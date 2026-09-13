@@ -3,12 +3,25 @@ import { syncLive } from "@/lib/ops";
 import { publicOrigin, requestOrigin } from "@/lib/origin";
 import { takeOAuthState } from "@/lib/public-origin";
 
+export const dynamic = "force-dynamic";
+
+function ready() {
+  return Response.json({ ok: true, service: "pressroom-etsy-callback" });
+}
+
+export async function HEAD() {
+  return new Response(null, { status: 200 });
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const origin = (await publicOrigin(request)) || requestOrigin(request);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const error = url.searchParams.get("error");
+  if (!code && !state && !error) {
+    return ready();
+  }
   if (error) {
     return Response.redirect(`${origin}/connections?etsy=denied`);
   }

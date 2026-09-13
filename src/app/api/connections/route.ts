@@ -2,18 +2,31 @@ import { connectionStatus } from "@/lib/ops";
 import { getCredentials, patchCredentials, saveCredentials } from "@/lib/credentials";
 import { pingEtsy } from "@/lib/etsy";
 import { etsyRedirectUri, isEtsyCallbackHost, publicOrigin } from "@/lib/origin";
+import { probePublicCallback, vendorHealth } from "@/lib/health";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const [connections, creds] = await Promise.all([connectionStatus(), getCredentials()]);
+  const [connections, creds, vendors] = await Promise.all([
+    connectionStatus(),
+    getCredentials(),
+    vendorHealth(),
+  ]);
   const origin = await publicOrigin(request);
   const callbackUrl = await etsyRedirectUri(request);
+  const callbackReachable = await probePublicCallback(origin);
+  const callbackIsPublic = isEtsyCallbackHost(origin) && callbackReachable;
   return Response.json({
     connections,
     callbackUrl,
     websiteUrl: origin,
-    callbackIsPublic: isEtsyCallbackHost(origin),
+    callbackIsPublic,
+    callbackReachable,
+    live: {
+      ...vendors,
+      callbackReachable,
+      readyToSell: Boolean(connections.etsy.authorized && vendors.gelato.ok),
+    },
     etsy: {
       apiKeySet: Boolean(creds.etsy?.apiKey),
       sharedSecretSet: Boolean(creds.etsy?.sharedSecret),

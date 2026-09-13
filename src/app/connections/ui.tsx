@@ -13,11 +13,20 @@ import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { Connections } from "@/lib/types";
 
+type LiveStatus = {
+  etsyApp: { ok: true; applicationId?: number } | { ok: false; error: string };
+  gelato: { ok: true; ordersSeen: number } | { ok: false; error: string };
+  callbackReachable: boolean;
+  readyToSell: boolean;
+};
+
 type Payload = {
   connections: Connections;
   callbackUrl?: string;
   websiteUrl?: string;
   callbackIsPublic?: boolean;
+  callbackReachable?: boolean;
+  live?: LiveStatus;
   etsy: { apiKeySet: boolean; sharedSecretSet: boolean; shopName?: string; shopId?: string };
   gelato: { apiKeySet: boolean };
 };
@@ -32,7 +41,8 @@ export function ConnectionsClient() {
   const [copied, setCopied] = useState<"callback" | "website" | null>(null);
   const callbackUrl = data?.callbackUrl || "";
   const websiteUrl = data?.websiteUrl || "";
-  const callbackIsPublic = Boolean(data?.callbackIsPublic);
+  const callbackIsPublic = Boolean(data?.callbackIsPublic && data?.callbackReachable);
+  const live = data?.live;
 
   const load = useCallback(async () => {
     setData(await api<Payload>("/api/connections"));
@@ -41,6 +51,14 @@ export function ConnectionsClient() {
   useEffect(() => {
     void load().catch((err: Error) => toast.error(err.message));
   }, [load]);
+
+  useEffect(() => {
+    if (live?.readyToSell) return;
+    const id = window.setInterval(() => {
+      void load().catch(() => undefined);
+    }, 8000);
+    return () => window.clearInterval(id);
+  }, [load, live?.readyToSell]);
 
   useEffect(() => {
     const etsy = search.get("etsy");
@@ -147,11 +165,60 @@ export function ConnectionsClient() {
               ? "keys accepted · authorize shop"
               : "not authorized"}
         </span>
-        <StatusPill value={data.connections.gelato.configured ? "live" : "demo"} />
+        <StatusPill value={live?.gelato.ok ? "live" : "demo"} />
         <span className="text-sm text-muted-foreground">
-          Gelato {data.gelato.apiKeySet ? "key on file" : "not configured"}
+          Gelato {live?.gelato.ok ? "print API live" : "not configured"}
         </span>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Live status</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm leading-6">
+          <p className="text-muted-foreground">
+            {live?.readyToSell
+              ? "Both vendors are live. Paid Etsy receipts can go to Gelato."
+              : "Gelato can print. Etsy still needs a reachable .com callback and one shop authorize click."}
+          </p>
+          <ul className="space-y-2">
+            <li className="flex flex-wrap items-center gap-2">
+              <StatusPill value={live?.etsyApp.ok ? "live" : "critical"} />
+              <span>
+                Etsy app API
+                {live?.etsyApp.ok && live.etsyApp.applicationId
+                  ? ` · application ${live.etsyApp.applicationId}`
+                  : live?.etsyApp.ok
+                    ? ""
+                    : ` · ${live?.etsyApp && !live.etsyApp.ok ? live.etsyApp.error : "checking"}`}
+              </span>
+            </li>
+            <li className="flex flex-wrap items-center gap-2">
+              <StatusPill value={data.connections.etsy.authorized ? "live" : "warning"} />
+              <span>
+                Etsy shop
+                {data.connections.etsy.authorized
+                  ? ` · ${data.connections.etsy.shopName || "authorized"}`
+                  : " · not authorized yet"}
+              </span>
+            </li>
+            <li className="flex flex-wrap items-center gap-2">
+              <StatusPill value={live?.gelato.ok ? "live" : "critical"} />
+              <span>
+                Gelato Order API
+                {live?.gelato.ok ? " · key accepted" : ` · ${live?.gelato && !live.gelato.ok ? live.gelato.error : "checking"}`}
+              </span>
+            </li>
+            <li className="flex flex-wrap items-center gap-2">
+              <StatusPill value={callbackIsPublic ? "live" : "critical"} />
+              <span>
+                Public .com callback
+                {callbackIsPublic ? " · reachable now" : " · offline (quick tunnels expire — wait for a new hostname)"}
+              </span>
+            </li>
+          </ul>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
@@ -191,9 +258,8 @@ export function ConnectionsClient() {
               <li>
                 {callbackIsPublic ? (
                   <>
-                    Paste these exact values. Pressroom is exposing a Cloudflare{" "}
-                    <code className="rounded bg-muted px-1">*.trycloudflare.com</code> tunnel
-                    for this:
+                    Paste these exact values. Remove any previous trycloudflare hostname — that
+                    tunnel is dead and is why the URL was not reached:
                     <div className="mt-2 space-y-2">
                       <div>
                         <p className="mb-1 text-xs uppercase tracking-wide">Website URL</p>
@@ -282,7 +348,10 @@ export function ConnectionsClient() {
               </Button>
               <a
                 href="/api/etsy/connect"
-                className={cn(buttonVariants(), !data.etsy.apiKeySet ? "pointer-events-none opacity-50" : "")}
+                className={cn(
+                  buttonVariants(),
+                  !data.etsy.apiKeySet || !callbackIsPublic ? "pointer-events-none opacity-50" : "",
+                )}
               >
                 Authorize with Etsy
               </a>

@@ -32,6 +32,8 @@ const labels: Record<string, string> = {
   sold_out: "Sold out",
   live: "Live",
   demo: "Sample shop",
+  critical: "Down",
+  warning: "Waiting",
   drop: "Harvest drop",
 };
 
