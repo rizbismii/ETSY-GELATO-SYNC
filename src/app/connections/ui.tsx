@@ -45,11 +45,18 @@ export function ConnectionsClient() {
   async function saveEtsy() {
     setBusy("etsy");
     try {
-      await api("/api/connections", {
-        method: "POST",
-        body: JSON.stringify({ etsyApiKey: etsyKey, etsySharedSecret: etsySecret }),
-      });
-      toast.success("Etsy keys saved. Authorize the shop next.");
+      const result = await api<{ etsyLive?: boolean; warning?: string; applicationId?: number }>(
+        "/api/connections",
+        {
+          method: "POST",
+          body: JSON.stringify({ etsyApiKey: etsyKey, etsySharedSecret: etsySecret }),
+        },
+      );
+      if (result.etsyLive) {
+        toast.success("Etsy API accepted the app. Authorize the shop next.");
+      } else {
+        toast.warning(result.warning || "Keys saved. Authorize the shop next.");
+      }
       setEtsyKey("");
       setEtsySecret("");
       await load();
@@ -125,7 +132,12 @@ export function ConnectionsClient() {
       <div className="flex flex-wrap items-center gap-2">
         <StatusPill value={data.connections.etsy.authorized ? "live" : "demo"} />
         <span className="text-sm text-muted-foreground">
-          Etsy {data.connections.etsy.shopName || "not authorized"}
+          Etsy{" "}
+          {data.connections.etsy.authorized
+            ? data.connections.etsy.shopName || "authorized"
+            : data.connections.etsy.configured
+              ? "keys accepted · authorize shop"
+              : "not authorized"}
         </span>
         <StatusPill value={data.connections.gelato.configured ? "live" : "demo"} />
         <span className="text-sm text-muted-foreground">

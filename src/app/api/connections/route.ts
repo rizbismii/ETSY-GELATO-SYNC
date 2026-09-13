@@ -1,5 +1,6 @@
 import { connectionStatus } from "@/lib/ops";
 import { getCredentials, patchCredentials, saveCredentials } from "@/lib/credentials";
+import { pingEtsy } from "@/lib/etsy";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +40,26 @@ export async function POST(request: Request) {
       shopName: current.etsy?.shopName,
     },
   });
-  return Response.json({ ok: true, connections: await connectionStatus() });
+  let etsyLive = false;
+  let etsyWarning: string | undefined;
+  let applicationId: number | undefined;
+  const next = await getCredentials();
+  if (next.etsy?.apiKey && next.etsy.sharedSecret) {
+    try {
+      const ping = await pingEtsy();
+      etsyLive = true;
+      applicationId = ping.application_id;
+    } catch (error) {
+      etsyWarning = (error as Error).message;
+    }
+  }
+  return Response.json({
+    ok: true,
+    etsyLive,
+    applicationId,
+    warning: etsyWarning,
+    connections: await connectionStatus(),
+  });
 }
 
 export async function DELETE() {

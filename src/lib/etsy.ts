@@ -39,12 +39,17 @@ export function etsyAuthorizeUrl(apiKey: string, challenge: string, state: strin
   return `${ETSY_AUTH}?${params.toString()}`;
 }
 
+export function etsyApiKeyHeader(apiKey: string, sharedSecret?: string) {
+  return sharedSecret ? `${apiKey}:${sharedSecret}` : apiKey;
+}
+
 async function etsyFetch(path: string, accessToken: string, apiKey: string, init?: RequestInit) {
+  const creds = await getCredentials();
   const response = await fetch(`${ETSY_API}${path}`, {
     ...init,
     headers: {
       Accept: "application/json",
-      "x-api-key": apiKey,
+      "x-api-key": etsyApiKeyHeader(apiKey, creds.etsy?.sharedSecret),
       Authorization: `Bearer ${accessToken}`,
       ...(init?.headers ?? {}),
     },
@@ -56,6 +61,25 @@ async function etsyFetch(path: string, accessToken: string, apiKey: string, init
     throw new Error(body.error || body.error_description || `Etsy ${response.status}`);
   }
   return body;
+}
+
+export async function pingEtsy() {
+  const creds = await getCredentials();
+  if (!creds.etsy?.apiKey || !creds.etsy.sharedSecret) {
+    throw new Error("Etsy keystring and shared secret are required");
+  }
+  const response = await fetch(`${ETSY_API}/openapi-ping`, {
+    headers: {
+      Accept: "application/json",
+      "x-api-key": etsyApiKeyHeader(creds.etsy.apiKey, creds.etsy.sharedSecret),
+    },
+    cache: "no-store",
+  });
+  const body = await response.json();
+  if (!response.ok) {
+    throw new Error(body.error || body.error_description || `Etsy ${response.status}`);
+  }
+  return body as { application_id?: number };
 }
 
 export async function exchangeEtsyCode(code: string, verifier: string) {
