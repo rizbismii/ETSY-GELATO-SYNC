@@ -20,19 +20,13 @@ fi
 
 write_origin() {
   local origin="$1"
-  python3 - "$ORIGIN_FILE" "$origin" <<'PY'
-import json, sys
-from pathlib import Path
-path = Path(sys.argv[1])
-origin = sys.argv[2].rstrip("/")
-path.write_text(json.dumps({"origin": origin}, indent=2) + "\n")
-print(f"Etsy website URL:  {origin}", flush=True)
-print(f"Etsy Callback URL: {origin}/api/etsy/callback", flush=True)
-PY
+  python3 -c 'import json,sys; from pathlib import Path; Path(sys.argv[1]).write_text(json.dumps({"origin": sys.argv[2].rstrip("/")}, indent=2)+"\n")' "$ORIGIN_FILE" "$origin"
+  echo "Etsy website URL:  ${origin}"
+  echo "Etsy Callback URL: ${origin}/api/etsy/callback"
 }
 
 extract_origin() {
-  grep -oE 'https://[a-zA-Z0-9.-]+\.trycloudflare\.com' "$LOG" 2>/dev/null | tail -1 || true
+  grep -oE 'https://[a-zA-Z0-9.-]+\.trycloudflare.com' "$LOG" 2>/dev/null | tail -1 || true
 }
 
 stop_tunnel() {
