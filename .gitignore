@@ -37,6 +37,8 @@ yarn-error.log*
 # local shop state and secrets
 /data/runtime.json
 /data/credentials.json
+/data/public-origin.json
+/data/oauth-state.json
 /agent-tools
 
 # vercel

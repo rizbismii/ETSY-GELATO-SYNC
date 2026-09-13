@@ -28,18 +28,35 @@ Open [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
 ## Connect your live shops
 
-1. Create an app at [Etsy Developers](https://www.etsy.com/developers/your-apps).
-2. Set the redirect URI to `http://127.0.0.1:43127/api/etsy/callback` (or your deployed origin + `/api/etsy/callback`).
-3. On **Connections**, paste the keystring and shared secret, then **Authorize with Etsy**.
-4. In the [Gelato dashboard](https://dashboard.gelato.com/), create an API key and paste it on the same page.
-5. Click **Sync now**, map any unmapped listings, then **Fix store operations**.
+Etsy’s developer portal **will not accept** `127.0.0.1` or `localhost` as a Callback URL. The field requires an HTTPS public hostname (a `.com` address).
+
+### Local OAuth (HTTPS `.com` tunnel)
+
+1. Keep `npm run dev` running.
+2. In a second terminal: `npm run etsy-tunnel`.
+3. Copy the printed **Website URL** (`https://….trycloudflare.com`) and **Callback URL** (`https://….trycloudflare.com/api/etsy/callback`).
+4. In [Manage your apps](https://www.etsy.com/developers/your-apps) → **fernora-etsgelto-app**, paste those exact values and save.
+5. On **Connections**, click **Authorize with Etsy**.
+
+The tunnel hostname changes if you restart `etsy-tunnel`. Update the Etsy app to match.
+
+### Deployed origin
+
+On a public host (for example Vercel), set `ETSY_REDIRECT_URI` to `https://your-domain.com/api/etsy/callback` and use that same value in the Etsy app.
+
+Then:
+
+1. On **Connections**, paste the Etsy keystring and shared secret if they are not already saved.
+2. In the [Gelato dashboard](https://dashboard.gelato.com/), create an API key and paste it on the same page.
+3. Click **Sync now**, map any unmapped listings, then **Fix store operations**.
 
 Keys can also live in environment variables:
 
 ```
 ETSY_API_KEY=
 ETSY_SHARED_SECRET=
-ETSY_REDIRECT_URI=http://127.0.0.1:43127/api/etsy/callback
+ETSY_REDIRECT_URI=https://your-domain.com/api/etsy/callback
+ETSY_PUBLIC_ORIGIN=https://your-domain.com
 GELATO_API_KEY=
 ```
 

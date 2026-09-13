@@ -6,7 +6,8 @@
     "dev": "next dev --port 43127 --hostname 0.0.0.0",
     "build": "next build",
     "start": "next start --port 43127 --hostname 0.0.0.0",
-    "lint": "eslint"
+    "lint": "eslint",
+    "etsy-tunnel": "bash scripts/etsy-tunnel.sh"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

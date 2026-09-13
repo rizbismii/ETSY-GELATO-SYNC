@@ -1,15 +1,19 @@
 import { connectionStatus } from "@/lib/ops";
 import { getCredentials, patchCredentials, saveCredentials } from "@/lib/credentials";
 import { pingEtsy } from "@/lib/etsy";
-import { etsyRedirectUri } from "@/lib/origin";
+import { etsyRedirectUri, isEtsyCallbackHost, publicOrigin } from "@/lib/origin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const [connections, creds] = await Promise.all([connectionStatus(), getCredentials()]);
+  const origin = await publicOrigin(request);
+  const callbackUrl = await etsyRedirectUri(request);
   return Response.json({
     connections,
-    callbackUrl: etsyRedirectUri(request),
+    callbackUrl,
+    websiteUrl: origin,
+    callbackIsPublic: isEtsyCallbackHost(origin),
     etsy: {
       apiKeySet: Boolean(creds.etsy?.apiKey),
       sharedSecretSet: Boolean(creds.etsy?.sharedSecret),

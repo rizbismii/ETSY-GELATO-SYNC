@@ -16,6 +16,8 @@ import type { Connections } from "@/lib/types";
 type Payload = {
   connections: Connections;
   callbackUrl?: string;
+  websiteUrl?: string;
+  callbackIsPublic?: boolean;
   etsy: { apiKeySet: boolean; sharedSecretSet: boolean; shopName?: string; shopId?: string };
   gelato: { apiKeySet: boolean };
 };
@@ -27,10 +29,10 @@ export function ConnectionsClient() {
   const [etsySecret, setEtsySecret] = useState("");
   const [gelatoKey, setGelatoKey] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const callbackUrl =
-    data?.callbackUrl ||
-    (typeof window === "undefined" ? "" : `${window.location.origin}/api/etsy/callback`);
+  const [copied, setCopied] = useState<"callback" | "website" | null>(null);
+  const callbackUrl = data?.callbackUrl || "";
+  const websiteUrl = data?.websiteUrl || "";
+  const callbackIsPublic = Boolean(data?.callbackIsPublic);
 
   const load = useCallback(async () => {
     setData(await api<Payload>("/api/connections"));
@@ -169,7 +171,7 @@ export function ConnectionsClient() {
               </a>
               ) is email and password only. The Open API v3 keys live in the developer portal.
             </p>
-            <ol className="list-decimal space-y-2 pl-4 text-sm leading-6 text-muted-foreground">
+            <ol className="list-decimal space-y-3 pl-4 text-sm leading-6 text-muted-foreground">
               <li>
                 Open{" "}
                 <a
@@ -180,49 +182,80 @@ export function ConnectionsClient() {
                 >
                   Manage your apps
                 </a>{" "}
-                while signed in, or{" "}
-                <a
-                  className="underline"
-                  href="https://www.etsy.com/developers/register"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  register a seller app
-                </a>{" "}
-                for your own shop.
+                → <strong className="font-medium text-foreground">fernora-etsgelto-app</strong>.
+                Etsy’s Callback URL field only accepts an HTTPS public hostname (a{" "}
+                <strong className="font-medium text-foreground">.com</strong> address). It
+                rejects <code className="rounded bg-muted px-1">127.0.0.1</code> and{" "}
+                <code className="rounded bg-muted px-1">localhost</code>.
               </li>
               <li>
-                In{" "}
-                <a
-                  className="underline"
-                  href="https://www.etsy.com/developers/your-apps"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  fernora-etsgelto-app
-                </a>
-                , add this exact Callback URL (also set the website URL to this host):
-                <span className="mt-2 flex flex-col gap-2 sm:flex-row">
-                  <code className="block flex-1 break-all rounded bg-muted px-2 py-1 text-xs text-foreground">
-                    {callbackUrl || "http://127.0.0.1:43127/api/etsy/callback"}
-                  </code>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={async () => {
-                      const value = callbackUrl || "http://127.0.0.1:43127/api/etsy/callback";
-                      await navigator.clipboard.writeText(value);
-                      setCopied(true);
-                      toast.success("Callback URL copied");
-                    }}
-                  >
-                    {copied ? "Copied" : "Copy"}
-                  </Button>
-                </span>
-                Also add <code className="rounded bg-muted px-1">http://localhost:43127/api/etsy/callback</code>{" "}
-                if you open the desk as localhost.
+                {callbackIsPublic ? (
+                  <>
+                    Paste these exact values. Pressroom is exposing a Cloudflare{" "}
+                    <code className="rounded bg-muted px-1">*.trycloudflare.com</code> tunnel
+                    for this:
+                    <div className="mt-2 space-y-2">
+                      <div>
+                        <p className="mb-1 text-xs uppercase tracking-wide">Website URL</p>
+                        <span className="flex flex-col gap-2 sm:flex-row">
+                          <code className="block flex-1 break-all rounded bg-muted px-2 py-1 text-xs text-foreground">
+                            {websiteUrl}
+                          </code>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                              await navigator.clipboard.writeText(websiteUrl);
+                              setCopied("website");
+                              toast.success("Website URL copied");
+                            }}
+                          >
+                            {copied === "website" ? "Copied" : "Copy"}
+                          </Button>
+                        </span>
+                      </div>
+                      <div>
+                        <p className="mb-1 text-xs uppercase tracking-wide">Callback URL</p>
+                        <span className="flex flex-col gap-2 sm:flex-row">
+                          <code className="block flex-1 break-all rounded bg-muted px-2 py-1 text-xs text-foreground">
+                            {callbackUrl}
+                          </code>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                              await navigator.clipboard.writeText(callbackUrl);
+                              setCopied("callback");
+                              toast.success("Callback URL copied");
+                            }}
+                          >
+                            {copied === "callback" ? "Copied" : "Copy"}
+                          </Button>
+                        </span>
+                      </div>
+                    </div>
+                    If the tunnel restarts, the hostname changes and you must update the Etsy
+                    app to match.
+                  </>
+                ) : (
+                  <>
+                    No public .com callback is available yet. Run{" "}
+                    <code className="rounded bg-muted px-1">npm run etsy-tunnel</code> in this
+                    repo (with the desk already running). That prints an{" "}
+                    <code className="rounded bg-muted px-1">https://….trycloudflare.com</code>{" "}
+                    website URL and matching Callback URL to paste into Etsy.
+                    {callbackUrl ? (
+                      <code className="mt-2 block break-all rounded bg-muted px-2 py-1 text-xs text-foreground">
+                        Not ready: {callbackUrl}
+                      </code>
+                    ) : null}
+                  </>
+                )}
               </li>
-              <li>Keys are already saved. Click authorize and approve access for this shop.</li>
+              <li>
+                Keys are already saved. After Etsy accepts the .com callback, click authorize
+                and approve access for this shop.
+              </li>
             </ol>
             <div className="space-y-2">
               <Label htmlFor="etsy-key">Keystring</Label>

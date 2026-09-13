@@ -1,34 +1,28 @@
-import { cookies } from "next/headers";
 import { exchangeEtsyCode, loadEtsyShop } from "@/lib/etsy";
 import { syncLive } from "@/lib/ops";
-import { publicOrigin } from "@/lib/origin";
+import { publicOrigin, requestOrigin } from "@/lib/origin";
+import { takeOAuthState } from "@/lib/public-origin";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const origin = publicOrigin(request);
+  const origin = (await publicOrigin(request)) || requestOrigin(request);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const error = url.searchParams.get("error");
   if (error) {
     return Response.redirect(`${origin}/connections?etsy=denied`);
   }
-  const jar = await cookies();
-  const expected = jar.get("etsy_oauth_state")?.value;
-  const verifier = jar.get("etsy_oauth_verifier")?.value;
-  const redirectUri = jar.get("etsy_oauth_redirect")?.value;
-  jar.delete("etsy_oauth_state");
-  jar.delete("etsy_oauth_verifier");
-  jar.delete("etsy_oauth_redirect");
-  if (!verifier || !expected) {
+  const stored = state ? await takeOAuthState(state) : null;
+  if (!stored) {
     return Response.redirect(
-      `${origin}/connections?etsy=error&reason=${encodeURIComponent("OAuth cookies were missing. Register this callback URL on the Etsy app, then authorize again from this same address.")}`,
+      `${origin}/connections?etsy=error&reason=${encodeURIComponent("OAuth state expired. Click Authorize with Etsy again.")}`,
     );
   }
-  if (!code || !state || state !== expected || !redirectUri) {
+  if (!code) {
     return Response.redirect(`${origin}/connections?etsy=invalid`);
   }
   try {
-    await exchangeEtsyCode(code, verifier, redirectUri);
+    await exchangeEtsyCode(code, stored.verifier, stored.redirectUri);
     await loadEtsyShop();
     await syncLive();
     return Response.redirect(`${origin}/connections?etsy=connected`);
