@@ -1,0 +1,159 @@
+export type ConnectionMode = "demo" | "live";
+
+export type EtsyConnection = {
+  configured: boolean;
+  authorized: boolean;
+  mode: ConnectionMode;
+  shopName?: string;
+  shopId?: string;
+  userId?: string;
+  error?: string;
+};
+
+export type GelatoConnection = {
+  configured: boolean;
+  mode: ConnectionMode;
+  error?: string;
+};
+
+export type Connections = {
+  etsy: EtsyConnection;
+  gelato: GelatoConnection;
+};
+
+export type ListingState = "active" | "inactive" | "expired" | "sold_out";
+
+export type Listing = {
+  id: string;
+  etsyListingId: string;
+  title: string;
+  state: ListingState;
+  price: number;
+  currency: string;
+  quantity: number;
+  views: number;
+  favorites: number;
+  tags: string[];
+  category: string;
+  gelatoProductUid?: string;
+  gelatoProductName?: string;
+  printFileUrl?: string;
+  gelatoUnitCost: number;
+  issues: string[];
+};
+
+export type Address = {
+  firstName: string;
+  lastName: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  state?: string;
+  postCode: string;
+  country: string;
+  email?: string;
+  phone?: string;
+};
+
+export type OrderStatus =
+  | "paid"
+  | "blocked"
+  | "in_production"
+  | "shipped"
+  | "delivered"
+  | "cancelled";
+
+export type OrderItem = {
+  id: string;
+  listingId: string;
+  title: string;
+  quantity: number;
+  price: number;
+  variation?: string;
+  gelatoProductUid?: string;
+  printFileUrl?: string;
+};
+
+export type Order = {
+  id: string;
+  etsyReceiptId: string;
+  buyerName: string;
+  createdAt: string;
+  paidAt?: string;
+  status: OrderStatus;
+  subtotal: number;
+  shippingPaid: number;
+  currency: string;
+  items: OrderItem[];
+  shippingAddress: Address;
+  gelatoOrderId?: string;
+  trackingNumber?: string;
+  trackingCarrier?: string;
+  trackingPushedToEtsy: boolean;
+  gelatoStatus?: string;
+  issues: string[];
+};
+
+export type ProductTemplate = {
+  uid: string;
+  name: string;
+  category: string;
+  unitCost: number;
+  shippingCost: number;
+  keywords: string[];
+};
+
+export type DailyRevenue = {
+  date: string;
+  gross: number;
+  fees: number;
+  cogs: number;
+  net: number;
+  orders: number;
+};
+
+export type ShopState = {
+  shopName: string;
+  currency: string;
+  listings: Listing[];
+  orders: Order[];
+  lastSyncAt?: string;
+};
+
+export type OpsIssue = {
+  id: string;
+  severity: "critical" | "warning" | "info";
+  title: string;
+  detail: string;
+  action?: {
+    label: string;
+    href?: string;
+    kind:
+      | "connect"
+      | "map_listings"
+      | "fulfill"
+      | "push_tracking"
+      | "price"
+      | "repair";
+  };
+};
+
+export type Overview = {
+  connections: Connections;
+  shopName: string;
+  kpis: {
+    gross30d: number;
+    net30d: number;
+    fees30d: number;
+    cogs30d: number;
+    orders30d: number;
+    awaitingFulfillment: number;
+    inProduction: number;
+    unmappedListings: number;
+    opsScore: number;
+  };
+  issues: OpsIssue[];
+  revenue: DailyRevenue[];
+  recentOrders: Order[];
+  topListings: Array<Listing & { units30d: number; net30d: number }>;
+};
