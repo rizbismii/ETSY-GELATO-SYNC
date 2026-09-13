@@ -48,6 +48,7 @@ export async function POST(request: Request) {
       total: result.quote.total,
       currency: result.quote.currency,
       status: result.order.status,
+      order: result.order,
     });
   } catch (error) {
     return Response.json({ error: (error as Error).message }, { status: 400 });

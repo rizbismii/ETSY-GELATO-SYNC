@@ -9,12 +9,10 @@ const FILE = path.join(process.cwd(), "data", "runtime.json");
 let cache: ShopState | null = null;
 
 export async function getShop(): Promise<ShopState> {
-  if (!cache) {
-    try {
-      cache = JSON.parse(await fs.readFile(FILE, "utf8")) as ShopState;
-    } catch {
-      cache = seedShop();
-    }
+  try {
+    cache = JSON.parse(await fs.readFile(FILE, "utf8")) as ShopState;
+  } catch {
+    cache = cache ?? seedShop();
   }
   if (applyLiveCatalog(cache) || shopLooksLikeSample(cache)) {
     await saveShop(cache);

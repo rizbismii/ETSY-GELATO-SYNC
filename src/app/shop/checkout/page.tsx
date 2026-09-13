@@ -13,6 +13,8 @@ import { fernoraProduct, type FernoraCountry } from "@/lib/shop";
 import { api } from "@/lib/api";
 import { useCart } from "../cart-provider";
 import { ProductArt } from "@/components/product-art";
+import { cacheShopOrder } from "../order/[id]/ui";
+import type { Order } from "@/lib/types";
 
 type Quote = {
   subtotal: number;
@@ -73,10 +75,11 @@ export default function CheckoutPage() {
     event.preventDefault();
     setBusy(true);
     try {
-      const result = await api<{ orderId: string; invoiceUrl?: string }>("/api/shop/checkout", {
+      const result = await api<{ orderId: string; invoiceUrl?: string; order?: Order }>("/api/shop/checkout", {
         method: "POST",
         body: JSON.stringify({ ...form, country, lines }),
       });
+      if (result.order) cacheShopOrder(result.order);
       clear();
       if (result.invoiceUrl) {
         window.location.href = result.invoiceUrl;
