@@ -139,20 +139,51 @@ export function ConnectionsClient() {
             <CardTitle>Etsy</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <p className="text-sm leading-6 text-muted-foreground">
+              Account settings (
+              <a
+                className="underline"
+                href="https://www.etsy.com/nz/your/account"
+                target="_blank"
+                rel="noreferrer"
+              >
+                etsy.com/nz/your/account
+              </a>
+              ) is email and password only. The Open API v3 keys live in the developer portal.
+            </p>
             <ol className="list-decimal space-y-2 pl-4 text-sm leading-6 text-muted-foreground">
               <li>
-                Create an app at{" "}
-                <a className="underline" href="https://www.etsy.com/developers/your-apps" target="_blank" rel="noreferrer">
-                  Etsy Developers
-                </a>
-                .
+                Open{" "}
+                <a
+                  className="underline"
+                  href="https://www.etsy.com/developers/your-apps"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Manage your apps
+                </a>{" "}
+                while signed in, or{" "}
+                <a
+                  className="underline"
+                  href="https://www.etsy.com/developers/register"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  register a seller app
+                </a>{" "}
+                for your own shop.
+              </li>
+              <li>
+                After approval, click the visibility icon and copy the{" "}
+                <strong>keystring</strong> and <strong>shared secret</strong>.
               </li>
               <li>
                 Set the callback URL to{" "}
-                <code className="rounded bg-muted px-1">/api/etsy/callback</code> on this
-                host, or set <code className="rounded bg-muted px-1">ETSY_REDIRECT_URI</code>.
+                <code className="rounded bg-muted px-1">http://127.0.0.1:43127/api/etsy/callback</code>{" "}
+                (or your deployed origin +{" "}
+                <code className="rounded bg-muted px-1">/api/etsy/callback</code>).
               </li>
-              <li>Paste the keystring and shared secret, then authorize the shop.</li>
+              <li>Paste both below, save, then authorize the shop.</li>
             </ol>
             <div className="space-y-2">
               <Label htmlFor="etsy-key">Keystring</Label>
