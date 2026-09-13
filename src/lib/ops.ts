@@ -8,7 +8,7 @@ import { createGelatoOrder, demoFulfill, pingGelato } from "@/lib/gelato";
 import { pullEtsyCatalog, pushEtsyTracking } from "@/lib/etsy";
 import { PRINT_FILE, HARVEST_DROP_ID, HARVEST_DROP_NAME } from "@/lib/constants";
 import { applyHarvestDrop } from "@/lib/drop";
-import { ETSY_KNOWN_LISTINGS, liveProductById, READINESS_STATE_ID } from "@/lib/live-catalog";
+import { ETSY_KNOWN_LISTINGS, etsyListingUrl, liveProductById, READINESS_STATE_ID } from "@/lib/live-catalog";
 import { createEtsyDraft, setEtsyListingState, uploadEtsyListingImage } from "@/lib/etsy";
 import { absoluteAssetUrl } from "@/lib/origin";
 
@@ -489,7 +489,7 @@ export async function publishListing(id: string, mode: "draft" | "live") {
       sku: listing.gelatoProductUid,
     });
     listingId = String(created.listing_id);
-    url = created.url;
+    url = etsyListingUrl(listingId) || created.url;
   }
 
   const imagePath = `${process.cwd()}/public${meta.imageUrl}`;
@@ -517,7 +517,7 @@ export async function publishListing(id: string, mode: "draft" | "live") {
   if (mode === "live") {
     try {
       const updated = await setEtsyListingState(listingId, "active");
-      url = updated.url || url;
+      url = etsyListingUrl(listingId) || updated.url || url;
       state = "live";
     } catch (error) {
       await updateShop((current) => {

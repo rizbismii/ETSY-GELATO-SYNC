@@ -1,6 +1,12 @@
 import { OFFSITE_ADS_RATE, recommendedPrice } from "@/lib/money";
 import type { Listing } from "@/lib/types";
 
+export const ETSY_SHOP_URL = "https://www.etsy.com/shop/FERNORATRENDS";
+
+export function etsyListingUrl(listingId?: string | null) {
+  if (!listingId) return undefined;
+  return `https://www.etsy.com/listing/${listingId}`;
+}
 export const LIVE_DROP_ID = "fernora-live";
 export const LIVE_DROP_NAME = "Fernora mix";
 export const SHOP_NAME = "FERNORATRENDS";

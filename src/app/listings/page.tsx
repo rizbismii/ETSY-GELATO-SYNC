@@ -10,6 +10,7 @@ import { StatusPill } from "@/components/status-pill";
 import { ProductArt } from "@/components/product-art";
 import { api } from "@/lib/api";
 import { formatMoney, formatPercent } from "@/lib/money";
+import { ETSY_SHOP_URL, etsyListingUrl } from "@/lib/live-catalog";
 import type { Listing } from "@/lib/types";
 
 type Lane = {
@@ -159,6 +160,14 @@ export default function ListingsPage() {
             {busy === "all:live" ? <Loader2 className="animate-spin" /> : null}
             Publish all live
           </Button>
+          <a
+            href={ETSY_SHOP_URL}
+            target="_blank"
+            rel="noreferrer"
+            className={cn(buttonVariants({ variant: "ghost" }))}
+          >
+            Open shop on Etsy
+          </a>
         </div>
       </div>
 
@@ -304,9 +313,9 @@ export default function ListingsPage() {
                         {busy === `${listing.id}:live` ? <Loader2 className="animate-spin" /> : null}
                         Publish live
                       </Button>
-                      {listing.etsyUrl ? (
+                      {etsyListingUrl(listing.etsyListingId) || listing.etsyUrl ? (
                         <a
-                          href={listing.etsyUrl}
+                          href={etsyListingUrl(listing.etsyListingId) || listing.etsyUrl}
                           target="_blank"
                           rel="noreferrer"
                           className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}

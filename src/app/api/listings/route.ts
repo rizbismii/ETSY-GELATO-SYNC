@@ -6,7 +6,7 @@ import {
   recommendedPrice,
 } from "@/lib/money";
 import { templateByUid } from "@/lib/catalog";
-import { liveProductById, SHIP_COUNTRIES } from "@/lib/live-catalog";
+import { etsyListingUrl, liveProductById, SHIP_COUNTRIES } from "@/lib/live-catalog";
 import { getShop } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +29,7 @@ export async function GET() {
       publishState: row.publishState || meta?.publishState || "ready",
       collection: row.collection || meta?.collection || "original",
       quote: row.quote || meta?.quote,
-      etsyUrl: row.etsyUrl,
+      etsyUrl: etsyListingUrl(row.etsyListingId) || row.etsyUrl,
       shippingCost: shipping,
       net: economics.net,
       margin: economics.margin,

@@ -121,10 +121,10 @@ export async function exchangeEtsyCode(code: string, verifier: string, redirectU
   return data;
 }
 
-export async function refreshEtsyToken() {
+export async function refreshEtsyToken(force = false) {
   const creds = await getCredentials();
   if (!creds.etsy?.refreshToken || !creds.etsy.apiKey) return creds.etsy;
-  if (creds.etsy.expiresAt && creds.etsy.expiresAt > Date.now() + 60_000) return creds.etsy;
+  if (!force && creds.etsy.expiresAt && creds.etsy.expiresAt > Date.now() + 60_000) return creds.etsy;
   const response = await fetch(ETSY_TOKEN, {
     method: "POST",
     headers: { Accept: "application/json", "Content-Type": "application/x-www-form-urlencoded" },
