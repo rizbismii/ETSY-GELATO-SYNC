@@ -1,12 +1,13 @@
 # Pressroom
 
-Operations desk for **FERNORATRENDS** on Etsy, fulfilled by Gelato. It connects both accounts, publishes the live catalog, maps listings to print products, sends paid receipts to production, pushes tracking back to Etsy, and shows net profit after marketplace fees and print cost.
+Operations desk for **FERNORATRENDS** on Etsy and the **Fernora** shop (Australia and New Zealand only), both fulfilled by Gelato. It connects the accounts, publishes the live catalog, maps listings to print products, sends paid receipts to production, and shows net profit after marketplace fees and print cost.
 
 There is no sample shop. The desk opens on the five live Fernora products in NZD.
 
 ## What it does
 
-- **Connect Etsy** with Open API v3 (OAuth 2.0 + PKCE) and **Gelato** with an API key (`X-API-KEY`).
+- **Connect Etsy** with Open API v3 (OAuth 2.0 + PKCE), **Shopify** with a Dev Dashboard app (client ID + secret), and **Gelato** with an API key (`X-API-KEY`).
+- **Fernora website** at `/shop` — the 20 live products, AU/NZ shipping only, Gelato fulfillment.
 - **Catalog** with AI artwork, Gelato SKUs, destination shipping, and **Save Etsy draft** / **Publish live**.
 - **Map listings** to Gelato product UIDs and print files so orders are not blocked.
 - **Fulfill** paid Etsy receipts as Gelato v4 orders.
@@ -24,7 +25,25 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open [http://127.0.0.1:43127](http://127.0.0.1:43127).
+Open [http://127.0.0.1:43127](http://127.0.0.1:43127) for Pressroom, or [http://127.0.0.1:43127/shop](http://127.0.0.1:43127/shop) for the Fernora storefront.
+
+## Fernora shop (AU / NZ)
+
+The customer website is `/shop`. It sells the existing 20-piece catalog only, quotes Gelato shipping for New Zealand or Australia, and will not accept any other country.
+
+Paid Fernora orders print through Gelato. Until Shopify checkout is authorized, new shop orders sit as **pending** on the Orders desk — mark them paid to send the print files.
+
+### Shopify (fernora.myshopify.com)
+
+The Shopify shop name **fernora** already exists. The public myshopify storefront is currently frozen (HTTP 402 — unpaid plan). App client ID and secret are stored on Connections.
+
+Shopify cannot create a second store with that name from the app keys. To attach the Admin API:
+
+1. Unfreeze **fernora** in Shopify admin (pick a plan).
+2. In the Dev Dashboard app, add Redirect URL `https://your-public-origin/api/shopify/callback`.
+3. On **Connections**, click **Authorize Shopify**, then **Publish catalog · AU/NZ**.
+
+That pushes the 20 products, limits shipping zones to Australia and New Zealand, and registers an orders/paid webhook so Gelato can print automatically.
 
 ## Connect your live shops
 
@@ -57,6 +76,10 @@ ETSY_API_KEY=
 ETSY_SHARED_SECRET=
 ETSY_REDIRECT_URI=https://your-domain.com/api/etsy/callback
 ETSY_PUBLIC_ORIGIN=https://your-domain.com
+SHOPIFY_CLIENT_ID=
+SHOPIFY_CLIENT_SECRET=
+SHOPIFY_SHOP=fernora
+SHOPIFY_REDIRECT_URI=https://your-domain.com/api/shopify/callback
 GELATO_API_KEY=
 ```
 

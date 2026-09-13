@@ -53,6 +53,11 @@ export async function etsyRedirectUri(request?: Request) {
   return `${await publicOrigin(request)}/api/etsy/callback`;
 }
 
+export async function shopifyRedirectUri(request?: Request) {
+  if (process.env.SHOPIFY_REDIRECT_URI) return process.env.SHOPIFY_REDIRECT_URI;
+  return `${await publicOrigin(request)}/api/shopify/callback`;
+}
+
 export async function absoluteAssetUrl(assetPath: string, request?: Request) {
   if (assetPath.startsWith("http://") || assetPath.startsWith("https://")) return assetPath;
   const origin = await publicOrigin(request);

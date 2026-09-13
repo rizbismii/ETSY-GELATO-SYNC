@@ -6,6 +6,13 @@ export const OFFSITE_ADS_RATE = 0.15;
 /** On-site Etsy Ads are CPC. Keep them off so spend never runs without a sale. */
 export const ETSY_CPC_ADS_ENABLED = false;
 
+export const SHOPIFY_PAYMENT_RATE = 0.029;
+export const SHOPIFY_PAYMENT_FIXED = 0.3;
+
+export function shopifyFees(itemTotal: number, shippingPaid: number) {
+  return (itemTotal + shippingPaid) * SHOPIFY_PAYMENT_RATE + SHOPIFY_PAYMENT_FIXED;
+}
+
 export function etsyFees(itemTotal: number, shippingPaid: number) {
   const taxable = itemTotal + shippingPaid;
   return taxable * ETSY_TRANSACTION_RATE + taxable * ETSY_PAYMENT_RATE + ETSY_PAYMENT_FIXED;
@@ -30,8 +37,14 @@ export function orderProfit(input: {
   items: Array<{ quantity: number; listingId: string }>;
   listings: Array<{ id: string; gelatoUnitCost: number }>;
   gelatoShipping: number;
+  channel?: "etsy" | "shopify" | "fernora";
 }) {
-  const fees = etsyFees(input.subtotal, input.shippingPaid);
+  const fees =
+    input.channel === "shopify"
+      ? shopifyFees(input.subtotal, input.shippingPaid)
+      : input.channel === "fernora"
+        ? 0
+        : etsyFees(input.subtotal, input.shippingPaid);
   const cogs = orderCogs(input.items, input.listings, input.gelatoShipping);
   const net = input.subtotal + input.shippingPaid - fees - cogs;
   return { fees, cogs, net };

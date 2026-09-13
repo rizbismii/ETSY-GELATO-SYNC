@@ -2,7 +2,7 @@ import { GELATO_CATALOG, suggestTemplate, templateByUid } from "@/lib/catalog";
 import { getCredentials } from "@/lib/credentials";
 import { listingNet, orderProfit, recommendedPrice } from "@/lib/money";
 import { getShop, updateShop } from "@/lib/store";
-import type { Connections, Listing, OpsIssue, Order, Overview, ShopState } from "@/lib/types";
+import type { Address, Connections, Listing, OpsIssue, Order, Overview, ShopState } from "@/lib/types";
 import { existsSync } from "node:fs";
 import { createGelatoOrder, demoFulfill, pingGelato } from "@/lib/gelato";
 import { pullEtsyCatalog, pushEtsyTracking } from "@/lib/etsy";
@@ -11,6 +11,14 @@ import { applyHarvestDrop } from "@/lib/drop";
 import { ETSY_KNOWN_LISTINGS, etsyListingUrl, liveProductById, READINESS_STATE_ID } from "@/lib/live-catalog";
 import { createEtsyDraft, setEtsyListingState, uploadEtsyListingImage } from "@/lib/etsy";
 import { absoluteAssetUrl } from "@/lib/origin";
+import {
+  checkoutToOrder,
+  isFernoraCountry,
+  quoteFernoraCart,
+  type CartLine,
+  type FernoraCountry,
+} from "@/lib/shop";
+import { createShopifyDraftInvoice } from "@/lib/shopify";
 
 export async function connectionStatus(): Promise<Connections> {
   const creds = await getCredentials();
@@ -26,6 +34,13 @@ export async function connectionStatus(): Promise<Connections> {
     gelato: {
       configured: Boolean(creds.gelatoApiKey),
       mode: creds.gelatoApiKey ? "live" : "demo",
+    },
+    shopify: {
+      configured: Boolean(creds.shopify?.clientId && creds.shopify.clientSecret),
+      authorized: Boolean(creds.shopify?.accessToken),
+      mode: creds.shopify?.accessToken ? "live" : "demo",
+      shop: creds.shopify?.shop,
+      storefrontStatus: creds.shopify?.storefrontStatus,
     },
   };
 }
@@ -62,16 +77,22 @@ export function enrichOrder(order: Order, listings: Listing[]): Order {
   if (unmapped && (order.status === "paid" || order.status === "blocked")) {
     issues.push("Line item is not mapped to Gelato");
   }
+  if (order.status === "pending") {
+    issues.push("Awaiting payment before Gelato print");
+  }
   if (order.status === "shipped" && order.trackingNumber && !order.trackingPushedToEtsy) {
     issues.push("Tracking is on Gelato but not on the Etsy receipt");
   }
   let status = order.status;
-  if (unmapped && status === "paid") status = "blocked";
-  if (!unmapped && status === "blocked") status = "paid";
+  if (status !== "pending") {
+    if (unmapped && status === "paid") status = "blocked";
+    if (!unmapped && status === "blocked") status = "paid";
+  }
   return { ...order, items, issues, status };
 }
 
 export function gelatoShippingFor(order: Order) {
+  if (order.channel === "fernora" || order.channel === "shopify") return order.shippingPaid;
   const first = templateByUid(order.items[0]?.gelatoProductUid);
   return first?.shippingCost ?? 4.2;
 }
@@ -83,6 +104,7 @@ export function profitFor(order: Order, listings: Listing[]) {
     items: order.items,
     listings,
     gelatoShipping: gelatoShippingFor(order),
+    channel: order.channel || "etsy",
   });
 }
 
@@ -104,6 +126,31 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
       title: "Gelato is not connected",
       detail: "Add your Gelato API key so paid Etsy orders can be printed and shipped.",
       action: { label: "Connect Gelato", href: "/connections", kind: "connect" },
+    });
+  }
+  if (!connections.shopify.authorized) {
+    issues.push({
+      id: "shopify-connect",
+      severity: connections.shopify.storefrontStatus === "frozen" ? "warning" : "info",
+      title:
+        connections.shopify.storefrontStatus === "frozen"
+          ? "Shopify store fernora is frozen"
+          : "Shopify Fernora is not authorized",
+      detail:
+        connections.shopify.storefrontStatus === "frozen"
+          ? "fernora.myshopify.com exists but Shopify has paused the storefront (unpaid plan). Unfreeze it, then authorize the app. The Fernora website at /shop still sells AU/NZ and prints through Gelato."
+          : "Authorize the Fernora Shopify shop so Pressroom can push the catalog and pull paid checkouts.",
+      action: { label: "Connect Shopify", href: "/connections", kind: "connect" },
+    });
+  }
+  const pending = shop.orders.filter((o) => o.status === "pending");
+  if (pending.length) {
+    issues.push({
+      id: "pending-pay",
+      severity: "warning",
+      title: `${pending.length} Fernora order${pending.length === 1 ? "" : "s"} awaiting payment`,
+      detail: "Mark them paid to send the print files to Gelato.",
+      action: { label: "Review orders", href: "/orders", kind: "fulfill" },
     });
   }
   const unpublished = shop.listings.filter(
@@ -183,10 +230,12 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
 
 export function opsScore(shop: ShopState, connections: Connections) {
   let score = 0;
-  if (connections.etsy.authorized) score += 15;
-  else score += 8;
+  if (connections.etsy.authorized) score += 12;
+  else score += 6;
   if (connections.gelato.configured) score += 15;
   else score += 8;
+  if (connections.shopify.authorized) score += 8;
+  else score += 4;
   const active = shop.listings.filter((l) => l.state === "active");
   const mapped = active.filter((l) => l.gelatoProductUid && l.printFileUrl);
   score += active.length ? Math.round((mapped.length / active.length) * 30) : 30;
@@ -355,6 +404,7 @@ export async function fulfillOrder(id: string) {
   const shop = await updateShop(async (state) => {
     const order = state.orders.find((row) => row.id === id);
     if (!order) throw new Error("Order not found");
+    if (order.status === "pending") throw new Error("Collect payment before sending this order to Gelato");
     const ready = enrichOrder(order, state.listings);
     if (ready.status === "blocked" || ready.items.some((item) => !item.gelatoProductUid || !item.printFileUrl)) {
       throw new Error("Order is blocked until every line is mapped");
@@ -541,6 +591,164 @@ export async function publishListing(id: string, mode: "draft" | "live") {
     row.state = state === "live" ? "active" : "inactive";
   });
   return { id, listingId, url, state };
+}
+
+export async function placeFernoraOrder(input: {
+  lines: CartLine[];
+  country: string;
+  address: Address;
+}) {
+  if (!isFernoraCountry(input.country)) {
+    throw new Error("Fernora only ships to Australia and New Zealand");
+  }
+  const country = input.country as FernoraCountry;
+  const quote = quoteFernoraCart(input.lines, country);
+  const draft = checkoutToOrder({ quote, address: input.address });
+  const id = `ord_frn_${Date.now().toString(36)}`;
+  const connections = await connectionStatus();
+  let invoiceUrl: string | undefined;
+  let shopifyDraftOrderId: string | undefined;
+  if (connections.shopify.authorized) {
+    try {
+      const invoice = await createShopifyDraftInvoice({
+        email: input.address.email || "",
+        note: "Fernora AU/NZ · Gelato print-on-demand",
+        country,
+        lines: quote.items.map((item) => ({
+          listingId: item.product.id,
+          quantity: item.quantity,
+          title: item.product.title,
+          price: item.unitPrice,
+        })),
+        address: {
+          firstName: input.address.firstName,
+          lastName: input.address.lastName,
+          address1: input.address.addressLine1,
+          address2: input.address.addressLine2,
+          city: input.address.city,
+          province: input.address.state,
+          zip: input.address.postCode,
+          country: input.address.country,
+          phone: input.address.phone,
+        },
+      });
+      invoiceUrl = invoice.invoiceUrl || undefined;
+      shopifyDraftOrderId = invoice.id;
+      draft.channel = "shopify";
+      draft.shopifyDraftOrderId = invoice.id;
+      draft.invoiceUrl = invoiceUrl;
+      draft.etsyReceiptId = invoice.name || draft.etsyReceiptId;
+    } catch {
+      /* Shopify store may be frozen; keep the local pending order */
+    }
+  }
+  const order: Order = { ...draft, id, invoiceUrl, shopifyDraftOrderId };
+  await updateShop((state) => {
+    state.orders.unshift(order);
+  });
+  return { order, quote, invoiceUrl };
+}
+
+export async function markOrderPaid(id: string, fulfill = true) {
+  await updateShop((state) => {
+    const order = state.orders.find((row) => row.id === id);
+    if (!order) throw new Error("Order not found");
+    if (order.status === "cancelled") throw new Error("Order is cancelled");
+    if (order.status === "pending" || order.status === "blocked") {
+      order.status = "paid";
+      order.paidAt = new Date().toISOString();
+      order.issues = [];
+    }
+  });
+  let gelatoOrderId: string | undefined;
+  let live = false;
+  if (fulfill) {
+    try {
+      const result = await fulfillOrder(id);
+      gelatoOrderId = result.gelatoOrderId;
+      live = result.live;
+    } catch {
+      /* stay paid if Gelato rejects; desk can retry */
+    }
+  }
+  const shop = await getShop();
+  return { shop, order: shop.orders.find((row) => row.id === id), gelatoOrderId, live };
+}
+
+export async function ingestShopifyPaidOrder(payload: {
+  id?: number | string;
+  name?: string;
+  email?: string;
+  created_at?: string;
+  shipping_address?: Record<string, string>;
+  billing_address?: Record<string, string>;
+  line_items?: Array<{ sku?: string; title?: string; quantity?: number; price?: string }>;
+  total_price?: string;
+  shipping_lines?: Array<{ price?: string }>;
+  currency?: string;
+}) {
+  const shopifyOrderId = String(payload.id || "");
+  const shop = await getShop();
+  const existing = shop.orders.find(
+    (row) => row.shopifyOrderId === shopifyOrderId || row.shopifyDraftOrderId?.includes(shopifyOrderId),
+  );
+  if (existing) {
+    if (existing.status === "pending") return markOrderPaid(existing.id, true);
+    return { order: existing, duplicate: true };
+  }
+  const addressSource = payload.shipping_address || payload.billing_address || {};
+  const country = String(addressSource.country_code || addressSource.country || "").toUpperCase();
+  if (country && country !== "AU" && country !== "NZ" && country !== "AUS" && country !== "NZL") {
+    throw new Error("Fernora Shopify orders only ship to Australia and New Zealand");
+  }
+  const lines = (payload.line_items || [])
+    .map((item, index) => {
+      const listingId = item.sku || "";
+      const listing = shop.listings.find((row) => row.id === listingId) || liveProductById(listingId);
+      return {
+        id: `shp_${shopifyOrderId}_${index}`,
+        listingId: listing?.id || listingId || `unknown_${index}`,
+        title: item.title || listing?.title || "Item",
+        quantity: item.quantity || 1,
+        price: Number(item.price || listing?.price || 0),
+        gelatoProductUid: listing?.gelatoProductUid,
+        printFileUrl: listing?.printFileUrl,
+      };
+    })
+    .filter((item) => item.quantity > 0);
+  const id = `ord_shp_${shopifyOrderId || Date.now().toString(36)}`;
+  const order: Order = {
+    id,
+    etsyReceiptId: payload.name || `SHP-${shopifyOrderId}`,
+    buyerName: `${addressSource.first_name || ""} ${addressSource.last_name || ""}`.trim() || "Shopify customer",
+    createdAt: payload.created_at || new Date().toISOString(),
+    paidAt: new Date().toISOString(),
+    status: "paid",
+    channel: "shopify",
+    subtotal: lines.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    shippingPaid: Number(payload.shipping_lines?.[0]?.price || 0),
+    currency: payload.currency || "NZD",
+    items: lines,
+    shippingAddress: {
+      firstName: addressSource.first_name || "Customer",
+      lastName: addressSource.last_name || "",
+      addressLine1: addressSource.address1 || "",
+      addressLine2: addressSource.address2,
+      city: addressSource.city || "",
+      state: addressSource.province,
+      postCode: addressSource.zip || "",
+      country: country === "AUS" ? "AU" : country === "NZL" ? "NZ" : country || "NZ",
+      email: payload.email,
+      phone: addressSource.phone,
+    },
+    shopifyOrderId,
+    trackingPushedToEtsy: true,
+    issues: [],
+  };
+  await updateShop((state) => {
+    state.orders.unshift(order);
+  });
+  return markOrderPaid(id, true);
 }
 
 export { GELATO_CATALOG };

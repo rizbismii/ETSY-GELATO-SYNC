@@ -52,7 +52,7 @@ export async function createGelatoOrder(order: Order) {
   );
   const payload = {
     orderType: "order",
-    orderReferenceId: order.etsyReceiptId,
+    orderReferenceId: order.shopifyOrderId || order.etsyReceiptId || order.id,
     customerReferenceId: order.buyerName.replace(/\s+/g, "-").toLowerCase(),
     currency: order.currency,
     items,

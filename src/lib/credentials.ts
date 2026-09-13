@@ -12,9 +12,20 @@ export type EtsyCredentials = {
   shopName?: string;
 };
 
+export type ShopifyCredentials = {
+  clientId: string;
+  clientSecret: string;
+  shop?: string;
+  accessToken?: string;
+  scope?: string;
+  expiresAt?: number;
+  storefrontStatus?: "live" | "frozen" | "missing" | "unknown";
+};
+
 export type StoredCredentials = {
   etsy?: EtsyCredentials;
   gelatoApiKey?: string;
+  shopify?: ShopifyCredentials;
 };
 
 const FILE = path.join(process.cwd(), "data", "credentials.json");
@@ -38,6 +49,17 @@ async function writeDisk(value: StoredCredentials) {
   }
 }
 
+function normalizeShopDomain(shop?: string) {
+  if (!shop) return undefined;
+  const cleaned = shop
+    .trim()
+    .replace(/^https?:\/\//, "")
+    .replace(/\/$/, "")
+    .toLowerCase();
+  if (!cleaned) return undefined;
+  return cleaned.includes(".") ? cleaned : `${cleaned}.myshopify.com`;
+}
+
 export async function getCredentials(): Promise<StoredCredentials> {
   if (!cache) cache = await readDisk();
   const env: StoredCredentials = {
@@ -52,8 +74,18 @@ export async function getCredentials(): Promise<StoredCredentials> {
       shopId: process.env.ETSY_SHOP_ID || cache.etsy?.shopId,
       shopName: cache.etsy?.shopName,
     },
+    shopify: {
+      clientId: process.env.SHOPIFY_CLIENT_ID || cache.shopify?.clientId || "",
+      clientSecret: process.env.SHOPIFY_CLIENT_SECRET || cache.shopify?.clientSecret || "",
+      shop: normalizeShopDomain(process.env.SHOPIFY_SHOP || cache.shopify?.shop),
+      accessToken: process.env.SHOPIFY_ACCESS_TOKEN || cache.shopify?.accessToken,
+      scope: cache.shopify?.scope,
+      expiresAt: cache.shopify?.expiresAt,
+      storefrontStatus: cache.shopify?.storefrontStatus,
+    },
   };
   if (!env.etsy?.apiKey) delete env.etsy;
+  if (!env.shopify?.clientId) delete env.shopify;
   return env;
 }
 
@@ -67,8 +99,18 @@ export async function patchCredentials(patch: StoredCredentials) {
   const next: StoredCredentials = {
     gelatoApiKey: patch.gelatoApiKey ?? current.gelatoApiKey,
     etsy: patch.etsy ? { ...current.etsy, ...patch.etsy } : current.etsy,
+    shopify: patch.shopify
+      ? {
+          ...current.shopify,
+          ...patch.shopify,
+          shop: normalizeShopDomain(patch.shopify.shop || current.shopify?.shop),
+        }
+      : current.shopify,
   };
   if (next.etsy && !next.etsy.apiKey) delete next.etsy;
+  if (next.shopify && !next.shopify.clientId) delete next.shopify;
   await saveCredentials(next);
   return next;
 }
+
+export { normalizeShopDomain };

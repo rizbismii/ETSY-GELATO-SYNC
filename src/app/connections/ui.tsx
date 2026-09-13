@@ -16,6 +16,9 @@ import type { Connections } from "@/lib/types";
 type LiveStatus = {
   etsyApp: { ok: true; applicationId?: number } | { ok: false; error: string };
   gelato: { ok: true; ordersSeen: number } | { ok: false; error: string };
+  shopify?:
+    | { ok: true; storefrontStatus?: string; shop?: string; name?: string; url?: string }
+    | { ok: false; storefrontStatus?: string; shop?: string; error: string };
   callbackReachable: boolean;
   readyToSell: boolean;
 };
@@ -24,11 +27,21 @@ type Payload = {
   connections: Connections;
   callbackUrl?: string;
   websiteUrl?: string;
+  shopifyCallbackUrl?: string;
+  shopUrl?: string;
   callbackIsPublic?: boolean;
   callbackReachable?: boolean;
   live?: LiveStatus;
   etsy: { apiKeySet: boolean; sharedSecretSet: boolean; shopName?: string; shopId?: string };
   gelato: { apiKeySet: boolean };
+  shopify?: {
+    clientIdSet: boolean;
+    clientSecretSet: boolean;
+    shop?: string;
+    authorized: boolean;
+    storefrontStatus?: string;
+    scope?: string;
+  };
 };
 
 export function ConnectionsClient() {
@@ -37,16 +50,23 @@ export function ConnectionsClient() {
   const [etsyKey, setEtsyKey] = useState("");
   const [etsySecret, setEtsySecret] = useState("");
   const [gelatoKey, setGelatoKey] = useState("");
+  const [shopifyKey, setShopifyKey] = useState("");
+  const [shopifySecret, setShopifySecret] = useState("");
+  const [shopifyShop, setShopifyShop] = useState("fernora.myshopify.com");
   const [busy, setBusy] = useState<string | null>(null);
-  const [copied, setCopied] = useState<"callback" | "website" | "desk" | null>(null);
+  const [copied, setCopied] = useState<"callback" | "website" | "desk" | "shop" | "shopify-callback" | null>(null);
   const callbackUrl = data?.callbackUrl || "";
   const websiteUrl = data?.websiteUrl || "";
+  const shopUrl = data?.shopUrl || (websiteUrl ? `${websiteUrl.replace(/\/$/, "")}/shop` : "/shop");
+  const shopifyCallbackUrl = data?.shopifyCallbackUrl || "";
   const deskUrl = websiteUrl ? `${websiteUrl.replace(/\/$/, "")}/connections` : "";
   const callbackIsPublic = Boolean(data?.callbackIsPublic && data?.callbackReachable);
   const live = data?.live;
 
   const load = useCallback(async () => {
-    setData(await api<Payload>("/api/connections"));
+    const next = await api<Payload>("/api/connections");
+    setData(next);
+    if (next.shopify?.shop) setShopifyShop(next.shopify.shop);
   }, []);
 
   useEffect(() => {
@@ -67,6 +87,11 @@ export function ConnectionsClient() {
     if (etsy === "denied") toast.error("Etsy authorization was cancelled");
     if (etsy === "invalid") toast.error("Etsy OAuth state did not match — try again");
     if (etsy === "error") toast.error(search.get("reason") || "Etsy connect failed");
+    const shopify = search.get("shopify");
+    if (shopify === "connected") toast.success("Shopify shop authorized");
+    if (shopify === "denied") toast.error("Shopify authorization was cancelled");
+    if (shopify === "invalid") toast.error("Shopify OAuth state did not match — try again");
+    if (shopify === "error") toast.error(search.get("reason") || "Shopify connect failed");
   }, [search]);
 
   async function saveEtsy() {
@@ -94,6 +119,44 @@ export function ConnectionsClient() {
     }
   }
 
+  async function saveShopify() {
+    setBusy("shopify");
+    try {
+      const result = await api<{ shopify?: { ok: boolean; error?: string; storefrontStatus?: string } }>(
+        "/api/connections",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            shopifyClientId: shopifyKey,
+            shopifyClientSecret: shopifySecret,
+            shopifyShop,
+          }),
+        },
+      );
+      if (result.shopify?.ok) toast.success("Shopify token accepted. Catalog can sync.");
+      else toast.warning(result.shopify?.error || "Keys saved. Authorize the Fernora shop next.");
+      setShopifyKey("");
+      setShopifySecret("");
+      await load();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function syncShopify() {
+    setBusy("shopify-sync");
+    try {
+      const result = await api<{ notes: string[]; products?: number }>("/api/shopify/sync", { method: "POST" });
+      toast.message(result.notes.join(" · "));
+      await load();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
   async function saveGelato() {
     setBusy("gelato");
     try {
@@ -151,9 +214,9 @@ export function ConnectionsClient() {
       <div>
         <h1 className="font-heading text-4xl tracking-tight">Connections</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Pressroom talks to Etsy Open API v3 and Gelato Order API v4. This desk is live
-          for FERNORATRENDS — 20 listings, no sample orders. Advertising is Offsite Ads
-          (a % of the sale only); keep on-site CPC Etsy Ads off in Shop Manager.
+          Pressroom talks to Etsy Open API v3, Shopify Admin API, and Gelato Order API v4.
+          FERNORATRENDS stays on Etsy. The Fernora website at /shop sells the same 20 products
+          to Australia and New Zealand only, fulfilled by Gelato.
         </p>
       </div>
 
@@ -186,7 +249,24 @@ export function ConnectionsClient() {
                     toast.success("Desk URL copied");
                   }}
                 >
-                  {copied === "desk" ? "Copied" : "Copy"}
+                  {copied === "desk" ? "Copied" : "Copy desk"}
+                </Button>
+              </span>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Fernora shop (AU/NZ)</p>
+              <span className="flex flex-col gap-2 sm:flex-row">
+                <code className="block flex-1 break-all rounded bg-muted px-2 py-1 text-xs text-foreground">
+                  {shopUrl}
+                </code>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(shopUrl);
+                    setCopied("shop");
+                    toast.success("Fernora shop URL copied");
+                  }}
+                >
+                  {copied === "shop" ? "Copied" : "Copy shop"}
                 </Button>
               </span>
             </>
@@ -214,6 +294,17 @@ export function ConnectionsClient() {
         <span className="text-sm text-muted-foreground">
           Gelato {live?.gelato.ok ? "print API live" : "not configured"}
         </span>
+        <StatusPill value={data.connections.shopify.authorized ? "live" : data.shopify?.storefrontStatus === "frozen" ? "warning" : "demo"} />
+        <span className="text-sm text-muted-foreground">
+          Shopify{" "}
+          {data.connections.shopify.authorized
+            ? data.shopify?.shop || "authorized"
+            : data.shopify?.storefrontStatus === "frozen"
+              ? "fernora frozen · authorize after unfreeze"
+              : data.shopify?.clientIdSet
+                ? "app keys saved · authorize shop"
+                : "not connected"}
+        </span>
       </div>
 
       <Card>
@@ -223,8 +314,8 @@ export function ConnectionsClient() {
         <CardContent className="space-y-3 text-sm leading-6">
           <p className="text-muted-foreground">
             {live?.readyToSell
-              ? "Both vendors are live. Paid Etsy receipts can go to Gelato."
-              : "Gelato can print. Etsy still needs a reachable .com callback and one shop authorize click."}
+              ? "Gelato can print. Paid Etsy and Fernora/Shopify orders go to production."
+              : "Gelato can print. Connect Etsy or Shopify, then use the Fernora shop at /shop for AU/NZ."}
           </p>
           <ul className="space-y-2">
             <li className="flex flex-wrap items-center gap-2">
@@ -259,6 +350,36 @@ export function ConnectionsClient() {
               <span>
                 Public .com callback
                 {callbackIsPublic ? " · reachable now" : " · offline (quick tunnels expire — wait for a new hostname)"}
+              </span>
+            </li>
+            <li className="flex flex-wrap items-center gap-2">
+              <StatusPill
+                value={
+                  data.connections.shopify.authorized
+                    ? "live"
+                    : data.shopify?.storefrontStatus === "frozen"
+                      ? "warning"
+                      : "critical"
+                }
+              />
+              <span>
+                Shopify Fernora
+                {data.connections.shopify.authorized
+                  ? ` · ${data.shopify?.shop || "authorized"}`
+                  : data.shopify?.storefrontStatus === "frozen"
+                    ? " · fernora.myshopify.com exists but the storefront is frozen (unpaid Shopify plan)"
+                    : live?.shopify && !live.shopify.ok
+                      ? ` · ${live.shopify.error}`
+                      : " · not authorized"}
+              </span>
+            </li>
+            <li className="flex flex-wrap items-center gap-2">
+              <StatusPill value="live" />
+              <span>
+                Fernora website · AU/NZ only ·{" "}
+                <a className="underline" href="/shop">
+                  Open shop
+                </a>
               </span>
             </li>
           </ul>
@@ -434,6 +555,99 @@ export function ConnectionsClient() {
               {busy === "gelato" ? <Loader2 className="animate-spin" /> : null}
               Save and test Gelato
             </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Shopify · Fernora</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm leading-6 text-muted-foreground">
+              Store name is <strong className="font-medium text-foreground">fernora</strong> (
+              <code className="rounded bg-muted px-1 text-xs">fernora.myshopify.com</code>
+              ). Shopify already has that shop, but the public storefront is frozen until a plan
+              is paid. The Fernora website at{" "}
+              <a className="underline" href="/shop">
+                /shop
+              </a>{" "}
+              sells the same catalog now, ships AU/NZ only, and sends paid orders to Gelato.
+            </p>
+            <ol className="list-decimal space-y-3 pl-4 text-sm leading-6 text-muted-foreground">
+              <li>
+                In the Shopify Dev Dashboard app, add this Redirect URL, then unfreeze the store
+                if Shopify still shows “Store unavailable”:
+                {shopifyCallbackUrl ? (
+                  <span className="mt-2 flex flex-col gap-2 sm:flex-row">
+                    <code className="block flex-1 break-all rounded bg-muted px-2 py-1 text-xs text-foreground">
+                      {shopifyCallbackUrl}
+                    </code>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(shopifyCallbackUrl);
+                        setCopied("shopify-callback");
+                        toast.success("Shopify callback copied");
+                      }}
+                    >
+                      {copied === "shopify-callback" ? "Copied" : "Copy"}
+                    </Button>
+                  </span>
+                ) : null}
+              </li>
+              <li>Authorize the app on fernora. Then publish the 20 live products and lock shipping to AU/NZ.</li>
+            </ol>
+            <div className="space-y-2">
+              <Label htmlFor="shopify-shop">Shop domain</Label>
+              <Input
+                id="shopify-shop"
+                value={shopifyShop}
+                onChange={(event) => setShopifyShop(event.target.value)}
+                placeholder="fernora.myshopify.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="shopify-key">Client ID</Label>
+              <Input
+                id="shopify-key"
+                value={shopifyKey}
+                onChange={(event) => setShopifyKey(event.target.value)}
+                placeholder={data.shopify?.clientIdSet ? "Saved · paste to replace" : "Shopify client ID"}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="shopify-secret">Client secret</Label>
+              <Input
+                id="shopify-secret"
+                type="password"
+                value={shopifySecret}
+                onChange={(event) => setShopifySecret(event.target.value)}
+                placeholder={data.shopify?.clientSecretSet ? "Saved · paste to replace" : "shpss_…"}
+              />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => void saveShopify()} disabled={busy === "shopify"}>
+                Save Shopify app
+              </Button>
+              <a
+                href="/api/shopify/connect"
+                className={cn(
+                  buttonVariants(),
+                  !data.shopify?.clientIdSet || !callbackIsPublic ? "pointer-events-none opacity-50" : "",
+                )}
+              >
+                Authorize Shopify
+              </a>
+              <Button
+                variant="outline"
+                onClick={() => void syncShopify()}
+                disabled={!data.connections.shopify.authorized || busy === "shopify-sync"}
+              >
+                {busy === "shopify-sync" ? <Loader2 className="animate-spin" /> : null}
+                Publish catalog · AU/NZ
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

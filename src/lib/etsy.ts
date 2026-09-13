@@ -401,7 +401,7 @@ export async function uploadEtsyListingImage(listingId: string, filePath: string
   const buffer = await readFile(filePath);
   const name = path.basename(filePath);
   const form = new FormData();
-  form.append("image", new File([new Uint8Array(buffer)], name, { type: "image/png" }));
+  form.append("image", new Blob([buffer], { type: "image/png" }), name);
   form.append("listing_id", listingId);
   form.append("rank", String(rank));
   form.append("overwrite", "true");

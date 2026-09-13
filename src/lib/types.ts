@@ -16,9 +16,19 @@ export type GelatoConnection = {
   error?: string;
 };
 
+export type ShopifyConnection = {
+  configured: boolean;
+  authorized: boolean;
+  mode: ConnectionMode;
+  shop?: string;
+  storefrontStatus?: "live" | "frozen" | "missing" | "unknown";
+  error?: string;
+};
+
 export type Connections = {
   etsy: EtsyConnection;
   gelato: GelatoConnection;
+  shopify: ShopifyConnection;
 };
 
 export type ListingState = "active" | "inactive" | "expired" | "sold_out";
@@ -65,7 +75,10 @@ export type Address = {
   phone?: string;
 };
 
+export type OrderChannel = "etsy" | "shopify" | "fernora";
+
 export type OrderStatus =
+  | "pending"
   | "paid"
   | "blocked"
   | "in_production"
@@ -91,6 +104,7 @@ export type Order = {
   createdAt: string;
   paidAt?: string;
   status: OrderStatus;
+  channel?: OrderChannel;
   subtotal: number;
   shippingPaid: number;
   currency: string;
@@ -101,6 +115,9 @@ export type Order = {
   trackingCarrier?: string;
   trackingPushedToEtsy: boolean;
   gelatoStatus?: string;
+  shopifyOrderId?: string;
+  shopifyDraftOrderId?: string;
+  invoiceUrl?: string;
   issues: string[];
 };
 
@@ -122,12 +139,19 @@ export type DailyRevenue = {
   orders: number;
 };
 
+export type ShopifyCatalogMap = Record<
+  string,
+  { productId: string; variantId: string; handle?: string }
+>;
+
 export type ShopState = {
   shopName: string;
   currency: string;
   listings: Listing[];
   orders: Order[];
   lastSyncAt?: string;
+  shopifyCatalog?: ShopifyCatalogMap;
+  shopifySyncedAt?: string;
 };
 
 export type OpsIssue = {

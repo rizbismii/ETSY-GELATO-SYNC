@@ -17,6 +17,7 @@ type Payload = {
 
 const filters = [
   { id: "all", label: "All" },
+  { id: "pending", label: "Pending" },
   { id: "paid", label: "Ready" },
   { id: "blocked", label: "Blocked" },
   { id: "in_production", label: "Printing" },
@@ -81,6 +82,24 @@ export default function OrdersPage() {
     }
   }
 
+  async function markPaid(id: string) {
+    setBusy(id);
+    try {
+      const result = await api<{ gelatoOrderId?: string }>(`/api/orders/${id}/paid`, {
+        method: "POST",
+        body: JSON.stringify({ fulfill: true }),
+      });
+      toast.success(
+        result.gelatoOrderId ? `Paid · sent to Gelato as ${result.gelatoOrderId}` : "Marked paid",
+      );
+      await load();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function bulk(action: "fulfill" | "tracking") {
     setBusy(action);
     try {
@@ -119,8 +138,8 @@ export default function OrdersPage() {
         <div>
           <h1 className="font-heading text-4xl tracking-tight">Orders</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Every paid Etsy receipt should either be printing at Gelato or already have
-            tracking on Etsy. Blocked rows need a product map first.
+            Every paid Etsy receipt and every paid Fernora / Shopify order should either be
+            printing at Gelato or already have tracking. Pending rows are waiting on payment.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -148,7 +167,7 @@ export default function OrdersPage() {
       {orders.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            No orders in this view. Paid Etsy receipts will land here after a sync.
+            No orders in this view. Paid Etsy receipts and Fernora checkouts land here.
           </CardContent>
         </Card>
       ) : (
@@ -163,7 +182,11 @@ export default function OrdersPage() {
                       <StatusPill value={order.status} />
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Etsy #{order.etsyReceiptId}
+                      {order.channel === "shopify"
+                        ? `Shopify ${order.shopifyOrderId || order.etsyReceiptId}`
+                        : order.channel === "fernora"
+                          ? `Fernora ${order.etsyReceiptId}`
+                          : `Etsy #${order.etsyReceiptId}`}
                       {order.gelatoOrderId ? ` · Gelato ${order.gelatoOrderId}` : ""}
                       {" · "}
                       {new Date(order.createdAt).toLocaleString()}
@@ -199,6 +222,16 @@ export default function OrdersPage() {
                     : ""}
                 </p>
                 <div className="flex flex-wrap gap-2">
+                  {order.status === "pending" ? (
+                    <Button
+                      size="sm"
+                      onClick={() => void markPaid(order.id)}
+                      disabled={busy === order.id}
+                    >
+                      {busy === order.id ? <Loader2 className="animate-spin" /> : <Send />}
+                      Mark paid & print
+                    </Button>
+                  ) : null}
                   {order.status === "paid" ? (
                     <Button
                       size="sm"

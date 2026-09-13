@@ -1,8 +1,9 @@
 import { connectionStatus } from "@/lib/ops";
 import { getCredentials, patchCredentials, saveCredentials } from "@/lib/credentials";
 import { pingEtsy } from "@/lib/etsy";
-import { etsyRedirectUri, isEtsyCallbackHost, publicOrigin } from "@/lib/origin";
+import { etsyRedirectUri, isEtsyCallbackHost, publicOrigin, shopifyRedirectUri } from "@/lib/origin";
 import { probePublicCallback, vendorHealth } from "@/lib/health";
+import { pingShopify, probeShopifyStore } from "@/lib/shopify";
 
 export const dynamic = "force-dynamic";
 
@@ -14,18 +15,25 @@ export async function GET(request: Request) {
   ]);
   const origin = await publicOrigin(request);
   const callbackUrl = await etsyRedirectUri(request);
+  const shopifyCallbackUrl = await shopifyRedirectUri(request);
   const callbackReachable = await probePublicCallback(origin);
   const callbackIsPublic = isEtsyCallbackHost(origin) && callbackReachable;
+  const shopifyShop = creds.shopify?.shop || "fernora.myshopify.com";
+  const storefrontStatus = await probeShopifyStore(shopifyShop);
   return Response.json({
     connections,
     callbackUrl,
     websiteUrl: origin,
+    shopifyCallbackUrl,
+    shopUrl: `${origin.replace(/\/$/, "")}/shop`,
     callbackIsPublic,
     callbackReachable,
     live: {
       ...vendors,
       callbackReachable,
-      readyToSell: Boolean(connections.etsy.authorized && vendors.gelato.ok),
+      readyToSell: Boolean(
+        (connections.etsy.authorized || connections.shopify.authorized) && vendors.gelato.ok,
+      ),
     },
     etsy: {
       apiKeySet: Boolean(creds.etsy?.apiKey),
@@ -36,6 +44,14 @@ export async function GET(request: Request) {
     gelato: {
       apiKeySet: Boolean(creds.gelatoApiKey),
     },
+    shopify: {
+      clientIdSet: Boolean(creds.shopify?.clientId),
+      clientSecretSet: Boolean(creds.shopify?.clientSecret),
+      shop: shopifyShop,
+      authorized: Boolean(creds.shopify?.accessToken),
+      storefrontStatus,
+      scope: creds.shopify?.scope,
+    },
   });
 }
 
@@ -44,6 +60,9 @@ export async function POST(request: Request) {
     etsyApiKey?: string;
     etsySharedSecret?: string;
     gelatoApiKey?: string;
+    shopifyClientId?: string;
+    shopifyClientSecret?: string;
+    shopifyShop?: string;
   };
   const current = await getCredentials();
   await patchCredentials({
@@ -58,10 +77,20 @@ export async function POST(request: Request) {
       shopId: current.etsy?.shopId,
       shopName: current.etsy?.shopName,
     },
+    shopify: {
+      clientId: body.shopifyClientId?.trim() || current.shopify?.clientId || "",
+      clientSecret: body.shopifyClientSecret?.trim() || current.shopify?.clientSecret || "",
+      shop: body.shopifyShop?.trim() || current.shopify?.shop || "fernora.myshopify.com",
+      accessToken: current.shopify?.accessToken,
+      scope: current.shopify?.scope,
+      expiresAt: current.shopify?.expiresAt,
+      storefrontStatus: current.shopify?.storefrontStatus,
+    },
   });
   let etsyLive = false;
   let etsyWarning: string | undefined;
   let applicationId: number | undefined;
+  let shopifyPing: Awaited<ReturnType<typeof pingShopify>> | undefined;
   const next = await getCredentials();
   if (next.etsy?.apiKey && next.etsy.sharedSecret) {
     try {
@@ -72,11 +101,15 @@ export async function POST(request: Request) {
       etsyWarning = (error as Error).message;
     }
   }
+  if (next.shopify?.clientId && next.shopify.clientSecret) {
+    shopifyPing = await pingShopify();
+  }
   return Response.json({
     ok: true,
     etsyLive,
     applicationId,
     warning: etsyWarning,
+    shopify: shopifyPing,
     connections: await connectionStatus(),
   });
 }

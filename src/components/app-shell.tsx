@@ -10,6 +10,7 @@ import {
   Wallet,
   Plug,
   Menu,
+  Store,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +27,7 @@ const links = [
   { href: "/listings", label: "Catalog", icon: Package },
   { href: "/revenue", label: "Revenue", icon: Wallet },
   { href: "/connections", label: "Connections", icon: Plug },
+  { href: "/shop", label: "Fernora shop", icon: Store },
 ];
 
 function Nav({ onNavigate }: { onNavigate?: () => void }) {
@@ -59,18 +61,22 @@ function Nav({ onNavigate }: { onNavigate?: () => void }) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  if (pathname.startsWith("/shop")) {
+    return <>{children}</>;
+  }
   return (
     <div className="flex min-h-full flex-1">
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col bg-sidebar px-4 py-6 text-sidebar-foreground md:flex">
         <Link href="/" className="mb-8 px-2">
           <p className="font-heading text-2xl leading-none tracking-tight">Pressroom</p>
           <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-sidebar-foreground/55">
-            Etsy × Gelato
+            Etsy × Shopify × Gelato
           </p>
         </Link>
         <Nav />
         <p className="mt-auto px-2 text-xs leading-5 text-sidebar-foreground/50">
-          Paid Etsy orders print through Gelato. Fees, cost, and tracking stay on one desk.
+          Etsy and the Fernora shop print through Gelato. AU/NZ storefront lives at /shop.
         </p>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">

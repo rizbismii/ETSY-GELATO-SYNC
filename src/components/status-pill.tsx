@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 const styles: Record<string, string> = {
-  paid: "bg-amber-100 text-amber-900 border-amber-200",
+  pending: "bg-stone-100 text-stone-800 border-stone-200",
   blocked: "bg-red-100 text-red-800 border-red-200",
   in_production: "bg-sky-100 text-sky-900 border-sky-200",
   shipped: "bg-violet-100 text-violet-900 border-violet-200",
@@ -20,6 +20,7 @@ const styles: Record<string, string> = {
 };
 
 const labels: Record<string, string> = {
+  pending: "Awaiting payment",
   paid: "Ready to print",
   blocked: "Blocked",
   in_production: "Printing",

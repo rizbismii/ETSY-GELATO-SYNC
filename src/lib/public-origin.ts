@@ -6,7 +6,7 @@ const ORIGIN_FILE = path.join(DIR, "public-origin.json");
 const OAUTH_FILE = path.join(DIR, "oauth-state.json");
 
 type OriginFile = { origin: string };
-type OAuthRecord = { verifier: string; redirectUri: string; createdAt: number };
+type OAuthRecord = { verifier: string; redirectUri: string; createdAt: number; shop?: string };
 type OAuthFile = Record<string, OAuthRecord>;
 
 async function readJson<T>(file: string, fallback: T): Promise<T> {
