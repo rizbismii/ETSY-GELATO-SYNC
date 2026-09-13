@@ -465,7 +465,8 @@ export async function publishListing(id: string, mode: "draft" | "live") {
   const listing = shop.listings.find((row) => row.id === id);
   const meta = liveProductById(id);
   if (!listing || !meta) throw new Error("Catalog product not found");
-  const printUrl = await absoluteAssetUrl(meta.printFileUrl || listing.printFileUrl || "");
+  const printPath = meta.printFileUrl || listing.printFileUrl || "";
+  const printUrl = await absoluteAssetUrl(printPath);
   let listingId = listing.etsyListingId;
   let url = listing.etsyUrl;
   if (!listingId) {
@@ -514,7 +515,7 @@ export async function publishListing(id: string, mode: "draft" | "live") {
     row.etsyListingId = listingId;
     row.etsyUrl = url;
     row.publishState = "draft";
-    row.printFileUrl = printUrl;
+    row.printFileUrl = printPath || printUrl;
     row.imageUrl = meta.imageUrl;
   });
 
@@ -541,7 +542,7 @@ export async function publishListing(id: string, mode: "draft" | "live") {
     row.etsyListingId = listingId;
     row.etsyUrl = url;
     row.publishState = state;
-    row.printFileUrl = printUrl;
+    row.printFileUrl = printPath || printUrl;
     row.imageUrl = meta.imageUrl;
     row.state = state === "live" ? "active" : "inactive";
   });
