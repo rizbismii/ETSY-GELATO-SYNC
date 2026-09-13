@@ -16,7 +16,7 @@ const styles: Record<string, string> = {
   demo: "bg-amber-100 text-amber-900 border-amber-200",
   critical: "bg-red-100 text-red-800 border-red-200",
   warning: "bg-amber-100 text-amber-900 border-amber-200",
-  info: "bg-sky-100 text-sky-900 border-sky-200",
+  drop: "bg-primary/15 text-primary border-primary/20",
 };
 
 const labels: Record<string, string> = {
@@ -32,6 +32,7 @@ const labels: Record<string, string> = {
   sold_out: "Sold out",
   live: "Live",
   demo: "Sample shop",
+  drop: "Harvest drop",
 };
 
 export function StatusPill({

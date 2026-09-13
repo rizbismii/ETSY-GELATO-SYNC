@@ -113,8 +113,8 @@ export default function ListingsPage() {
         <div>
           <h1 className="font-heading text-4xl tracking-tight">Listings</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Each live Etsy listing needs a Gelato product UID, a print file, and a price
-            that still nets after marketplace fees.
+            Harvest drop listings sit at the top: hoodie, tote, framed print, calendar, and
+            pillow, each mapped to a Gelato product and priced to keep about 42% net.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -135,7 +135,9 @@ export default function ListingsPage() {
         </Card>
       ) : (
         <div className="grid gap-3">
-          {data.listings.map((listing) => {
+          {[...data.listings]
+            .sort((a, b) => Number(Boolean(b.drop)) - Number(Boolean(a.drop)))
+            .map((listing) => {
             const draft = drafts[listing.id] ?? { uid: "", file: "" };
             const healthy = listing.net >= 4 && listing.gelatoProductUid && listing.printFileUrl;
             return (
@@ -144,6 +146,7 @@ export default function ListingsPage() {
                   <ProductArt
                     id={listing.id}
                     title={listing.title}
+                    category={listing.category}
                     className="h-24 w-full shrink-0 md:h-28 md:w-28"
                   />
                   <div className="min-w-0 flex-1 space-y-3">
@@ -152,9 +155,10 @@ export default function ListingsPage() {
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="font-medium">{listing.title}</p>
                           <StatusPill value={listing.state} />
+                          {listing.drop ? <StatusPill value="drop" /> : null}
                         </div>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          Etsy #{listing.etsyListingId} · {listing.views} views · {listing.favorites} favorites
+                          {listing.gelatoProductName ?? listing.category} · Etsy #{listing.etsyListingId} · {listing.views} views
                         </p>
                       </div>
                       <div className="text-sm sm:text-right">

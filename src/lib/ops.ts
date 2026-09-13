@@ -5,9 +5,8 @@ import { getShop, updateShop } from "@/lib/store";
 import type { Connections, Listing, OpsIssue, Order, Overview, ShopState } from "@/lib/types";
 import { createGelatoOrder, demoFulfill, pingGelato } from "@/lib/gelato";
 import { pullEtsyCatalog, pushEtsyTracking } from "@/lib/etsy";
-
-const PRINT_FILE =
-  "https://cdn-origin.gelato-api-dashboard.ie.live.gelato.tech/docs/sample-print-files/logo.png";
+import { PRINT_FILE, HARVEST_DROP_ID, HARVEST_DROP_NAME } from "@/lib/constants";
+import { applyHarvestDrop } from "@/lib/drop";
 
 export async function connectionStatus(): Promise<Connections> {
   const creds = await getCredentials();
@@ -242,8 +241,17 @@ export async function getOverview(): Promise<Overview> {
       units30d: units[listing.id]?.units ?? 0,
       net30d: units[listing.id]?.net ?? 0,
     }))
-    .sort((a, b) => b.net30d - a.net30d)
-    .slice(0, 5);
+    .sort((a, b) => b.net30d - a.net30d);
+  const dropListings = topListings.filter((listing) => listing.drop === HARVEST_DROP_ID);
+  const dropUnits = dropListings.reduce((sum, listing) => sum + listing.units30d, 0);
+  const dropNet = dropListings.reduce((sum, listing) => sum + listing.net30d, 0);
+  const dropGross = orders.reduce((sum, order) => {
+    const dropItems = order.items.filter((item) =>
+      dropListings.some((listing) => listing.id === item.listingId),
+    );
+    if (!dropItems.length) return sum;
+    return sum + dropItems.reduce((itemSum, item) => itemSum + item.price * item.quantity, 0);
+  }, 0);
 
   return {
     connections,
@@ -258,7 +266,15 @@ export async function getOverview(): Promise<Overview> {
     issues: collectIssues(shop, connections),
     revenue: series,
     recentOrders: [...orders].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 6),
-    topListings,
+    topListings: topListings.slice(0, 5),
+    drop: {
+      id: HARVEST_DROP_ID,
+      name: HARVEST_DROP_NAME,
+      gross30d: dropGross,
+      net30d: dropNet,
+      units30d: dropUnits,
+      listings: dropListings,
+    },
   };
 }
 
@@ -417,6 +433,7 @@ export async function syncLive() {
     }
     state.listings = state.listings.map(enrichListing);
     state.orders = state.orders.map((order) => enrichOrder(order, state.listings));
+    applyHarvestDrop(state);
     state.lastSyncAt = new Date().toISOString();
   });
   return notes;

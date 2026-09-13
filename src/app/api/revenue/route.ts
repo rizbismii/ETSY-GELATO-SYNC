@@ -8,6 +8,7 @@ export async function GET() {
     kpis: overview.kpis,
     revenue: overview.revenue,
     topListings: overview.topListings,
+    drop: overview.drop,
     shopName: overview.shopName,
   });
 }

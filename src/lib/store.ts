@@ -1,6 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { seedShop } from "@/lib/demo-data";
+import { applyHarvestDrop } from "@/lib/drop";
 import type { ShopState } from "@/lib/types";
 
 const FILE = path.join(process.cwd(), "data", "runtime.json");
@@ -8,14 +9,17 @@ const FILE = path.join(process.cwd(), "data", "runtime.json");
 let cache: ShopState | null = null;
 
 export async function getShop(): Promise<ShopState> {
-  if (cache) return cache;
-  try {
-    cache = JSON.parse(await fs.readFile(FILE, "utf8")) as ShopState;
-    return cache;
-  } catch {
-    cache = seedShop();
-    return cache;
+  if (!cache) {
+    try {
+      cache = JSON.parse(await fs.readFile(FILE, "utf8")) as ShopState;
+    } catch {
+      cache = seedShop();
+    }
   }
+  if (applyHarvestDrop(cache)) {
+    await saveShop(cache);
+  }
+  return cache;
 }
 
 export async function saveShop(shop: ShopState) {

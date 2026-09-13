@@ -11,6 +11,7 @@ The app boots with a sample shop (**Hearth & Line**) so fulfillment, mapping, an
 - **Fulfill** paid Etsy receipts as Gelato v4 orders.
 - **Push tracking** from Gelato onto the Etsy receipt (Star Seller / case protection).
 - **Price for profit** using Etsy 6.5% transaction + 3% + $0.25 payment fees against Gelato unit + ship cost.
+- **Harvest drop**: five customized Gelato products (hoodie, tote, framed print, wall calendar, throw pillow) priced for ~42% net, with live order flow.
 - **Fix store operations** in one pass: auto-map, reprice thin listings, send ready orders, push missing tracking.
 
 Gelato already offers a native Etsy channel. Pressroom is the control plane around it: blocked orders, margin math, and tracking gaps in one desk.

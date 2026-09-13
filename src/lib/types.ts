@@ -39,6 +39,7 @@ export type Listing = {
   gelatoProductName?: string;
   printFileUrl?: string;
   gelatoUnitCost: number;
+  drop?: string;
   issues: string[];
 };
 
@@ -156,4 +157,12 @@ export type Overview = {
   revenue: DailyRevenue[];
   recentOrders: Order[];
   topListings: Array<Listing & { units30d: number; net30d: number }>;
+  drop: {
+    id: string;
+    name: string;
+    gross30d: number;
+    net30d: number;
+    units30d: number;
+    listings: Array<Listing & { units30d: number; net30d: number }>;
+  };
 };

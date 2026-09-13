@@ -1,8 +1,7 @@
 import { suggestTemplate } from "@/lib/catalog";
+import { PRINT_FILE } from "@/lib/constants";
+import { HARVEST_LISTINGS, HARVEST_ORDERS } from "@/lib/drop";
 import type { Listing, Order, ShopState } from "@/lib/types";
-
-const PRINT_FILE =
-  "https://cdn-origin.gelato-api-dashboard.ie.live.gelato.tech/docs/sample-print-files/logo.png";
 
 function listing(
   partial: Omit<Listing, "issues" | "gelatoUnitCost"> & {
@@ -401,9 +400,9 @@ const orders: Order[] = [
 export const DEMO_SHOP: ShopState = {
   shopName: "Hearth & Line",
   currency: "USD",
-  listings,
-  orders,
-  lastSyncAt: "2026-09-13T01:10:00.000Z",
+  listings: [...listings, ...HARVEST_LISTINGS],
+  orders: [...HARVEST_ORDERS, ...orders],
+  lastSyncAt: "2026-09-13T01:40:00.000Z",
 };
 
 export function seedShop(): ShopState {

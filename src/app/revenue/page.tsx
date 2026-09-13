@@ -5,18 +5,13 @@ import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { formatMoney, formatPercent } from "@/lib/money";
-import type { DailyRevenue, Listing } from "@/lib/types";
+import type { DailyRevenue, Listing, Overview } from "@/lib/types";
 
 type Payload = {
-  kpis: {
-    gross30d: number;
-    net30d: number;
-    fees30d: number;
-    cogs30d: number;
-    orders30d: number;
-  };
+  kpis: Overview["kpis"];
   revenue: DailyRevenue[];
   topListings: Array<Listing & { units30d: number; net30d: number }>;
+  drop: Overview["drop"];
   shopName: string;
 };
 
@@ -130,8 +125,28 @@ export default function RevenuePage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Product contribution</CardTitle>
+          <CardTitle>{data.drop.name}</CardTitle>
         </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            {data.drop.units30d} units · {formatMoney(data.drop.gross30d)} gross ·{" "}
+            <span className="text-profit">{formatMoney(data.drop.net30d)} net</span>
+          </p>
+          {data.drop.listings.map((listing) => (
+            <div key={listing.id} className="flex items-center justify-between gap-3 text-sm">
+              <div className="min-w-0">
+                <p className="truncate font-medium">{listing.title}</p>
+                <p className="text-xs capitalize text-muted-foreground">
+                  {listing.category} · {listing.units30d} sold
+                </p>
+              </div>
+              <p className="text-profit">{formatMoney(listing.net30d)}</p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardContent className="space-y-3">
           {data.topListings.map((listing) => (
             <div key={listing.id} className="flex items-center justify-between gap-3 text-sm">

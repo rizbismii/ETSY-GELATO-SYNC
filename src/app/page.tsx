@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusPill } from "@/components/status-pill";
+import { ProductArt } from "@/components/product-art";
 import { api } from "@/lib/api";
 import { formatMoney } from "@/lib/money";
 import type { Overview } from "@/lib/types";
@@ -156,6 +157,48 @@ export default function DeskPage() {
           value={String(data.kpis.unmappedListings)}
           hint="These will block the next paid order"
         />
+      </section>
+
+      <section>
+        <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="font-heading text-2xl tracking-tight">{data.drop.name}</h2>
+            <p className="text-sm text-muted-foreground">
+              Five customized Gelato products across apparel, bags, wall art, calendars, and home.
+            </p>
+          </div>
+          <p className="text-sm">
+            <span className="font-medium text-profit">{formatMoney(data.drop.net30d)} net</span>
+            <span className="text-muted-foreground">
+              {" "}
+              · {formatMoney(data.drop.gross30d)} gross · {data.drop.units30d} units
+            </span>
+          </p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          {data.drop.listings.map((listing) => (
+            <Card key={listing.id} size="sm">
+              <CardContent className="space-y-3">
+                <ProductArt
+                  id={listing.id}
+                  title={listing.title}
+                  category={listing.category}
+                  className="h-28 w-full"
+                />
+                <div>
+                  <p className="text-sm font-medium leading-5">{listing.title}</p>
+                  <p className="mt-1 text-xs capitalize text-muted-foreground">
+                    {listing.category} · {listing.units30d} sold
+                  </p>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span>{formatMoney(listing.price)}</span>
+                  <span className="text-profit">{formatMoney(listing.net30d)}</span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
