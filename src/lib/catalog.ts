@@ -2,12 +2,12 @@ import type { ProductTemplate } from "@/lib/types";
 
 export const GELATO_CATALOG: ProductTemplate[] = [
   {
-    uid: "posters_pt_poster_ps_12x16-in_pt_200-gsm-coated_cl_4-0_ver",
-    name: "Poster 12×16 in",
+    uid: "flat_a3_200-gsm-80lb-coated-silk_4-0_ver",
+    name: "A3 semi-gloss poster",
     category: "poster",
-    unitCost: 8.4,
-    shippingCost: 4.2,
-    keywords: ["poster", "print", "12x16", "botanical", "line art"],
+    unitCost: 17.23,
+    shippingCost: 10.09,
+    keywords: ["poster", "print", "a3", "botanical", "fern"],
   },
   {
     uid: "posters_pt_poster_ps_18x24-in_pt_200-gsm-coated_cl_4-0_ver",
@@ -18,11 +18,11 @@ export const GELATO_CATALOG: ProductTemplate[] = [
     keywords: ["poster", "print", "18x24", "large"],
   },
   {
-    uid: "wall_art_canvas_ps_16x20-in_pt_canvas_cl_4-0",
-    name: "Canvas 16×20 in",
+    uid: "canvas_16x20-inch-400x500-mm_canvas_wood-fsc-slim_4-0_ver",
+    name: "Canvas 16×20 in · slim wrap",
     category: "canvas",
-    unitCost: 22.1,
-    shippingCost: 8.5,
+    unitCost: 59.54,
+    shippingCost: 15.15,
     keywords: ["canvas", "stretched", "16x20"],
   },
   {
@@ -34,11 +34,11 @@ export const GELATO_CATALOG: ProductTemplate[] = [
     keywords: ["framed", "frame", "oak", "wall art"],
   },
   {
-    uid: "mugs_11oz_white_wrap",
-    name: "Ceramic mug 11 oz",
+    uid: "mug_product_msz_11-oz_mmat_ceramic-white_cl_4-0",
+    name: "Ceramic mug 11 oz · white",
     category: "mug",
-    unitCost: 7.8,
-    shippingCost: 5.1,
+    unitCost: 13.59,
+    shippingCost: 10.71,
     keywords: ["mug", "coffee", "ceramic"],
   },
   {
@@ -50,16 +50,16 @@ export const GELATO_CATALOG: ProductTemplate[] = [
     keywords: ["tee", "t-shirt", "shirt", "apparel"],
   },
   {
-    uid: "apparel_product_gca_hoodie_gsc_pullover_gcu_unisex_gqa_classic_gsi_m_gco_sand_gpr_4-0",
-    name: "Unisex pullover hoodie · sand · M",
+    uid: "apparel_product_gca_hoodie_gsc_pullover_gcu_unisex_gqa_classic_gsi_m_gco_black_gpr_4-0",
+    name: "Unisex pullover hoodie · black · M",
     category: "hoodie",
     unitCost: 28.4,
     shippingCost: 6.8,
     keywords: ["hoodie", "sweatshirt", "pullover", "apparel"],
   },
   {
-    uid: "bags_product_gca_tote-bag_gsc_canvas_gcu_unisex_gsi_os_gco_natural_gpr_4-0",
-    name: "Canvas tote · natural · one size",
+    uid: "bag_product_bsc_tote-bag_bqa_clc_bsi_std-t_bco_natural_bpr_4-0",
+    name: "Canvas tote · natural",
     category: "tote",
     unitCost: 9.2,
     shippingCost: 4.9,

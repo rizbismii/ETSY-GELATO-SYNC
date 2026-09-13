@@ -52,3 +52,9 @@ export async function etsyRedirectUri(request?: Request) {
   if (process.env.ETSY_REDIRECT_URI) return process.env.ETSY_REDIRECT_URI;
   return `${await publicOrigin(request)}/api/etsy/callback`;
 }
+
+export async function absoluteAssetUrl(assetPath: string, request?: Request) {
+  if (assetPath.startsWith("http://") || assetPath.startsWith("https://")) return assetPath;
+  const origin = await publicOrigin(request);
+  return `${origin}${assetPath.startsWith("/") ? assetPath : `/${assetPath}`}`;
+}

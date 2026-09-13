@@ -115,7 +115,7 @@ export function ConnectionsClient() {
     setBusy("reset");
     try {
       await api("/api/demo/reset", { method: "POST" });
-      toast.success("Sample shop restored");
+      toast.success("Sample orders removed. Live Fernora catalog restored.");
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
@@ -150,8 +150,8 @@ export function ConnectionsClient() {
       <div>
         <h1 className="font-heading text-4xl tracking-tight">Connections</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Pressroom talks to Etsy Open API v3 and Gelato Order API v4. Until keys are
-          saved, the desk runs a full sample shop so you can practice fulfillment.
+          Pressroom talks to Etsy Open API v3 and Gelato Order API v4. This desk is live
+          for FERNORATRENDS — no sample orders.
         </p>
       </div>
 
@@ -395,16 +395,16 @@ export function ConnectionsClient() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Sync & sample data</CardTitle>
+          <CardTitle>Sync</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-xl text-sm text-muted-foreground">
-            Pull live Etsy listings and receipts when authorized. Restore the Hearth & Line
-            sample shop if you want to rehearse fulfillment without touching production.
+            Pull live Etsy listings and receipts. Clear leftover sample orders and restore
+            the five Fernora products if the desk was still on demo data.
           </p>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => void resetDemo()} disabled={Boolean(busy)}>
-              Restore sample shop
+              Clear sample data
             </Button>
             <Button onClick={() => void sync()} disabled={Boolean(busy)}>
               {busy === "sync" ? <Loader2 className="animate-spin" /> : null}

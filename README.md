@@ -60,7 +60,13 @@ ETSY_PUBLIC_ORIGIN=https://your-domain.com
 GELATO_API_KEY=
 ```
 
-Without keys, every action still runs against the sample shop so you can learn the flow.
+## Live catalog
+
+The desk is wired to **FERNORATRENDS** (NZD). Sample Hearth & Line orders are not loaded.
+
+Five products sit on **Catalog**, each with AI print files, catalog photos, Gelato SKUs, and destination shipping from the shop’s existing Gelato Etsy profiles (NZ, AU, US, UK, EU). Prices target about 42% net after Etsy fees and the highest regional print cost.
+
+Publish options per product: **Save Etsy draft** or **Publish live**. Print files are served from `/catalog/*.png` so Gelato can pull artwork on the public hostname.
 
 ## Stack
 

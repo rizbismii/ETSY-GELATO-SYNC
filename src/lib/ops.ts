@@ -7,6 +7,9 @@ import { createGelatoOrder, demoFulfill, pingGelato } from "@/lib/gelato";
 import { pullEtsyCatalog, pushEtsyTracking } from "@/lib/etsy";
 import { PRINT_FILE, HARVEST_DROP_ID, HARVEST_DROP_NAME } from "@/lib/constants";
 import { applyHarvestDrop } from "@/lib/drop";
+import { liveProductById } from "@/lib/live-catalog";
+import { createEtsyDraft, setEtsyListingState, uploadEtsyListingImage } from "@/lib/etsy";
+import { absoluteAssetUrl } from "@/lib/origin";
 
 export async function connectionStatus(): Promise<Connections> {
   const creds = await getCredentials();
@@ -88,8 +91,8 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
     issues.push({
       id: "etsy-connect",
       severity: "critical",
-      title: "Etsy is running in sample mode",
-      detail: "Connect your shop to pull live listings, receipts, and tracking.",
+      title: "Etsy shop is not authorized",
+      detail: "Authorize FERNORATRENDS so Pressroom can publish listings and pull receipts.",
       action: { label: "Connect Etsy", href: "/connections", kind: "connect" },
     });
   }
@@ -97,9 +100,21 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
     issues.push({
       id: "gelato-connect",
       severity: "critical",
-      title: "Gelato is running in sample mode",
+      title: "Gelato is not connected",
       detail: "Add your Gelato API key so paid Etsy orders can be printed and shipped.",
       action: { label: "Connect Gelato", href: "/connections", kind: "connect" },
+    });
+  }
+  const unpublished = shop.listings.filter(
+    (listing) => listing.drop === HARVEST_DROP_ID && listing.publishState !== "live",
+  );
+  if (connections.etsy.authorized && unpublished.length) {
+    issues.push({
+      id: "publish-live",
+      severity: "warning",
+      title: `${unpublished.length} product${unpublished.length === 1 ? "" : "s"} ready to publish`,
+      detail: "AI artwork and Gelato maps are ready. Publish as Etsy drafts or go live today.",
+      action: { label: "Publish options", href: "/listings", kind: "price" },
     });
   }
   const unmapped = shop.listings.filter((l) => l.state === "active" && l.issues.length && l.issues.some((i) => i.includes("Not mapped")));
@@ -182,7 +197,7 @@ export function opsScore(shop: ShopState, connections: Connections) {
 }
 
 function daysAgo(n: number) {
-  const date = new Date("2026-09-13T12:00:00.000Z");
+  const date = new Date();
   date.setUTCDate(date.getUTCDate() - n);
   return date.toISOString().slice(0, 10);
 }
@@ -255,7 +270,8 @@ export async function getOverview(): Promise<Overview> {
 
   return {
     connections,
-    shopName: shop.shopName,
+    shopName: connections.etsy.shopName || shop.shopName,
+    currency: shop.currency || "NZD",
     kpis: {
       ...last30,
       awaitingFulfillment: orders.filter((o) => o.status === "paid").length,
@@ -437,6 +453,57 @@ export async function syncLive() {
     state.lastSyncAt = new Date().toISOString();
   });
   return notes;
+}
+
+export async function publishListing(id: string, mode: "draft" | "live") {
+  const connections = await connectionStatus();
+  if (!connections.etsy.authorized) {
+    throw new Error("Authorize the Etsy shop before publishing.");
+  }
+  const shop = await getShop();
+  const listing = shop.listings.find((row) => row.id === id);
+  const meta = liveProductById(id);
+  if (!listing || !meta) throw new Error("Catalog product not found");
+  const printUrl = await absoluteAssetUrl(meta.printFileUrl || listing.printFileUrl || "");
+  let listingId = listing.etsyListingId;
+  let url = listing.etsyUrl;
+  if (!listingId) {
+    const created = await createEtsyDraft({
+      title: listing.title,
+      description: meta.description,
+      price: listing.price,
+      taxonomyId: meta.taxonomyId,
+      shippingProfileId: meta.shippingProfileId,
+      returnPolicyId: meta.returnPolicyId,
+      tags: listing.tags,
+      sku: listing.gelatoProductUid,
+    });
+    listingId = String(created.listing_id);
+    url = created.url;
+    const imagePath = `${process.cwd()}/public${meta.imageUrl}`;
+    try {
+      await uploadEtsyListingImage(listingId, imagePath, 1);
+    } catch (error) {
+      console.warn("Etsy image upload failed", (error as Error).message);
+    }
+  }
+  let state: "draft" | "live" = "draft";
+  if (mode === "live") {
+    const updated = await setEtsyListingState(listingId, "active");
+    url = updated.url || url;
+    state = "live";
+  }
+  await updateShop((current) => {
+    const row = current.listings.find((item) => item.id === id);
+    if (!row) return;
+    row.etsyListingId = listingId;
+    row.etsyUrl = url;
+    row.publishState = state;
+    row.printFileUrl = printUrl;
+    row.imageUrl = meta.imageUrl;
+    row.state = state === "live" ? "active" : "inactive";
+  });
+  return { id, listingId, url, state };
 }
 
 export { GELATO_CATALOG };

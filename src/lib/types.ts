@@ -38,9 +38,16 @@ export type Listing = {
   gelatoProductUid?: string;
   gelatoProductName?: string;
   printFileUrl?: string;
+  imageUrl?: string;
   gelatoUnitCost: number;
   drop?: string;
   issues: string[];
+  description?: string;
+  taxonomyId?: number;
+  shippingProfileId?: number;
+  returnPolicyId?: number;
+  publishState?: "ready" | "draft" | "live";
+  etsyUrl?: string;
 };
 
 export type Address = {
@@ -142,6 +149,7 @@ export type OpsIssue = {
 export type Overview = {
   connections: Connections;
   shopName: string;
+  currency: string;
   kpis: {
     gross30d: number;
     net30d: number;

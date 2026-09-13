@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 const links = [
   { href: "/", label: "Desk", icon: LayoutDashboard },
   { href: "/orders", label: "Orders", icon: ShoppingBag },
-  { href: "/listings", label: "Listings", icon: Package },
+  { href: "/listings", label: "Catalog", icon: Package },
   { href: "/revenue", label: "Revenue", icon: Wallet },
   { href: "/connections", label: "Connections", icon: Plug },
 ];

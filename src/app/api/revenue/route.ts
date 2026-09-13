@@ -10,5 +10,6 @@ export async function GET() {
     topListings: overview.topListings,
     drop: overview.drop,
     shopName: overview.shopName,
+    currency: overview.currency,
   });
 }

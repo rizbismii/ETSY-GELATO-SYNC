@@ -34,7 +34,7 @@ const labels: Record<string, string> = {
   demo: "Sample shop",
   critical: "Down",
   warning: "Waiting",
-  drop: "Harvest drop",
+  drop: "Live five",
 };
 
 export function StatusPill({

@@ -3,38 +3,51 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { StatusPill } from "@/components/status-pill";
 import { ProductArt } from "@/components/product-art";
 import { api } from "@/lib/api";
-import { formatMoney } from "@/lib/money";
-import type { Listing, ProductTemplate } from "@/lib/types";
+import { formatMoney, formatPercent } from "@/lib/money";
+import type { Listing } from "@/lib/types";
 
-type Row = Listing & { shippingCost: number; net: number; suggestedPrice: number };
-type Payload = { listings: Row[]; catalog: ProductTemplate[] };
+type Lane = {
+  region: string;
+  label: string;
+  shipping: number;
+  printCost: number;
+  days: string;
+  fees: number;
+  net: number;
+  margin: number;
+};
+
+type Row = Listing & {
+  shippingCost: number;
+  net: number;
+  margin: number;
+  suggestedPrice: number;
+  lanes: Lane[];
+  description?: string;
+};
+
+type Payload = {
+  listings: Row[];
+  shopName: string;
+  currency: string;
+  etsyAuthorized: boolean;
+  gelatoLive: boolean;
+};
 
 export default function ListingsPage() {
   const [data, setData] = useState<Payload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [drafts, setDrafts] = useState<Record<string, { uid: string; file: string }>>({});
 
   const load = useCallback(async () => {
     try {
-      const payload = await api<Payload>("/api/listings");
-      setData(payload);
-      setDrafts((current) => {
-        const next = { ...current };
-        for (const listing of payload.listings) {
-          next[listing.id] ??= {
-            uid: listing.gelatoProductUid || payload.catalog[0]?.uid || "",
-            file: listing.printFileUrl || "",
-          };
-        }
-        return next;
-      });
+      setData(await api<Payload>("/api/listings"));
       setError(null);
     } catch (err) {
       setError((err as Error).message);
@@ -45,18 +58,15 @@ export default function ListingsPage() {
     void load();
   }, [load]);
 
-  async function save(id: string) {
-    const draft = drafts[id];
-    setBusy(id);
+  async function publish(id: string, mode: "draft" | "live") {
+    setBusy(`${id}:${mode}`);
     try {
-      await api(`/api/listings/${id}/map`, {
+      const result = await api<{ url?: string; state: string }>(`/api/listings/${id}/publish`, {
         method: "POST",
-        body: JSON.stringify({
-          gelatoProductUid: draft.uid,
-          printFileUrl: draft.file || undefined,
-        }),
+        body: JSON.stringify({ mode }),
       });
-      toast.success("Listing mapped to Gelato");
+      toast.success(mode === "live" ? "Live on Etsy" : "Saved as Etsy draft");
+      if (result.url) window.open(result.url, "_blank");
       await load();
     } catch (err) {
       toast.error((err as Error).message);
@@ -65,30 +75,16 @@ export default function ListingsPage() {
     }
   }
 
-  async function autoMap() {
-    setBusy("map");
+  async function publishAll(mode: "draft" | "live") {
+    setBusy(`all:${mode}`);
     try {
-      const result = await api<{ mappedListings: number }>("/api/ops/repair", {
-        method: "POST",
-        body: JSON.stringify({ action: "map" }),
-      });
-      toast.success(`Mapped ${result.mappedListings} listings`);
-      await load();
-    } catch (err) {
-      toast.error((err as Error).message);
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function reprice() {
-    setBusy("price");
-    try {
-      const result = await api<{ repriced: number }>("/api/ops/repair", {
-        method: "POST",
-        body: JSON.stringify({ action: "price" }),
-      });
-      toast.success(`Raised ${result.repriced} thin prices`);
+      const result = await api<{ results: Array<{ id: string; error?: string; url?: string }> }>(
+        "/api/listings/publish-all",
+        { method: "POST", body: JSON.stringify({ mode }) },
+      );
+      const failed = result.results.filter((row) => row.error);
+      if (failed.length) toast.error(failed.map((row) => row.error).join(" · "));
+      else toast.success(mode === "live" ? "All five are live on Etsy" : "All five saved as Etsy drafts");
       await load();
     } catch (err) {
       toast.error((err as Error).message);
@@ -102,131 +98,149 @@ export default function ListingsPage() {
     return (
       <div className="flex flex-1 items-center justify-center text-muted-foreground">
         <Loader2 className="mr-2 size-4 animate-spin" />
-        Loading listings…
+        Loading the live catalog…
       </div>
     );
   }
+
+  const currency = data.currency || "NZD";
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="font-heading text-4xl tracking-tight">Listings</h1>
+          <h1 className="font-heading text-4xl tracking-tight">Catalog</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Harvest drop listings sit at the top: hoodie, tote, framed print, calendar, and
-            pillow, each mapped to a Gelato product and priced to keep about 42% net.
+            Five Fernora products, each with AI artwork, a real Gelato SKU, and destination
+            shipping from the shop’s Gelato Etsy profiles. Prices are in {currency} and set
+            so about 42% remains after Etsy fees and the highest regional print cost.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => void reprice()} disabled={Boolean(busy)}>
-            Raise thin prices
+          <Button
+            variant="outline"
+            onClick={() => void publishAll("draft")}
+            disabled={Boolean(busy) || !data.etsyAuthorized}
+          >
+            {busy === "all:draft" ? <Loader2 className="animate-spin" /> : null}
+            Save all as drafts
           </Button>
-          <Button onClick={() => void autoMap()} disabled={Boolean(busy)}>
-            Auto-map unmapped
+          <Button onClick={() => void publishAll("live")} disabled={Boolean(busy) || !data.etsyAuthorized}>
+            {busy === "all:live" ? <Loader2 className="animate-spin" /> : null}
+            Publish all live
           </Button>
         </div>
       </div>
 
+      {!data.etsyAuthorized ? (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          Etsy is not authorized yet. You can still review images, locations, and profit.
+          Authorize the shop on Connections before a draft or live publish will send.
+        </p>
+      ) : null}
+
       {data.listings.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            No listings yet. Connect Etsy to pull your active shop catalog.
+            No live products yet.
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-3">
-          {[...data.listings]
-            .sort((a, b) => Number(Boolean(b.drop)) - Number(Boolean(a.drop)))
-            .map((listing) => {
-            const draft = drafts[listing.id] ?? { uid: "", file: "" };
-            const healthy = listing.net >= 4 && listing.gelatoProductUid && listing.printFileUrl;
+        <div className="grid gap-4">
+          {data.listings.map((listing) => {
+            const status = listing.publishState || "ready";
             return (
               <Card key={listing.id}>
-                <CardContent className="flex flex-col gap-4 md:flex-row">
+                <CardContent className="grid gap-4 p-4 lg:grid-cols-[220px_1fr]">
                   <ProductArt
                     id={listing.id}
                     title={listing.title}
                     category={listing.category}
-                    className="h-24 w-full shrink-0 md:h-28 md:w-28"
+                    imageUrl={listing.imageUrl}
+                    className="h-56 w-full rounded-lg lg:h-full min-h-52"
                   />
-                  <div className="min-w-0 flex-1 space-y-3">
+                  <div className="min-w-0 space-y-4">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="font-medium">{listing.title}</p>
-                          <StatusPill value={listing.state} />
-                          {listing.drop ? <StatusPill value="drop" /> : null}
+                          <StatusPill value={status === "live" ? "live" : status === "draft" ? "paid" : "drop"} />
+                          <StatusPill value={listing.category} />
                         </div>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {listing.gelatoProductName ?? listing.category} · Etsy #{listing.etsyListingId} · {listing.views} views
+                        <p className="mt-1 text-xs capitalize text-muted-foreground">
+                          {listing.gelatoProductName} · {listing.category}
+                          {listing.etsyListingId ? ` · Etsy #${listing.etsyListingId}` : " · not on Etsy yet"}
                         </p>
                       </div>
                       <div className="text-sm sm:text-right">
-                        <p>{formatMoney(listing.price)}</p>
-                        <p className={listing.net < 4 ? "text-destructive" : "text-profit"}>
-                          Net {formatMoney(listing.net)}
+                        <p className="font-heading text-2xl">{formatMoney(listing.price, currency)}</p>
+                        <p className="text-profit">
+                          NZ net {formatMoney(listing.net, currency)} · {formatPercent(listing.margin)}
                         </p>
                       </div>
                     </div>
-                    {listing.issues.length ? (
-                      <p className="text-xs text-destructive">{listing.issues.join(" · ")}</p>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">
-                        {healthy
-                          ? `Mapped to ${listing.gelatoProductName}. Ready for Gelato.`
-                          : "Connect a Gelato product before this listing sells."}
-                      </p>
-                    )}
-                    {listing.net < 4 && listing.gelatoProductUid ? (
-                      <p className="text-xs text-amber-800">
-                        Suggested price {formatMoney(listing.suggestedPrice)} to keep about 42% net.
-                      </p>
-                    ) : null}
-                    <div className="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
-                      <label className="text-xs text-muted-foreground">
-                        Gelato product
-                        <select
-                          className="mt-1 h-8 w-full rounded-lg border border-input bg-background px-2 text-sm text-foreground"
-                          value={draft.uid}
-                          onChange={(event) =>
-                            setDrafts((current) => ({
-                              ...current,
-                              [listing.id]: { ...draft, uid: event.target.value },
-                            }))
-                          }
-                        >
-                          {data.catalog.map((product) => (
-                            <option key={product.uid} value={product.uid}>
-                              {product.name} · {formatMoney(product.unitCost)} print
-                            </option>
+                    <p className="text-sm leading-6 text-muted-foreground">{listing.description}</p>
+                    <div className="overflow-x-auto rounded-lg border border-border">
+                      <table className="w-full min-w-[32rem] text-left text-xs">
+                        <thead className="bg-muted/60 text-muted-foreground">
+                          <tr>
+                            <th className="px-3 py-2 font-medium">Ships to</th>
+                            <th className="px-3 py-2 font-medium">Print</th>
+                            <th className="px-3 py-2 font-medium">Ship</th>
+                            <th className="px-3 py-2 font-medium">Etsy fees</th>
+                            <th className="px-3 py-2 font-medium">Your net</th>
+                            <th className="px-3 py-2 font-medium">Transit</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(listing.lanes || []).map((lane) => (
+                            <tr key={lane.region} className="border-t border-border/70">
+                              <td className="px-3 py-2">{lane.label}</td>
+                              <td className="px-3 py-2">{formatMoney(lane.printCost, currency)}</td>
+                              <td className="px-3 py-2">{formatMoney(lane.shipping, currency)}</td>
+                              <td className="px-3 py-2">{formatMoney(lane.fees, currency)}</td>
+                              <td className={`px-3 py-2 ${lane.net < 8 ? "text-destructive" : "text-profit"}`}>
+                                {formatMoney(lane.net, currency)} ({formatPercent(lane.margin)})
+                              </td>
+                              <td className="px-3 py-2 text-muted-foreground">{lane.days}</td>
+                            </tr>
                           ))}
-                        </select>
-                      </label>
-                      <label className="text-xs text-muted-foreground">
-                        Print file URL
-                        <Input
-                          className="mt-1"
-                          value={draft.file}
-                          placeholder="https://…"
-                          onChange={(event) =>
-                            setDrafts((current) => ({
-                              ...current,
-                              [listing.id]: { ...draft, file: event.target.value },
-                            }))
-                          }
-                        />
-                      </label>
-                      <div className="flex items-end">
-                        <Button
-                          className="w-full md:w-auto"
-                          size="sm"
-                          onClick={() => void save(listing.id)}
-                          disabled={busy === listing.id}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Buyer pays the Gelato shipping profile. Net is the listing price minus Etsy
+                      fees and the regional print cost, after shipping is passed through. Shop
+                      origin on Etsy is Wellington 6012; Gelato still prints in-region.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void publish(listing.id, "draft")}
+                        disabled={Boolean(busy) || !data.etsyAuthorized}
+                      >
+                        {busy === `${listing.id}:draft` ? <Loader2 className="animate-spin" /> : null}
+                        Save Etsy draft
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => void publish(listing.id, "live")}
+                        disabled={Boolean(busy) || !data.etsyAuthorized}
+                      >
+                        {busy === `${listing.id}:live` ? <Loader2 className="animate-spin" /> : null}
+                        Publish live
+                      </Button>
+                      {listing.etsyUrl ? (
+                        <a
+                          href={listing.etsyUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
                         >
-                          {busy === listing.id ? <Loader2 className="animate-spin" /> : null}
-                          Save map
-                        </Button>
-                      </div>
+                          View on Etsy
+                        </a>
+                      ) : null}
                     </div>
                   </div>
                 </CardContent>

@@ -38,8 +38,15 @@ export function listingFees(price: number) {
 }
 
 export function listingNet(price: number, unitCost: number, shippingCost: number) {
-  const fees = etsyFees(price, 0);
-  return price - fees - unitCost - shippingCost;
+  const fees = etsyFees(price, shippingCost);
+  return price + shippingCost - fees - unitCost - shippingCost;
+}
+
+export function destinationEconomics(price: number, printCost: number, shipping: number) {
+  const fees = etsyFees(price, shipping);
+  const net = price + shipping - fees - printCost - shipping;
+  const margin = price > 0 ? net / price : 0;
+  return { fees, printCost, shipping, net, margin };
 }
 
 export function recommendedPrice(

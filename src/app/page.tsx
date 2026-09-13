@@ -104,6 +104,7 @@ export default function DeskPage() {
 
   const maxGross = Math.max(...data.revenue.map((day) => day.gross), 1);
   const sample = data.connections.etsy.mode === "demo" || data.connections.gelato.mode === "demo";
+  const money = (value: number) => formatMoney(value, data.currency || "NZD");
 
   return (
     <div className="flex flex-col gap-8">
@@ -114,8 +115,8 @@ export default function DeskPage() {
             {data.shopName}
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-            Etsy takes the sale. Gelato prints and ships it. Pressroom keeps mappings,
-            fulfillment, tracking, and net profit in one place.
+            Live FERNORATRENDS desk. Etsy takes the sale. Gelato prints near the buyer.
+            Catalog prices are NZD and already include fee and print margin math.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -131,16 +132,16 @@ export default function DeskPage() {
 
       {sample ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-          You are looking at a working sample shop. Add your Etsy app keys and Gelato API
-          key on Connections to run against your live store.
+          Gelato is live. Authorize Etsy on Connections if you have not already, then publish
+          the five Fernora products from Catalog.
         </div>
       ) : null}
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi
           label="Net profit · 30 days"
-          value={formatMoney(data.kpis.net30d)}
-          hint={`${formatMoney(data.kpis.gross30d)} gross after Etsy fees and Gelato cost`}
+          value={money(data.kpis.net30d)}
+          hint={`${money(data.kpis.gross30d)} gross after Etsy fees and Gelato cost`}
         />
         <Kpi
           label="Ops score"
@@ -164,14 +165,14 @@ export default function DeskPage() {
           <div>
             <h2 className="font-heading text-2xl tracking-tight">{data.drop.name}</h2>
             <p className="text-sm text-muted-foreground">
-              Five customized Gelato products across apparel, bags, wall art, calendars, and home.
+              Five live Gelato products with AI artwork: poster, hoodie, tote, mug, and canvas.
             </p>
           </div>
           <p className="text-sm">
-            <span className="font-medium text-profit">{formatMoney(data.drop.net30d)} net</span>
+            <span className="font-medium text-profit">{money(data.drop.net30d)} net</span>
             <span className="text-muted-foreground">
               {" "}
-              · {formatMoney(data.drop.gross30d)} gross · {data.drop.units30d} units
+              · {money(data.drop.gross30d)} gross · {data.drop.units30d} units
             </span>
           </p>
         </div>
@@ -183,6 +184,7 @@ export default function DeskPage() {
                   id={listing.id}
                   title={listing.title}
                   category={listing.category}
+                  imageUrl={listing.imageUrl}
                   className="h-28 w-full"
                 />
                 <div>
@@ -192,8 +194,8 @@ export default function DeskPage() {
                   </p>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span>{formatMoney(listing.price)}</span>
-                  <span className="text-profit">{formatMoney(listing.net30d)}</span>
+                  <span>{money(listing.price)}</span>
+                  <span className="text-profit">{money(listing.net30d)}</span>
                 </div>
               </CardContent>
             </Card>
@@ -248,18 +250,18 @@ export default function DeskPage() {
                   key={day.date}
                   className="flex-1 rounded-sm bg-primary/80"
                   style={{ height: `${Math.max(6, (day.gross / maxGross) * 100)}%` }}
-                  title={`${day.date}: ${formatMoney(day.gross)}`}
+                  title={`${day.date}: ${money(day.gross)}`}
                 />
               ))}
             </div>
             <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-muted-foreground">
               <div>
                 <p>Etsy fees</p>
-                <p className="text-sm text-foreground">{formatMoney(data.kpis.fees30d)}</p>
+                <p className="text-sm text-foreground">{money(data.kpis.fees30d)}</p>
               </div>
               <div>
                 <p>Gelato cost</p>
-                <p className="text-sm text-foreground">{formatMoney(data.kpis.cogs30d)}</p>
+                <p className="text-sm text-foreground">{money(data.kpis.cogs30d)}</p>
               </div>
               <div>
                 <p>Orders</p>
@@ -317,7 +319,7 @@ export default function DeskPage() {
                   </p>
                 </div>
                 <p className="shrink-0 text-sm font-medium text-profit">
-                  {formatMoney(listing.net30d)}
+                  {money(listing.net30d)}
                 </p>
               </div>
             ))}

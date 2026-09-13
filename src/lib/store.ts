@@ -1,7 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { seedShop } from "@/lib/demo-data";
-import { applyHarvestDrop } from "@/lib/drop";
+import { applyLiveCatalog, shopLooksLikeSample } from "@/lib/drop";
 import type { ShopState } from "@/lib/types";
 
 const FILE = path.join(process.cwd(), "data", "runtime.json");
@@ -16,7 +16,7 @@ export async function getShop(): Promise<ShopState> {
       cache = seedShop();
     }
   }
-  if (applyHarvestDrop(cache)) {
+  if (applyLiveCatalog(cache) || shopLooksLikeSample(cache)) {
     await saveShop(cache);
   }
   return cache;

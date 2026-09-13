@@ -1,4 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { getCredentials, patchCredentials } from "@/lib/credentials";
 import type { Address, Listing, Order, ShopState } from "@/lib/types";
 
@@ -278,7 +280,18 @@ export async function pullEtsyCatalog(existing: ShopState): Promise<Partial<Shop
       status: prior.status === "in_production" || prior.status === "blocked" ? prior.status : order.status,
     };
   });
-  return { shopName, listings: mergedListings, orders: mergedOrders, lastSyncAt: new Date().toISOString() };
+  const unpublished = existing.listings.filter(
+    (row) => row.id.startsWith("live_") && !mergedListings.some((live) => live.etsyListingId && live.etsyListingId === row.etsyListingId),
+  );
+  const keepLocal = unpublished.filter(
+    (row) => !mergedListings.some((live) => live.title === row.title),
+  );
+  return {
+    shopName,
+    listings: [...mergedListings, ...keepLocal],
+    orders: mergedOrders,
+    lastSyncAt: new Date().toISOString(),
+  };
 }
 
 export async function pushEtsyTracking(order: Order) {
@@ -300,4 +313,103 @@ export async function pushEtsyTracking(order: Order) {
       }),
     },
   );
+}
+
+export async function createEtsyDraft(input: {
+  title: string;
+  description: string;
+  price: number;
+  taxonomyId: number;
+  shippingProfileId: number;
+  returnPolicyId: number;
+  tags: string[];
+  sku?: string;
+}) {
+  const etsy = await refreshEtsyToken();
+  if (!etsy?.apiKey || !etsy.accessToken || !etsy.shopId) {
+    throw new Error("Etsy is not authorized");
+  }
+  const params = new URLSearchParams();
+  params.set("quantity", "999");
+  params.set("title", input.title.slice(0, 140));
+  params.set("description", input.description);
+  params.set("price", input.price.toFixed(2));
+  params.set("who_made", "i_did");
+  params.set("when_made", "made_to_order");
+  params.set("taxonomy_id", String(input.taxonomyId));
+  params.set("type", "physical");
+  params.set("shipping_profile_id", String(input.shippingProfileId));
+  params.set("return_policy_id", String(input.returnPolicyId));
+  params.set("should_auto_renew", "true");
+  params.set("is_personalizable", "false");
+  if (input.sku) params.set("sku", input.sku);
+  for (const tag of input.tags.slice(0, 13)) {
+    params.append("tags[]", tag.slice(0, 20));
+  }
+  const response = await fetch(`${ETSY_API}/shops/${etsy.shopId}/listings`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/x-www-form-urlencoded",
+      "x-api-key": etsyApiKeyHeader(etsy.apiKey, etsy.sharedSecret),
+      Authorization: `Bearer ${etsy.accessToken}`,
+    },
+    body: params,
+    cache: "no-store",
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || data.error_description || `Etsy listing create ${response.status}`);
+  }
+  return data as { listing_id: number; url?: string; state?: string };
+}
+
+export async function uploadEtsyListingImage(listingId: string, filePath: string, rank = 1) {
+  const etsy = await refreshEtsyToken();
+  if (!etsy?.apiKey || !etsy.accessToken) throw new Error("Etsy is not authorized");
+  const buffer = await readFile(filePath);
+  const name = path.basename(filePath);
+  const form = new FormData();
+  form.append("image", new Blob([new Uint8Array(buffer)], { type: "image/png" }), name);
+  form.append("listing_id", listingId);
+  form.append("rank", String(rank));
+  form.append("overwrite", "true");
+  form.append("alt_text", name.replace(/[-_]/g, " ").replace(/\.png$/i, ""));
+  const response = await fetch(`${ETSY_API}/listings/${listingId}/images`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "x-api-key": etsyApiKeyHeader(etsy.apiKey, etsy.sharedSecret),
+      Authorization: `Bearer ${etsy.accessToken}`,
+    },
+    body: form,
+    cache: "no-store",
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || data.error_description || `Etsy image ${response.status}`);
+  }
+  return data;
+}
+
+export async function setEtsyListingState(listingId: string, state: "draft" | "active" | "inactive") {
+  const etsy = await refreshEtsyToken();
+  if (!etsy?.apiKey || !etsy.accessToken) throw new Error("Etsy is not authorized");
+  const params = new URLSearchParams({ state });
+  const response = await fetch(`${ETSY_API}/listings/${listingId}`, {
+    method: "PATCH",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/x-www-form-urlencoded",
+      "x-api-key": etsyApiKeyHeader(etsy.apiKey, etsy.sharedSecret),
+      Authorization: `Bearer ${etsy.accessToken}`,
+    },
+    body: params,
+    cache: "no-store",
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || data.error_description || `Etsy listing update ${response.status}`);
+  }
+  return data as { listing_id: number; state: string; url?: string };
 }

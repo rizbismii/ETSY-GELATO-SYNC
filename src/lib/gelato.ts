@@ -1,5 +1,6 @@
 import { getCredentials } from "@/lib/credentials";
 import { templateByUid } from "@/lib/catalog";
+import { absoluteAssetUrl } from "@/lib/origin";
 import type { Order } from "@/lib/types";
 
 const ORDER_API = "https://order.gelatoapis.com/v4";
@@ -35,17 +36,20 @@ export async function pingGelato() {
 }
 
 export async function createGelatoOrder(order: Order) {
-  const items = order.items.map((item, index) => {
-    const uid = item.gelatoProductUid;
-    if (!uid) throw new Error(`Item ${item.title} is not mapped to Gelato`);
-    if (!item.printFileUrl) throw new Error(`Item ${item.title} is missing a print file`);
-    return {
-      itemReferenceId: item.id || `item-${index}`,
-      productUid: uid,
-      quantity: item.quantity,
-      files: [{ type: "default", url: item.printFileUrl }],
-    };
-  });
+  const items = await Promise.all(
+    order.items.map(async (item, index) => {
+      const uid = item.gelatoProductUid;
+      if (!uid) throw new Error(`Item ${item.title} is not mapped to Gelato`);
+      if (!item.printFileUrl) throw new Error(`Item ${item.title} is missing a print file`);
+      const printFileUrl = await absoluteAssetUrl(item.printFileUrl);
+      return {
+        itemReferenceId: item.id || `item-${index}`,
+        productUid: uid,
+        quantity: item.quantity,
+        files: [{ type: "default", url: printFileUrl }],
+      };
+    }),
+  );
   const payload = {
     orderType: "order",
     orderReferenceId: order.etsyReceiptId,
