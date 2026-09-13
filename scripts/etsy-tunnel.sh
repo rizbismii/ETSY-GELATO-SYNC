@@ -37,9 +37,24 @@ stop_tunnel() {
   pkill -f "cloudflared tunnel --url http://127.0.0.1:${PORT}" 2>/dev/null || true
 }
 
-health_ok() {
+local_ready() {
+  curl -fsS --max-time 5 "http://127.0.0.1:${PORT}/api/health" >/dev/null 2>&1
+}
+
+tunnel_registered() {
+  grep -q "Registered tunnel connection" "$LOG" 2>/dev/null && ! grep -q "Tunnel not found" "$LOG" 2>/dev/null
+}
+
+public_probe() {
   local origin="$1"
-  curl -fsS --max-time 8 "${origin}/api/health" >/dev/null 2>&1
+  local host="${origin#https://}"
+  host="${host%%/*}"
+  local ip
+  ip="$(dig +short @1.1.1.1 "$host" A | head -1 || true)"
+  if [[ ! "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    return 1
+  fi
+  curl -fsS --max-time 8 --resolve "${host}:443:${ip}" "${origin}/api/health" >/dev/null 2>&1
 }
 
 trap stop_tunnel EXIT
@@ -50,8 +65,7 @@ echo "Replace the Callback URL in fernora-etsgelto-app whenever this hostname ch
 while true; do
   stop_tunnel
   : > "$LOG"
-  "$BIN" tunnel --url "http://127.0.0.1:${PORT}" --no-autoupdate --protocol http2 --edge-ip-version 4 \
-    >>"$LOG" 2>&1 &
+  "$BIN" tunnel --url "http://127.0.0.1:${PORT}" --no-autoupdate >>"$LOG" 2>&1 &
   echo $! > "$PIDFILE"
 
   origin=""
@@ -75,16 +89,21 @@ while true; do
   fi
 
   up=0
-  for _ in $(seq 1 15); do
-    if health_ok "$origin"; then
+  for _ in $(seq 1 30); do
+    if local_ready && tunnel_registered; then
       up=1
-      echo "Public callback is reachable."
+      echo "Tunnel is registered with Cloudflare."
+      if public_probe "$origin"; then
+        echo "Public callback is reachable from 1.1.1.1."
+      else
+        echo "Public DNS from this VM is delayed; keep the hostname anyway for Etsy/your browser."
+      fi
       break
     fi
     sleep 2
   done
   if [[ "$up" != 1 ]]; then
-    echo "New hostname did not become reachable. Retrying…"
+    echo "Tunnel did not register. Retrying…"
     continue
   fi
 
@@ -93,9 +112,8 @@ while true; do
       echo "Cloudflare recycled the tunnel. Starting a new .com hostname…"
       break
     fi
-    if ! health_ok "$origin"; then
-      echo "Public callback is not reachable. Starting a new .com hostname…"
-      break
+    if ! local_ready; then
+      echo "Local desk is down. Waiting…"
     fi
     sleep 20
   done
