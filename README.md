@@ -38,7 +38,7 @@ Etsy’s developer portal **will not accept** `127.0.0.1` or `localhost` as a Ca
 4. In [Manage your apps](https://www.etsy.com/developers/your-apps) → **fernora-etsgelto-app**, paste those exact values and save.
 5. On **Connections**, click **Authorize with Etsy**.
 
-The tunnel hostname changes if Cloudflare recycles it or if you restart `etsy-tunnel`. Update the Etsy app to match the **reachable** Callback URL shown on Connections. A dead trycloudflare hostname will not load.
+The tunnel hostname changes if Cloudflare recycles it or if you restart `etsy-tunnel`. Quick tunnels cannot reuse a dead name (for example `remix-cookbook-brad-initiatives.trycloudflare.com`). Use the **Live desk URL** on Connections, and update the Etsy app Website URL + Callback URL to match.
 
 ### Deployed origin
 

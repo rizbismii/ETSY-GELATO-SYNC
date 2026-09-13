@@ -38,9 +38,10 @@ export function ConnectionsClient() {
   const [etsySecret, setEtsySecret] = useState("");
   const [gelatoKey, setGelatoKey] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
-  const [copied, setCopied] = useState<"callback" | "website" | null>(null);
+  const [copied, setCopied] = useState<"callback" | "website" | "desk" | null>(null);
   const callbackUrl = data?.callbackUrl || "";
   const websiteUrl = data?.websiteUrl || "";
+  const deskUrl = websiteUrl ? `${websiteUrl.replace(/\/$/, "")}/connections` : "";
   const callbackIsPublic = Boolean(data?.callbackIsPublic && data?.callbackReachable);
   const live = data?.live;
 
@@ -155,6 +156,49 @@ export function ConnectionsClient() {
           (a % of the sale only); keep on-site CPC Etsy Ads off in Shop Manager.
         </p>
       </div>
+
+      <Card className="border-foreground/20">
+        <CardHeader>
+          <CardTitle>Live desk URL</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm leading-6">
+          {callbackIsPublic && deskUrl ? (
+            <>
+              <p className="text-muted-foreground">
+                Open Pressroom here. Cloudflare quick tunnels get a new random hostname
+                when they recycle — old names cannot be restored.{" "}
+                <code className="rounded bg-muted px-1 text-xs text-foreground">
+                  remix-cookbook-brad-initiatives.trycloudflare.com
+                </code>{" "}
+                is dead. Use this one, and paste the matching Website URL into{" "}
+                <strong className="font-medium text-foreground">fernora-etsgelto-app</strong>.
+              </p>
+              <span className="flex flex-col gap-2 sm:flex-row">
+                <code className="block flex-1 break-all rounded bg-muted px-2 py-1 text-xs text-foreground">
+                  {deskUrl}
+                </code>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(deskUrl);
+                    setCopied("desk");
+                    toast.success("Desk URL copied");
+                  }}
+                >
+                  {copied === "desk" ? "Copied" : "Copy"}
+                </Button>
+              </span>
+            </>
+          ) : (
+            <p className="text-muted-foreground">
+              No public .com hostname is reachable yet. Wait for{" "}
+              <code className="rounded bg-muted px-1">npm run etsy-tunnel</code> to print a
+              new trycloudflare URL. Do not bookmark a previous hostname.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="flex flex-wrap items-center gap-2">
         <StatusPill value={data.connections.etsy.authorized ? "live" : "demo"} />
