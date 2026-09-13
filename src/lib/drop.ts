@@ -1,5 +1,5 @@
-import { LIVE_PRODUCTS, liveListings } from "@/lib/live-catalog";
-import type { ShopState } from "@/lib/types";
+import { LIVE_PRODUCTS, liveListings, SHOP_CURRENCY, SHOP_NAME } from "@/lib/live-catalog";
+import type { Listing, ShopState } from "@/lib/types";
 
 const SAMPLE_MARKERS = [
   "lst_sage",
@@ -24,13 +24,49 @@ export function applyLiveCatalog(shop: ShopState) {
     shop.lastSyncAt = new Date().toISOString();
     return true;
   }
-  let changed = false;
+  const used = new Set<string>();
+  const next: Listing[] = [];
   for (const product of LIVE_PRODUCTS) {
-    if (!shop.listings.some((row) => row.id === product.id)) {
-      shop.listings.push({ ...product });
-      changed = true;
+    const match = shop.listings.find(
+      (row) =>
+        !used.has(row.id) &&
+        (row.id === product.id ||
+          row.title === product.title ||
+          (row.etsyListingId && row.etsyListingId === product.etsyListingId)),
+    );
+    if (match) {
+      used.add(match.id);
+      next.push({
+        ...product,
+        ...match,
+        id: product.id,
+        category: product.category,
+        drop: product.drop,
+        imageUrl: match.imageUrl || product.imageUrl,
+        gelatoProductUid: match.gelatoProductUid || product.gelatoProductUid,
+        gelatoProductName: match.gelatoProductName || product.gelatoProductName,
+        printFileUrl: match.printFileUrl || product.printFileUrl,
+        gelatoUnitCost: match.gelatoUnitCost || product.gelatoUnitCost,
+        description: match.description || product.description,
+        taxonomyId: match.taxonomyId || product.taxonomyId,
+        shippingProfileId: match.shippingProfileId || product.shippingProfileId,
+        returnPolicyId: match.returnPolicyId || product.returnPolicyId,
+        publishState:
+          match.state === "active" ? "live" : match.publishState || product.publishState,
+      });
+    } else {
+      next.push({ ...product });
     }
   }
+  for (const row of shop.listings) {
+    if (used.has(row.id) || row.id.startsWith("live_")) continue;
+    if (LIVE_PRODUCTS.some((product) => product.title === row.title)) continue;
+    next.push(row);
+  }
+  const changed = JSON.stringify(shop.listings) !== JSON.stringify(next);
+  shop.shopName = shop.shopName || SHOP_NAME;
+  shop.currency = shop.currency || SHOP_CURRENCY;
+  shop.listings = next;
   return changed;
 }
 

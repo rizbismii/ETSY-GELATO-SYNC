@@ -1,20 +1,20 @@
 # Pressroom
 
-Operations desk for an Etsy shop fulfilled by Gelato. It connects both accounts, maps listings to print products, sends paid receipts to production, pushes tracking back to Etsy, and shows net profit after marketplace fees and print cost.
+Operations desk for **FERNORATRENDS** on Etsy, fulfilled by Gelato. It connects both accounts, publishes the live catalog, maps listings to print products, sends paid receipts to production, pushes tracking back to Etsy, and shows net profit after marketplace fees and print cost.
 
-The app boots with a sample shop (**Hearth & Line**) so fulfillment, mapping, and pricing can be rehearsed before any API keys are added.
+There is no sample shop. The desk opens on the five live Fernora products in NZD.
 
 ## What it does
 
 - **Connect Etsy** with Open API v3 (OAuth 2.0 + PKCE) and **Gelato** with an API key (`X-API-KEY`).
+- **Catalog** with AI artwork, Gelato SKUs, destination shipping, and **Save Etsy draft** / **Publish live**.
 - **Map listings** to Gelato product UIDs and print files so orders are not blocked.
 - **Fulfill** paid Etsy receipts as Gelato v4 orders.
 - **Push tracking** from Gelato onto the Etsy receipt (Star Seller / case protection).
-- **Price for profit** using Etsy 6.5% transaction + 3% + $0.25 payment fees against Gelato unit + ship cost.
-- **Harvest drop**: five customized Gelato products (hoodie, tote, framed print, wall calendar, throw pillow) priced for ~42% net, with live order flow.
+- **Price for profit** using Etsy 6.5% transaction + 3% + $0.25 payment fees against Gelato unit cost. Buyer pays Gelato shipping (pass-through).
 - **Fix store operations** in one pass: auto-map, reprice thin listings, send ready orders, push missing tracking.
 
-Gelato already offers a native Etsy channel. Pressroom is the control plane around it: blocked orders, margin math, and tracking gaps in one desk.
+Gelato already offers a native Etsy channel. Pressroom is the control plane around it: catalog publish, blocked orders, margin math, and tracking gaps in one desk.
 
 ## Run locally
 
@@ -62,11 +62,17 @@ GELATO_API_KEY=
 
 ## Live catalog
 
-The desk is wired to **FERNORATRENDS** (NZD). Sample Hearth & Line orders are not loaded.
+Five products on **Catalog**, each with an AI print file, a catalog photo, a Gelato SKU, and destination shipping from the shop’s Gelato Etsy profiles (NZ, AU, US, UK, EU). Shop origin on Etsy is Wellington 6012; Gelato still prints in-region. Prices are NZD and target about 42% net after Etsy fees and the highest regional print cost.
 
-Five products sit on **Catalog**, each with AI print files, catalog photos, Gelato SKUs, and destination shipping from the shop’s existing Gelato Etsy profiles (NZ, AU, US, UK, EU). Prices target about 42% net after Etsy fees and the highest regional print cost.
+| Product | Gelato | Price (NZD) | Shipping profile |
+| --- | --- | --- | --- |
+| Fern Arc Poster · A3 Semi-Gloss | A3 coated silk | 36.99 | Small Posters |
+| Fern Mark Unisex Hoodie · Black · M | Unisex pullover | 84.99 | Hoodies |
+| Fern Spray Canvas Tote · Natural | Canvas tote | 47.99 | Tote Bags |
+| Fern Band Mug · 11 oz White Ceramic | 11 oz white mug | 28.99 | Mugs 11oz |
+| Bush Light Canvas · 16×20 Slim Wrap | Slim wrap canvas | 123.99 | Small Canvas |
 
-Publish options per product: **Save Etsy draft** or **Publish live**. Print files are served from `/catalog/*.png` so Gelato can pull artwork on the public hostname.
+Publish options per product: **Save Etsy draft** or **Publish live**. Print files live at `/catalog/*.png` so Gelato can pull artwork from the public hostname.
 
 ## Stack
 

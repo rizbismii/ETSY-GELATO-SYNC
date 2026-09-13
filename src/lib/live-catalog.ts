@@ -6,6 +6,7 @@ export const LIVE_DROP_NAME = "Fernora live five";
 export const SHOP_NAME = "FERNORATRENDS";
 export const SHOP_CURRENCY = "NZD";
 export const RETURN_POLICY_ID = 1515682339963;
+export const READINESS_STATE_ID = 1514454820482;
 
 export type ShipLane = {
   region: string;

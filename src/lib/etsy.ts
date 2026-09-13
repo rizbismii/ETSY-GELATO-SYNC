@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
+import { File } from "node:buffer";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { getCredentials, patchCredentials } from "@/lib/credentials";
@@ -248,14 +249,28 @@ export async function pullEtsyCatalog(existing: ShopState): Promise<Partial<Shop
   );
   const liveListings = ((listingsRes.results ?? []) as Record<string, unknown>[]).map(mapListing);
   const mergedListings = liveListings.map((listing) => {
-    const prior = existing.listings.find((row) => row.etsyListingId === listing.etsyListingId);
+    const prior = existing.listings.find(
+      (row) =>
+        (listing.etsyListingId && row.etsyListingId === listing.etsyListingId) ||
+        row.title === listing.title,
+    );
     if (!prior) return listing;
     return {
       ...listing,
+      id: prior.id.startsWith("live_") ? prior.id : listing.id,
+      category: prior.category || listing.category,
+      drop: prior.drop,
+      description: prior.description || listing.description,
+      imageUrl: prior.imageUrl,
       gelatoProductUid: prior.gelatoProductUid,
       gelatoProductName: prior.gelatoProductName,
       printFileUrl: prior.printFileUrl,
       gelatoUnitCost: prior.gelatoUnitCost || listing.gelatoUnitCost,
+      taxonomyId: prior.taxonomyId,
+      shippingProfileId: prior.shippingProfileId,
+      returnPolicyId: prior.returnPolicyId,
+      publishState: listing.state === "active" ? "live" : prior.publishState || "draft",
+      etsyUrl: prior.etsyUrl || listing.etsyUrl,
     };
   });
   const liveOrders = ((receiptsRes.results ?? []) as Record<string, unknown>[]).map(mapReceipt);
@@ -281,15 +296,29 @@ export async function pullEtsyCatalog(existing: ShopState): Promise<Partial<Shop
     };
   });
   const unpublished = existing.listings.filter(
-    (row) => row.id.startsWith("live_") && !mergedListings.some((live) => live.etsyListingId && live.etsyListingId === row.etsyListingId),
+    (row) =>
+      row.id.startsWith("live_") &&
+      !mergedListings.some(
+        (live) =>
+          (live.etsyListingId && live.etsyListingId === row.etsyListingId) || live.title === row.title,
+      ),
   );
-  const keepLocal = unpublished.filter(
-    (row) => !mergedListings.some((live) => live.title === row.title),
-  );
+  const listings = [...mergedListings, ...unpublished];
+  const orders = mergedOrders.map((order) => ({
+    ...order,
+    items: order.items.map((item) => {
+      const listing = listings.find(
+        (row) =>
+          row.id === item.listingId ||
+          (row.etsyListingId && (item.listingId === `lst_${row.etsyListingId}` || item.listingId === row.etsyListingId)),
+      );
+      return listing ? { ...item, listingId: listing.id } : item;
+    }),
+  }));
   return {
     shopName,
-    listings: [...mergedListings, ...keepLocal],
-    orders: mergedOrders,
+    listings,
+    orders,
     lastSyncAt: new Date().toISOString(),
   };
 }
@@ -324,6 +353,7 @@ export async function createEtsyDraft(input: {
   returnPolicyId: number;
   tags: string[];
   sku?: string;
+  readinessStateId?: number;
 }) {
   const etsy = await refreshEtsyToken();
   if (!etsy?.apiKey || !etsy.accessToken || !etsy.shopId) {
@@ -340,6 +370,7 @@ export async function createEtsyDraft(input: {
   params.set("type", "physical");
   params.set("shipping_profile_id", String(input.shippingProfileId));
   params.set("return_policy_id", String(input.returnPolicyId));
+  params.set("readiness_state_id", String(input.readinessStateId || 1514454820482));
   params.set("should_auto_renew", "true");
   params.set("is_personalizable", "false");
   if (input.sku) params.set("sku", input.sku);
@@ -370,12 +401,12 @@ export async function uploadEtsyListingImage(listingId: string, filePath: string
   const buffer = await readFile(filePath);
   const name = path.basename(filePath);
   const form = new FormData();
-  form.append("image", new Blob([new Uint8Array(buffer)], { type: "image/png" }), name);
+  form.append("image", new File([new Uint8Array(buffer)], name, { type: "image/png" }));
   form.append("listing_id", listingId);
   form.append("rank", String(rank));
   form.append("overwrite", "true");
   form.append("alt_text", name.replace(/[-_]/g, " ").replace(/\.png$/i, ""));
-  const response = await fetch(`${ETSY_API}/listings/${listingId}/images`, {
+  const response = await fetch(`${ETSY_API}/shops/${etsy.shopId}/listings/${listingId}/images`, {
     method: "POST",
     headers: {
       Accept: "application/json",
@@ -396,7 +427,7 @@ export async function setEtsyListingState(listingId: string, state: "draft" | "a
   const etsy = await refreshEtsyToken();
   if (!etsy?.apiKey || !etsy.accessToken) throw new Error("Etsy is not authorized");
   const params = new URLSearchParams({ state });
-  const response = await fetch(`${ETSY_API}/listings/${listingId}`, {
+  const response = await fetch(`${ETSY_API}/shops/${etsy.shopId}/listings/${listingId}`, {
     method: "PATCH",
     headers: {
       Accept: "application/json",
