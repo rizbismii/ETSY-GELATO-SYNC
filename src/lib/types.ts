@@ -48,6 +48,8 @@ export type Listing = {
   returnPolicyId?: number;
   publishState?: "ready" | "draft" | "live";
   etsyUrl?: string;
+  collection?: "original" | "quote" | "botanical" | "scenic" | "home";
+  quote?: string;
 };
 
 export type Address = {

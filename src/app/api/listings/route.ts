@@ -1,7 +1,12 @@
 import { connectionStatus, enrichListing, GELATO_CATALOG } from "@/lib/ops";
-import { destinationEconomics, recommendedPrice } from "@/lib/money";
+import {
+  destinationEconomics,
+  ETSY_CPC_ADS_ENABLED,
+  OFFSITE_ADS_RATE,
+  recommendedPrice,
+} from "@/lib/money";
 import { templateByUid } from "@/lib/catalog";
-import { liveProductById } from "@/lib/live-catalog";
+import { liveProductById, SHIP_COUNTRIES } from "@/lib/live-catalog";
 import { getShop } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -16,20 +21,33 @@ export async function GET() {
     const shipping = nz?.shipping ?? template?.shippingCost ?? 0;
     const printCost = nz?.printCost ?? row.gelatoUnitCost;
     const economics = destinationEconomics(row.price, printCost, shipping);
+    const advertised = destinationEconomics(row.price, printCost, shipping, OFFSITE_ADS_RATE);
     return {
       ...row,
       description: meta?.description ?? row.description,
       imageUrl: row.imageUrl || meta?.imageUrl,
       publishState: row.publishState || meta?.publishState || "ready",
+      collection: row.collection || meta?.collection || "original",
+      quote: row.quote || meta?.quote,
       etsyUrl: row.etsyUrl,
       shippingCost: shipping,
       net: economics.net,
       margin: economics.margin,
-      suggestedPrice: recommendedPrice(row.gelatoUnitCost || printCost, 0),
-      lanes: (meta?.lanes ?? []).map((lane) => ({
-        ...lane,
-        ...destinationEconomics(row.price, lane.printCost, lane.shipping),
-      })),
+      adsNet: advertised.net,
+      adsMargin: advertised.margin,
+      adsFee: advertised.ads,
+      suggestedPrice: recommendedPrice(row.gelatoUnitCost || printCost, 0, 0.42, OFFSITE_ADS_RATE),
+      lanes: (meta?.lanes ?? []).map((lane) => {
+        const organic = destinationEconomics(row.price, lane.printCost, lane.shipping);
+        const withAds = destinationEconomics(row.price, lane.printCost, lane.shipping, OFFSITE_ADS_RATE);
+        return {
+          ...lane,
+          ...organic,
+          ads: withAds.ads,
+          adsNet: withAds.net,
+          adsMargin: withAds.margin,
+        };
+      }),
     };
   });
   return Response.json({
@@ -39,5 +57,11 @@ export async function GET() {
     currency: shop.currency || "NZD",
     etsyAuthorized: connections.etsy.authorized,
     gelatoLive: connections.gelato.configured,
+    ads: {
+      mode: "offsite_percent",
+      rate: OFFSITE_ADS_RATE,
+      cpcEnabled: ETSY_CPC_ADS_ENABLED,
+      countries: SHIP_COUNTRIES,
+    },
   });
 }

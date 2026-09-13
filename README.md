@@ -64,6 +64,8 @@ GELATO_API_KEY=
 
 Five products on **Catalog**, each with an AI print file, a catalog photo, a Gelato SKU, and destination shipping from the shop’s Gelato Etsy profiles (NZ, AU, US, UK, EU). Shop origin on Etsy is Wellington 6012; Gelato still prints in-region. Prices are NZD and target about 42% net after Etsy fees and the highest regional print cost.
 
+The mix is **quotes and positive tags**, botanicals, scenic work, and five home-décor pieces — not an abstract-only wall. New listings bake in Etsy **Offsite Ads** (15% of an attributed sale only). On-site CPC Etsy Ads stay off so spend never runs without a sale.
+
 | Product | Gelato | Price (NZD) | Shipping profile |
 | --- | --- | --- | --- |
 | Fern Arc Poster · A3 Semi-Gloss | A3 coated silk | 36.99 | Small Posters |

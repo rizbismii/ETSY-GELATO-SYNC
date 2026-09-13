@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -19,17 +19,24 @@ type Lane = {
   printCost: number;
   days: string;
   fees: number;
+  ads?: number;
   net: number;
   margin: number;
+  adsNet?: number;
+  adsMargin?: number;
 };
 
 type Row = Listing & {
   shippingCost: number;
   net: number;
   margin: number;
+  adsNet?: number;
+  adsMargin?: number;
   suggestedPrice: number;
   lanes: Lane[];
   description?: string;
+  quote?: string;
+  collection?: string;
 };
 
 type Payload = {
@@ -38,12 +45,28 @@ type Payload = {
   currency: string;
   etsyAuthorized: boolean;
   gelatoLive: boolean;
+  ads?: {
+    mode: string;
+    rate: number;
+    cpcEnabled: boolean;
+    countries: Array<{ region: string; label: string }>;
+  };
 };
+
+const MIX = [
+  { id: "all", label: "All" },
+  { id: "quote", label: "Quotes" },
+  { id: "botanical", label: "Botanical" },
+  { id: "scenic", label: "Scenic" },
+  { id: "home", label: "Home décor" },
+  { id: "original", label: "Original fern" },
+] as const;
 
 export default function ListingsPage() {
   const [data, setData] = useState<Payload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [mix, setMix] = useState<string>("all");
 
   const load = useCallback(async () => {
     try {
@@ -57,6 +80,12 @@ export default function ListingsPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const visible = useMemo(() => {
+    if (!data) return [];
+    if (mix === "all") return data.listings;
+    return data.listings.filter((row) => row.collection === mix);
+  }, [data, mix]);
 
   async function publish(id: string, mode: "draft" | "live") {
     setBusy(`${id}:${mode}`);
@@ -84,7 +113,7 @@ export default function ListingsPage() {
       );
       const failed = result.results.filter((row) => row.error);
       if (failed.length) toast.error(failed.map((row) => row.error).join(" · "));
-      else toast.success(mode === "live" ? "All five are live on Etsy" : "All five saved as Etsy drafts");
+      else toast.success(mode === "live" ? "Catalog is live on Etsy" : "Saved as Etsy drafts");
       await load();
     } catch (err) {
       toast.error((err as Error).message);
@@ -104,6 +133,7 @@ export default function ListingsPage() {
   }
 
   const currency = data.currency || "NZD";
+  const adsRate = Math.round((data.ads?.rate ?? 0.15) * 100);
 
   return (
     <div className="flex flex-col gap-6">
@@ -111,9 +141,9 @@ export default function ListingsPage() {
         <div>
           <h1 className="font-heading text-4xl tracking-tight">Catalog</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Five Fernora products, each with AI artwork, a real Gelato SKU, and destination
-            shipping from the shop’s Gelato Etsy profiles. Prices are in {currency} and set
-            so about 42% remains after Etsy fees and the highest regional print cost.
+            Mixed Fernora shop: positive quote prints, botanicals, scenic work and five home-décor
+            pieces — not an all-abstract wall. Prices in {currency}. New listings bake in Offsite Ads
+            ({adsRate}% of the sale) so advertised orders still keep about 42% after print.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -132,6 +162,35 @@ export default function ListingsPage() {
         </div>
       </div>
 
+      <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm leading-6">
+        <p className="font-medium">Where it ships · how ads are paid</p>
+        <p className="mt-1 text-muted-foreground">
+          Buyers in{" "}
+          {(data.ads?.countries ?? []).map((country) => country.label).join(", ") ||
+            "New Zealand, Australia, United States, United Kingdom, European Union"}{" "}
+          see destination shipping at checkout (Gelato prints in-region). Advertising is{" "}
+          <strong>Etsy Offsite Ads</strong>: {adsRate}% of that sale only if an ad brought the
+          buyer. On-site CPC Etsy Ads stay off so there is no daily click budget eating profit.
+        </p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Confirm Offsite Ads is on and Etsy Ads (CPC) is off in Shop Manager → Marketing. The Open
+          API cannot flip those switches.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {MIX.map((option) => (
+          <Button
+            key={option.id}
+            size="sm"
+            variant={mix === option.id ? "default" : "outline"}
+            onClick={() => setMix(option.id)}
+          >
+            {option.label}
+          </Button>
+        ))}
+      </div>
+
       {!data.etsyAuthorized ? (
         <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
           Etsy is not authorized yet. You can still review images, locations, and profit.
@@ -139,15 +198,15 @@ export default function ListingsPage() {
         </p>
       ) : null}
 
-      {data.listings.length === 0 ? (
+      {visible.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            No live products yet.
+            Nothing in this mix yet.
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4">
-          {data.listings.map((listing) => {
+          {visible.map((listing) => {
             const status = listing.publishState || "ready";
             return (
               <Card key={listing.id}>
@@ -165,8 +224,11 @@ export default function ListingsPage() {
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="font-medium">{listing.title}</p>
                           <StatusPill value={status === "live" ? "live" : status === "draft" ? "paid" : "drop"} />
-                          <StatusPill value={listing.category} />
+                          <StatusPill value={listing.collection || listing.category} />
                         </div>
+                        {listing.quote ? (
+                          <p className="mt-1 font-heading text-lg text-foreground/80">“{listing.quote}”</p>
+                        ) : null}
                         <p className="mt-1 text-xs capitalize text-muted-foreground">
                           {listing.gelatoProductName} · {listing.category}
                           {listing.etsyListingId ? ` · Etsy #${listing.etsyListingId}` : " · not on Etsy yet"}
@@ -177,18 +239,23 @@ export default function ListingsPage() {
                         <p className="text-profit">
                           NZ net {formatMoney(listing.net, currency)} · {formatPercent(listing.margin)}
                         </p>
+                        <p className="text-xs text-muted-foreground">
+                          After Offsite Ads {formatMoney(listing.adsNet ?? 0, currency)} ·{" "}
+                          {formatPercent(listing.adsMargin ?? 0)}
+                        </p>
                       </div>
                     </div>
                     <p className="text-sm leading-6 text-muted-foreground">{listing.description}</p>
                     <div className="overflow-x-auto rounded-lg border border-border">
-                      <table className="w-full min-w-[32rem] text-left text-xs">
+                      <table className="w-full min-w-[36rem] text-left text-xs">
                         <thead className="bg-muted/60 text-muted-foreground">
                           <tr>
                             <th className="px-3 py-2 font-medium">Ships to</th>
                             <th className="px-3 py-2 font-medium">Print</th>
                             <th className="px-3 py-2 font-medium">Ship</th>
                             <th className="px-3 py-2 font-medium">Etsy fees</th>
-                            <th className="px-3 py-2 font-medium">Your net</th>
+                            <th className="px-3 py-2 font-medium">Organic net</th>
+                            <th className="px-3 py-2 font-medium">After ads {adsRate}%</th>
                             <th className="px-3 py-2 font-medium">Transit</th>
                           </tr>
                         </thead>
@@ -202,6 +269,12 @@ export default function ListingsPage() {
                               <td className={`px-3 py-2 ${lane.net < 8 ? "text-destructive" : "text-profit"}`}>
                                 {formatMoney(lane.net, currency)} ({formatPercent(lane.margin)})
                               </td>
+                              <td
+                                className={`px-3 py-2 ${(lane.adsNet ?? 0) < 8 ? "text-destructive" : "text-profit"}`}
+                              >
+                                {formatMoney(lane.adsNet ?? 0, currency)} (
+                                {formatPercent(lane.adsMargin ?? 0)})
+                              </td>
                               <td className="px-3 py-2 text-muted-foreground">{lane.days}</td>
                             </tr>
                           ))}
@@ -209,9 +282,9 @@ export default function ListingsPage() {
                       </table>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Buyer pays the Gelato shipping profile. Net is the listing price minus Etsy
-                      fees and the regional print cost, after shipping is passed through. Shop
-                      origin on Etsy is Wellington 6012; Gelato still prints in-region.
+                      Buyer pays destination shipping. Organic net is price minus marketplace fees and
+                      print. After ads subtracts Offsite Ads ({adsRate}% of price + shipping) only when
+                      Etsy attributes the order — never a CPC click budget.
                     </p>
                     <div className="flex flex-wrap gap-2">
                       <Button

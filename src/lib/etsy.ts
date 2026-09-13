@@ -444,3 +444,51 @@ export async function setEtsyListingState(listingId: string, state: "draft" | "a
   }
   return data as { listing_id: number; state: string; url?: string };
 }
+
+export async function updateEtsyListingPrice(listingId: string, price: number) {
+  const etsy = await refreshEtsyToken();
+  if (!etsy?.apiKey || !etsy.accessToken || !etsy.shopId) {
+    throw new Error("Etsy is not authorized");
+  }
+  const params = new URLSearchParams({ price: price.toFixed(2) });
+  const response = await fetch(`${ETSY_API}/shops/${etsy.shopId}/listings/${listingId}`, {
+    method: "PATCH",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/x-www-form-urlencoded",
+      "x-api-key": etsyApiKeyHeader(etsy.apiKey, etsy.sharedSecret),
+      Authorization: `Bearer ${etsy.accessToken}`,
+    },
+    body: params,
+    cache: "no-store",
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || data.error_description || `Etsy price ${response.status}`);
+  }
+  return data;
+}
+
+export async function updateEtsyShopAnnouncement(announcement: string) {
+  const etsy = await refreshEtsyToken();
+  if (!etsy?.apiKey || !etsy.accessToken || !etsy.shopId) {
+    throw new Error("Etsy is not authorized");
+  }
+  const params = new URLSearchParams({ announcement: announcement.slice(0, 5000) });
+  const response = await fetch(`${ETSY_API}/shops/${etsy.shopId}`, {
+    method: "PUT",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/x-www-form-urlencoded",
+      "x-api-key": etsyApiKeyHeader(etsy.apiKey, etsy.sharedSecret),
+      Authorization: `Bearer ${etsy.accessToken}`,
+    },
+    body: params,
+    cache: "no-store",
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || data.error_description || `Etsy shop ${response.status}`);
+  }
+  return data;
+}

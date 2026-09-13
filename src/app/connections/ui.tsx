@@ -399,8 +399,8 @@ export function ConnectionsClient() {
         </CardHeader>
         <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-xl text-sm text-muted-foreground">
-            Pull live Etsy listings and receipts. Clear leftover sample orders and restore
-            the five Fernora products if the desk was still on demo data.
+            Pull live Etsy listings and receipts. Restore the Fernora mix (quotes, botanicals,
+            home décor) if the desk was still on leftover demo data.
           </p>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => void resetDemo()} disabled={Boolean(busy)}>

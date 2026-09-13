@@ -1,6 +1,10 @@
 export const ETSY_TRANSACTION_RATE = 0.065;
 export const ETSY_PAYMENT_RATE = 0.03;
 export const ETSY_PAYMENT_FIXED = 0.25;
+/** Etsy Offsite Ads: charged only when a sale is attributed. Shops under US$10k pay 15%. */
+export const OFFSITE_ADS_RATE = 0.15;
+/** On-site Etsy Ads are CPC. Keep them off so spend never runs without a sale. */
+export const ETSY_CPC_ADS_ENABLED = false;
 
 export function etsyFees(itemTotal: number, shippingPaid: number) {
   const taxable = itemTotal + shippingPaid;
@@ -42,20 +46,34 @@ export function listingNet(price: number, unitCost: number, shippingCost: number
   return price + shippingCost - fees - unitCost - shippingCost;
 }
 
-export function destinationEconomics(price: number, printCost: number, shipping: number) {
-  const fees = etsyFees(price, shipping);
+export function offsiteAdsFee(itemTotal: number, shippingPaid: number, rate = OFFSITE_ADS_RATE) {
+  return (itemTotal + shippingPaid) * rate;
+}
+
+export function destinationEconomics(
+  price: number,
+  printCost: number,
+  shipping: number,
+  adsRate = 0,
+) {
+  const marketplace = etsyFees(price, shipping);
+  const ads = offsiteAdsFee(price, shipping, adsRate);
+  const fees = marketplace + ads;
   const net = price + shipping - fees - printCost - shipping;
   const margin = price > 0 ? net / price : 0;
-  return { fees, printCost, shipping, net, margin };
+  return { fees: marketplace, ads, printCost, shipping, net, margin };
 }
 
 export function recommendedPrice(
   unitCost: number,
   shippingCost: number,
   targetMargin = 0.42,
+  adsRate = 0,
 ) {
-  const denominator = 1 - ETSY_TRANSACTION_RATE - ETSY_PAYMENT_RATE - targetMargin;
-  const raw = (unitCost + shippingCost + ETSY_PAYMENT_FIXED) / denominator;
+  const stack = ETSY_TRANSACTION_RATE + ETSY_PAYMENT_RATE + adsRate + targetMargin;
+  const denominator = 1 - stack;
+  const extraOnShip = shippingCost * (ETSY_TRANSACTION_RATE + ETSY_PAYMENT_RATE + adsRate);
+  const raw = (unitCost + extraOnShip + ETSY_PAYMENT_FIXED) / denominator;
   return Math.ceil(raw) - 0.01;
 }
 

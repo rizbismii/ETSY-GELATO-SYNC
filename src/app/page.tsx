@@ -133,7 +133,7 @@ export default function DeskPage() {
       {sample ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
           Gelato is live. Authorize Etsy on Connections if you have not already, then publish
-          the five Fernora products from Catalog.
+          from Catalog. New listings use Offsite Ads (pay a % of the sale only).
         </div>
       ) : null}
 
@@ -165,7 +165,7 @@ export default function DeskPage() {
           <div>
             <h2 className="font-heading text-2xl tracking-tight">{data.drop.name}</h2>
             <p className="text-sm text-muted-foreground">
-              Five live Gelato products with AI artwork: poster, hoodie, tote, mug, and canvas.
+              Quotes, botanicals, home décor and the original fern set — printed near the buyer.
             </p>
           </div>
           <p className="text-sm">
