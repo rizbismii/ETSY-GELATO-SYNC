@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { etsyRedirectUri, getCredentials, patchCredentials } from "@/lib/credentials";
+import { getCredentials, patchCredentials } from "@/lib/credentials";
 import type { Address, Listing, Order, ShopState } from "@/lib/types";
 
 const ETSY_API = "https://openapi.etsy.com/v3/application";
@@ -12,7 +12,6 @@ const SCOPES = [
   "transactions_r",
   "transactions_w",
   "email_r",
-  "billing_r",
 ].join(" ");
 
 function base64url(buffer: Buffer) {
@@ -26,17 +25,21 @@ export function createPkce() {
   return { verifier, challenge, state };
 }
 
-export function etsyAuthorizeUrl(apiKey: string, challenge: string, state: string) {
-  const params = new URLSearchParams({
-    response_type: "code",
-    client_id: apiKey,
-    redirect_uri: etsyRedirectUri(),
-    scope: SCOPES,
-    state,
-    code_challenge: challenge,
-    code_challenge_method: "S256",
-  });
-  return `${ETSY_AUTH}?${params.toString()}`;
+export function etsyAuthorizeUrl(
+  apiKey: string,
+  challenge: string,
+  state: string,
+  redirectUri: string,
+) {
+  const params = new URLSearchParams();
+  params.set("response_type", "code");
+  params.set("client_id", apiKey);
+  params.set("redirect_uri", redirectUri);
+  params.set("scope", SCOPES);
+  params.set("state", state);
+  params.set("code_challenge", challenge);
+  params.set("code_challenge_method", "S256");
+  return `${ETSY_AUTH}?${params.toString().replace(/\+/g, "%20")}`;
 }
 
 export function etsyApiKeyHeader(apiKey: string, sharedSecret?: string) {
@@ -82,20 +85,22 @@ export async function pingEtsy() {
   return body as { application_id?: number };
 }
 
-export async function exchangeEtsyCode(code: string, verifier: string) {
+export async function exchangeEtsyCode(code: string, verifier: string, redirectUri: string) {
   const creds = await getCredentials();
   if (!creds.etsy?.apiKey) throw new Error("Etsy API key is not configured");
-  const response = await fetch(ETSY_TOKEN, {
-    method: "POST",
-    headers: { Accept: "application/json", "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "authorization_code",
-      client_id: creds.etsy.apiKey,
-      redirect_uri: etsyRedirectUri(),
-      code,
-      code_verifier: verifier,
-    }),
+  const headers = {
+    Accept: "application/json",
+    "Content-Type": "application/x-www-form-urlencoded",
+    "x-api-key": etsyApiKeyHeader(creds.etsy.apiKey, creds.etsy.sharedSecret),
+  };
+  const body = new URLSearchParams({
+    grant_type: "authorization_code",
+    client_id: creds.etsy.apiKey,
+    redirect_uri: redirectUri,
+    code,
+    code_verifier: verifier,
   });
+  const response = await fetch(ETSY_TOKEN, { method: "POST", headers, body });
   const data = await response.json();
   if (!response.ok) {
     throw new Error(data.error_description || data.error || "Etsy token exchange failed");

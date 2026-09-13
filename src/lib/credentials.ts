@@ -72,10 +72,3 @@ export async function patchCredentials(patch: StoredCredentials) {
   await saveCredentials(next);
   return next;
 }
-
-export function etsyRedirectUri() {
-  return (
-    process.env.ETSY_REDIRECT_URI ||
-    `${process.env.NEXT_PUBLIC_APP_URL || "http://127.0.0.1:43127"}/api/etsy/callback`
-  );
-}

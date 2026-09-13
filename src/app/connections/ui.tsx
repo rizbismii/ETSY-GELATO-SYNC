@@ -4,16 +4,18 @@ import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StatusPill } from "@/components/status-pill";
 import { api } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import type { Connections } from "@/lib/types";
 
 type Payload = {
   connections: Connections;
+  callbackUrl?: string;
   etsy: { apiKeySet: boolean; sharedSecretSet: boolean; shopName?: string; shopId?: string };
   gelato: { apiKeySet: boolean };
 };
@@ -25,6 +27,10 @@ export function ConnectionsClient() {
   const [etsySecret, setEtsySecret] = useState("");
   const [gelatoKey, setGelatoKey] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const callbackUrl =
+    data?.callbackUrl ||
+    (typeof window === "undefined" ? "" : `${window.location.origin}/api/etsy/callback`);
 
   const load = useCallback(async () => {
     setData(await api<Payload>("/api/connections"));
@@ -186,16 +192,37 @@ export function ConnectionsClient() {
                 for your own shop.
               </li>
               <li>
-                After approval, click the visibility icon and copy the{" "}
-                <strong>keystring</strong> and <strong>shared secret</strong>.
+                In{" "}
+                <a
+                  className="underline"
+                  href="https://www.etsy.com/developers/your-apps"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  fernora-etsgelto-app
+                </a>
+                , add this exact Callback URL (also set the website URL to this host):
+                <span className="mt-2 flex flex-col gap-2 sm:flex-row">
+                  <code className="block flex-1 break-all rounded bg-muted px-2 py-1 text-xs text-foreground">
+                    {callbackUrl || "http://127.0.0.1:43127/api/etsy/callback"}
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      const value = callbackUrl || "http://127.0.0.1:43127/api/etsy/callback";
+                      await navigator.clipboard.writeText(value);
+                      setCopied(true);
+                      toast.success("Callback URL copied");
+                    }}
+                  >
+                    {copied ? "Copied" : "Copy"}
+                  </Button>
+                </span>
+                Also add <code className="rounded bg-muted px-1">http://localhost:43127/api/etsy/callback</code>{" "}
+                if you open the desk as localhost.
               </li>
-              <li>
-                Set the callback URL to{" "}
-                <code className="rounded bg-muted px-1">http://127.0.0.1:43127/api/etsy/callback</code>{" "}
-                (or your deployed origin +{" "}
-                <code className="rounded bg-muted px-1">/api/etsy/callback</code>).
-              </li>
-              <li>Paste both below, save, then authorize the shop.</li>
+              <li>Keys are already saved. Click authorize and approve access for this shop.</li>
             </ol>
             <div className="space-y-2">
               <Label htmlFor="etsy-key">Keystring</Label>
@@ -220,9 +247,12 @@ export function ConnectionsClient() {
               <Button variant="outline" onClick={() => void saveEtsy()} disabled={busy === "etsy"}>
                 Save keys
               </Button>
-              <Button nativeButton={false} render={<a href="/api/etsy/connect" />}>
+              <a
+                href="/api/etsy/connect"
+                className={cn(buttonVariants(), !data.etsy.apiKeySet ? "pointer-events-none opacity-50" : "")}
+              >
                 Authorize with Etsy
-              </Button>
+              </a>
             </div>
           </CardContent>
         </Card>
