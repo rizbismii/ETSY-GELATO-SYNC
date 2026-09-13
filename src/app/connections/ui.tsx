@@ -151,7 +151,8 @@ export function ConnectionsClient() {
         <h1 className="font-heading text-4xl tracking-tight">Connections</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
           Pressroom talks to Etsy Open API v3 and Gelato Order API v4. This desk is live
-          for FERNORATRENDS — no sample orders.
+          for FERNORATRENDS — 20 listings, no sample orders. Advertising is Offsite Ads
+          (a % of the sale only); keep on-site CPC Etsy Ads off in Shop Manager.
         </p>
       </div>
 

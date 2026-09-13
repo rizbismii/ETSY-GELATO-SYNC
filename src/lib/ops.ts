@@ -8,7 +8,7 @@ import { createGelatoOrder, demoFulfill, pingGelato } from "@/lib/gelato";
 import { pullEtsyCatalog, pushEtsyTracking } from "@/lib/etsy";
 import { PRINT_FILE, HARVEST_DROP_ID, HARVEST_DROP_NAME } from "@/lib/constants";
 import { applyHarvestDrop } from "@/lib/drop";
-import { liveProductById, READINESS_STATE_ID } from "@/lib/live-catalog";
+import { ETSY_KNOWN_LISTINGS, liveProductById, READINESS_STATE_ID } from "@/lib/live-catalog";
 import { createEtsyDraft, setEtsyListingState, uploadEtsyListingImage } from "@/lib/etsy";
 import { absoluteAssetUrl } from "@/lib/origin";
 
@@ -470,13 +470,7 @@ export async function publishListing(id: string, mode: "draft" | "live") {
   let listingId = listing.etsyListingId;
   let url = listing.etsyUrl;
   if (!listingId) {
-    const known: Record<string, { id: string; url: string }> = {
-      live_poster: { id: "4574328954", url: "https://www.etsy.com/listing/4574328954/fern-arc-poster-a3-semi-gloss" },
-      live_hoodie: { id: "4574309819", url: "https://www.etsy.com/listing/4574309819/fern-mark-unisex-hoodie-black-m" },
-      live_tote: { id: "4574329002", url: "https://www.etsy.com/listing/4574329002/fern-spray-canvas-tote-natural" },
-      live_mug: { id: "4574329006", url: "https://www.etsy.com/listing/4574329006/fern-band-mug-11-oz-white-ceramic" },
-      live_canvas: { id: "4574309835", url: "https://www.etsy.com/listing/4574309835/bush-light-canvas-16x20-slim-wrap" },
-    };
+    const known = ETSY_KNOWN_LISTINGS;
     if (known[id]) {
       listingId = known[id].id;
       url = known[id].url;

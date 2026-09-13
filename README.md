@@ -62,17 +62,30 @@ GELATO_API_KEY=
 
 ## Live catalog
 
-Five products on **Catalog**, each with an AI print file, a catalog photo, a Gelato SKU, and destination shipping from the shop’s Gelato Etsy profiles (NZ, AU, US, UK, EU). Shop origin on Etsy is Wellington 6012; Gelato still prints in-region. Prices are NZD and target about 42% net after Etsy fees and the highest regional print cost.
+The catalog is **20 live listings**: the original fern set plus quotes, botanicals, scenic work, and five home-décor pieces. Shop origin on Etsy is Wellington 6012; Gelato still prints in-region. New listings bake in Etsy **Offsite Ads** (15% of an attributed sale only). On-site CPC Etsy Ads stay off so spend never runs without a sale.
 
-The mix is **quotes and positive tags**, botanicals, scenic work, and five home-décor pieces — not an abstract-only wall. New listings bake in Etsy **Offsite Ads** (15% of an attributed sale only). On-site CPC Etsy Ads stay off so spend never runs without a sale.
-
-| Product | Gelato | Price (NZD) | Shipping profile |
-| --- | --- | --- | --- |
-| Fern Arc Poster · A3 Semi-Gloss | A3 coated silk | 36.99 | Small Posters |
-| Fern Mark Unisex Hoodie · Black · M | Unisex pullover | 84.99 | Hoodies |
-| Fern Spray Canvas Tote · Natural | Canvas tote | 47.99 | Tote Bags |
-| Fern Band Mug · 11 oz White Ceramic | 11 oz white mug | 28.99 | Mugs 11oz |
-| Bush Light Canvas · 16×20 Slim Wrap | Slim wrap canvas | 123.99 | Small Canvas |
+| Product | Mix | Price (NZD) |
+| --- | --- | --- |
+| Fern Arc Poster · A3 | original | 36.99 |
+| Fern Mark Hoodie · Black M | original | 84.99 |
+| Fern Spray Tote · Natural | original | 47.99 |
+| Fern Band Mug · 11 oz | original | 28.99 |
+| Bush Light Canvas · 16×20 | original | 123.99 |
+| Breathe. You are here. · A3 | quote | 52.99 |
+| Light finds a way · A2 | quote | 66.99 |
+| Kowhai Bells · 18×24 | botanical | 69.99 |
+| Be kind anyway Tee | quote | 97.99 |
+| Grow anyway Tote · Black | quote | 69.99 |
+| Good morning, love Mug | quote | 52.99 |
+| Soft days ahead Sweatshirt | quote | 105.99 |
+| Harbour Morning Canvas · 12×12 | scenic | 116.99 |
+| You belong here · iPhone 15 | quote | 66.99 |
+| Pōhutukawa Coast · 12×16 | botanical | 49.99 |
+| Home is a kind light · oak frame | home | 182.99 |
+| Wild Coast · A3 black frame | home | 198.99 |
+| Tui on Kōwhai · wood print | home | 198.99 |
+| Be brave in the small hours · acrylic | home | 204.99 |
+| Dusk Hills · metallic | home | 144.99 |
 
 Publish options per product: **Save Etsy draft** or **Publish live**. Print files live at `/catalog/*.png` so Gelato can pull artwork from the public hostname.
 

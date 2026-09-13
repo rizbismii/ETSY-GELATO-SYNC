@@ -681,3 +681,26 @@ export function liveListings(): Listing[] {
 export function liveProductById(id: string) {
   return LIVE_PRODUCTS.find((row) => row.id === id);
 }
+
+export const ETSY_KNOWN_LISTINGS: Record<string, { id: string; url: string }> = {
+  live_poster: { id: "4574328954", url: "https://www.etsy.com/listing/4574328954/fern-arc-poster-a3-semi-gloss" },
+  live_hoodie: { id: "4574309819", url: "https://www.etsy.com/listing/4574309819/fern-mark-unisex-hoodie-black-m" },
+  live_tote: { id: "4574329002", url: "https://www.etsy.com/listing/4574329002/fern-spray-canvas-tote-natural" },
+  live_mug: { id: "4574329006", url: "https://www.etsy.com/listing/4574329006/fern-band-mug-11-oz-white-ceramic" },
+  live_canvas: { id: "4574309835", url: "https://www.etsy.com/listing/4574309835/bush-light-canvas-1620-slim-wrap" },
+  live_quote_breathe: { id: "4574325379", url: "https://www.etsy.com/listing/4574325379/breathe-you-are-here-a3-quote-poster" },
+  live_quote_light: { id: "4574344244", url: "https://www.etsy.com/listing/4574344244/light-finds-a-way-a2-sunrise-quote" },
+  live_botanical_kowhai: { id: "4574344254", url: "https://www.etsy.com/listing/4574344254/kowhai-bells-1824-botanical-print" },
+  live_tee_kind: { id: "4574325401", url: "https://www.etsy.com/listing/4574325401/be-kind-anyway-tee-natural-m" },
+  live_tote_grow: { id: "4574325409", url: "https://www.etsy.com/listing/4574325409/grow-anyway-tote-black-canvas" },
+  live_mug_morning: { id: "4574344284", url: "https://www.etsy.com/listing/4574344284/good-morning-love-mug-11-oz-black" },
+  live_sweat_soft: { id: "4574344292", url: "https://www.etsy.com/listing/4574344292/soft-days-ahead-sweatshirt-black-m" },
+  live_canvas_harbour: { id: "4574344298", url: "https://www.etsy.com/listing/4574344298/harbour-morning-canvas-1212" },
+  live_case_belong: { id: "4574344314", url: "https://www.etsy.com/listing/4574344314/you-belong-here-iphone-15-slim-case" },
+  live_poster_pohutukawa: { id: "4574344320", url: "https://www.etsy.com/listing/4574344320/phutukawa-coast-1216-print" },
+  live_frame_kind: { id: "4574344328", url: "https://www.etsy.com/listing/4574344328/home-is-a-kind-light-1216-oak-frame" },
+  live_frame_coast: { id: "4574344336", url: "https://www.etsy.com/listing/4574344336/wild-coast-a3-black-wood-frame" },
+  live_wood_tui: { id: "4574325495", url: "https://www.etsy.com/listing/4574325495/tui-on-kwhai-1216-wood-print" },
+  live_acrylic_brave: { id: "4574325509", url: "https://www.etsy.com/listing/4574325509/be-brave-in-the-small-hours-1216-acrylic" },
+  live_metal_dusk: { id: "4574344360", url: "https://www.etsy.com/listing/4574344360/dusk-hills-1216-metallic-print" },
+};
