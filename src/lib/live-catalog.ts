@@ -123,6 +123,7 @@ export const ETSY_KNOWN_LISTINGS: Record<string, { id: string; url: string }> = 
   live_frame_kind: { id: "4574344328", url: "https://www.etsy.com/listing/4574344328/home-is-a-kind-light-1216-oak-frame" },
   live_frame_coast: { id: "4574344336", url: "https://www.etsy.com/listing/4574344336/wild-coast-a3-black-wood-frame" },
   live_wood_tui: { id: "4574325495", url: "https://www.etsy.com/listing/4574325495/tui-on-kwhai-1216-wood-print" },
+  live_acrylic_brave: { id: "4574897456", url: "https://www.etsy.com/listing/4574897456/be-brave-in-the-small-hours-1216-acrylic" },
   live_metal_dusk: { id: "4574344360", url: "https://www.etsy.com/listing/4574344360/dusk-hills-1216-metallic-print" },
 };
 
@@ -145,6 +146,7 @@ export const GELATO_KNOWN_PRODUCTS: Record<string, { storeProductId: string; con
   live_frame_kind: { storeProductId: "cae48037-cbbb-424d-8bdd-4f9adff40bd1", connected: 1, variants: 1 },
   live_frame_coast: { storeProductId: "afa0e8ff-68f2-4a31-bca5-27d0437334be", connected: 1, variants: 1 },
   live_wood_tui: { storeProductId: "851e648d-ad5c-4773-951b-2c7444879dc4", connected: 1, variants: 1 },
+  live_acrylic_brave: { storeProductId: "1817a2ad-d654-48c5-b454-2f7b957fe083", connected: 1, variants: 1 },
   live_metal_dusk: { storeProductId: "dd276d98-9bab-45ba-ab0a-f8a878d17194", connected: 1, variants: 1 },
 };
 
