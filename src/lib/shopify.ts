@@ -256,17 +256,53 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
   const products = fernoraCatalog();
   for (const product of products) {
     const imageUrl = await absoluteAssetUrl(product.imageUrl, request);
+    const skuQuery = product.variants?.length
+      ? `sku:${product.id} OR sku:${product.variants[0].sku}`
+      : `sku:${product.id}`;
     const existing = await shopifyGraphql<{
       products: { nodes: Array<{ id: string; variants: { nodes: Array<{ id: string; sku?: string | null }> } }> };
     }>(
       `query ($q: String!) {
         products(first: 1, query: $q) {
-          nodes { id variants(first: 1) { nodes { id sku } } }
+          nodes { id variants(first: 20) { nodes { id sku } } }
         }
       }`,
-      { q: `sku:${product.id}` },
+      { q: skuQuery },
     );
     const found = existing.products.nodes[0];
+    const clothing = product.variants?.length
+      ? {
+          productOptions: [
+            {
+              name: "Color",
+              values: [...new Map(product.variants.map((row) => [row.color, { name: row.color }])).values()],
+            },
+            {
+              name: "Size",
+              values: [...new Map(product.variants.map((row) => [row.size, { name: row.size }])).values()],
+            },
+          ],
+          variants: product.variants.map((variant) => ({
+            optionValues: [
+              { optionName: "Color", name: variant.color },
+              { optionName: "Size", name: variant.size },
+            ],
+            price: product.price.toFixed(2),
+            sku: variant.sku,
+            inventoryPolicy: "CONTINUE",
+          })),
+        }
+      : {
+          productOptions: [{ name: "Title", values: [{ name: "Default Title" }] }],
+          variants: [
+            {
+              optionValues: [{ optionName: "Title", name: "Default Title" }],
+              price: product.price.toFixed(2),
+              sku: product.id,
+              inventoryPolicy: "CONTINUE",
+            },
+          ],
+        };
     const input: Record<string, unknown> = {
       title: product.title,
       descriptionHtml: `<p>${escapeHtml(product.description)}</p>`,
@@ -274,15 +310,7 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
       productType: product.category,
       status: "ACTIVE",
       tags: ["Fernora", product.collection, ...product.tags],
-      productOptions: [{ name: "Title", values: [{ name: "Default Title" }] }],
-      variants: [
-        {
-          optionValues: [{ optionName: "Title", name: "Default Title" }],
-          price: product.price.toFixed(2),
-          sku: product.id,
-          inventoryPolicy: "CONTINUE",
-        },
-      ],
+      ...clothing,
       files: [{ originalSource: imageUrl, alt: product.title, contentType: "IMAGE" }],
       metafields: [
         { namespace: "fernora", key: "product_id", type: "single_line_text_field", value: product.id },
@@ -300,14 +328,14 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
         product?: {
           id: string;
           handle: string;
-          variants: { nodes: Array<{ id: string }> };
+          variants: { nodes: Array<{ id: string; sku?: string | null }> };
         };
         userErrors: Array<{ field?: string[]; message: string }>;
       };
     }>(
       `mutation productSet($input: ProductSetInput!) {
         productSet(synchronous: true, input: $input) {
-          product { id handle variants(first: 1) { nodes { id } } }
+          product { id handle variants(first: 20) { nodes { id sku } } }
           userErrors { field message }
         }
       }`,
@@ -323,9 +351,12 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
       notes.push(`${product.title}: Shopify returned no product`);
       continue;
     }
+    const defaultSku = product.variants?.find((row) => row.colorUid === "black" && row.sizeUid === "m")?.sku || product.id;
+    const defaultVariant =
+      node.variants.nodes.find((row) => row.sku === defaultSku) || node.variants.nodes[0];
     catalog[product.id] = {
       productId: node.id,
-      variantId: node.variants.nodes[0]?.id || found?.variants.nodes[0]?.id || "",
+      variantId: defaultVariant?.id || found?.variants.nodes[0]?.id || "",
       handle: node.handle,
     };
   }
@@ -508,6 +539,46 @@ export async function createShopifyDraftInvoice(input: {
   const draft = created.draftOrderCreate.draftOrder;
   if (!draft) throw new Error("Shopify did not create a draft order");
   return draft;
+}
+
+export async function deleteShopifyProduct(listingId: string) {
+  const shop = await getShop();
+  const mapped = shop.shopifyCatalog?.[listingId];
+  let productId = mapped?.productId;
+  if (!productId) {
+    const existing = await shopifyGraphql<{
+      products: { nodes: Array<{ id: string }> };
+    }>(
+      `query ($q: String!) {
+        products(first: 5, query: $q) {
+          nodes { id }
+        }
+      }`,
+      { q: `sku:${listingId} OR sku:${listingId}-black-m` },
+    );
+    productId = existing.products.nodes[0]?.id;
+  }
+  if (!productId) {
+    return { deleted: false, note: "No Shopify product mapped for this listing" };
+  }
+  const data = await shopifyGraphql<{
+    productDelete: { deletedProductId?: string | null; userErrors: Array<{ message: string }> };
+  }>(
+    `mutation ($id: ID!) {
+      productDelete(input: { id: $id }) {
+        deletedProductId
+        userErrors { field message }
+      }
+    }`,
+    { id: productId },
+  );
+  if (data.productDelete.userErrors.length) {
+    throw new Error(data.productDelete.userErrors.map((row) => row.message).join("; "));
+  }
+  await updateShop((state) => {
+    if (state.shopifyCatalog) delete state.shopifyCatalog[listingId];
+  });
+  return { deleted: true, productId: data.productDelete.deletedProductId || productId };
 }
 
 export async function registerShopifyWebhooks(origin: string) {

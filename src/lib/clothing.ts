@@ -1,0 +1,153 @@
+import type { ClothingVariant, Listing } from "@/lib/types";
+
+export const CLOTHING_COLORS = [
+  { name: "Black", uid: "black" },
+  { name: "White", uid: "white" },
+  { name: "Navy", uid: "navy" },
+] as const;
+
+export const CLOTHING_SIZES = [
+  { name: "S", uid: "s" },
+  { name: "M", uid: "m" },
+  { name: "L", uid: "l" },
+] as const;
+
+export type ApparelKind = "hoodie" | "t-shirt" | "sweatshirt";
+
+const KIND_BY_CATEGORY: Record<string, ApparelKind> = {
+  hoodie: "hoodie",
+  tee: "t-shirt",
+  sweatshirt: "sweatshirt",
+};
+
+const STYLE_BY_KIND: Record<ApparelKind, string> = {
+  hoodie: "pullover",
+  "t-shirt": "crewneck",
+  sweatshirt: "crewneck",
+};
+
+export function isClothingCategory(category: string) {
+  return category === "hoodie" || category === "tee" || category === "sweatshirt";
+}
+
+export function apparelKindFor(category: string): ApparelKind | undefined {
+  return KIND_BY_CATEGORY[category];
+}
+
+export function apparelProductUid(kind: ApparelKind, colorUid: string, sizeUid: string, gpr = "4-0") {
+  return `apparel_product_gca_${kind}_gsc_${STYLE_BY_KIND[kind]}_gcu_unisex_gqa_classic_gsi_${sizeUid}_gco_${colorUid}_gpr_${gpr}`;
+}
+
+export function clothingVariants(productId: string, category: string): ClothingVariant[] {
+  const kind = apparelKindFor(category);
+  if (!kind) return [];
+  const rows: ClothingVariant[] = [];
+  for (const color of CLOTHING_COLORS) {
+    for (const size of CLOTHING_SIZES) {
+      rows.push({
+        id: `${productId}-${color.uid}-${size.uid}`,
+        color: color.name,
+        colorUid: color.uid,
+        size: size.name,
+        sizeUid: size.uid,
+        sku: `${productId}-${color.uid}-${size.uid}`,
+        gelatoProductUid: apparelProductUid(kind, color.uid, size.uid),
+      });
+    }
+  }
+  return rows;
+}
+
+export function defaultClothingVariant(variants: ClothingVariant[] | undefined) {
+  if (!variants?.length) return undefined;
+  return (
+    variants.find((row) => row.colorUid === "black" && row.sizeUid === "m") ||
+    variants.find((row) => row.sizeUid === "m") ||
+    variants[0]
+  );
+}
+
+export function findClothingVariant(variants: ClothingVariant[] | undefined, variantId?: string | null) {
+  if (!variants?.length) return undefined;
+  if (variantId) {
+    const exact = variants.find((row) => row.id === variantId || row.sku === variantId);
+    if (exact) return exact;
+  }
+  return defaultClothingVariant(variants);
+}
+
+const COLOR_ALIASES: Record<string, string> = {
+  black: "black",
+  white: "white",
+  navy: "navy",
+  blue: "navy",
+};
+
+const SIZE_ALIASES: Record<string, string> = {
+  s: "s",
+  small: "s",
+  m: "m",
+  medium: "m",
+  l: "l",
+  large: "l",
+};
+
+export function matchClothingVariant(title: string, variants: ClothingVariant[] | undefined) {
+  if (!variants?.length) return undefined;
+  const text = title.toLowerCase();
+  if (!text.trim()) return defaultClothingVariant(variants);
+
+  let colorUid: string | undefined;
+  for (const [alias, uid] of Object.entries(COLOR_ALIASES)) {
+    if (new RegExp(`\\b${alias}\\b`, "i").test(text)) {
+      colorUid = uid;
+      break;
+    }
+  }
+  const sizeToken = text.match(/(?:^|[\s/_\-,·])(small|medium|large|xxs|xs|s|m|l|xl|2xl|xxl)(?:$|[\s/_\-,·])/i);
+  const sizeUid = sizeToken ? SIZE_ALIASES[sizeToken[1].toLowerCase()] : undefined;
+
+  const matched = variants.find(
+    (row) =>
+      (!colorUid || row.colorUid === colorUid) &&
+      (!sizeUid || row.sizeUid === sizeUid) &&
+      (colorUid || sizeUid),
+  );
+  return matched || defaultClothingVariant(variants);
+}
+
+export function variantLabel(variant: ClothingVariant) {
+  return `${variant.color} · ${variant.size}`;
+}
+
+export function etsyClothingInventory(
+  listing: Pick<Listing, "id" | "category" | "price" | "variants">,
+) {
+  const variants = listing.variants?.length
+    ? listing.variants
+    : clothingVariants(listing.id, listing.category);
+  return variants.map((variant) => ({
+    sku: variant.sku,
+    propertyValues: [
+      { property_id: 513, property_name: "Color", values: [variant.color] },
+      { property_id: 514, property_name: "Size", values: [variant.size] },
+    ],
+    price: listing.price,
+  }));
+}
+
+export function resolveListingFulfillment(
+  listing: Pick<Listing, "gelatoProductUid" | "printFileUrl" | "variants">,
+  variation?: string,
+  variantId?: string,
+) {
+  const fromId = findClothingVariant(listing.variants, variantId);
+  const fromTitle = variation ? matchClothingVariant(variation, listing.variants) : undefined;
+  const variant = variantId && fromId?.id === variantId ? fromId : fromTitle || fromId;
+  return {
+    gelatoProductUid: variant?.gelatoProductUid || listing.gelatoProductUid,
+    printFileUrl: listing.printFileUrl,
+    variation: variant ? variantLabel(variant) : variation,
+    variant,
+  };
+}

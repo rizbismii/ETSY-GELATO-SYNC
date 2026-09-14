@@ -33,6 +33,16 @@ export type Connections = {
 
 export type ListingState = "active" | "inactive" | "expired" | "sold_out";
 
+export type ClothingVariant = {
+  id: string;
+  color: string;
+  colorUid: string;
+  size: string;
+  sizeUid: string;
+  sku: string;
+  gelatoProductUid: string;
+};
+
 export type Listing = {
   id: string;
   etsyListingId: string;
@@ -60,6 +70,10 @@ export type Listing = {
   etsyUrl?: string;
   collection?: "original" | "quote" | "botanical" | "scenic" | "home";
   quote?: string;
+  variants?: ClothingVariant[];
+  gelatoStoreProductId?: string;
+  gelatoConnectedCount?: number;
+  gelatoVariantCount?: number;
 };
 
 export type Address = {
@@ -152,6 +166,7 @@ export type ShopState = {
   lastSyncAt?: string;
   shopifyCatalog?: ShopifyCatalogMap;
   shopifySyncedAt?: string;
+  deletedListingIds?: string[];
 };
 
 export type OpsIssue = {

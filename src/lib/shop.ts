@@ -1,4 +1,5 @@
 import { LIVE_PRODUCTS, SHIP_BLURB, type LiveProduct } from "@/lib/live-catalog";
+import { findClothingVariant, variantLabel } from "@/lib/clothing";
 import type { Address, Order, OrderItem } from "@/lib/types";
 
 export const FERNORA_NAME = "Fernora";
@@ -32,7 +33,11 @@ export function fernoraProduct(id: string) {
   return fernoraCatalog().find((row) => row.id === id);
 }
 
-export type CartLine = { id: string; quantity: number };
+export type CartLine = { id: string; quantity: number; variantId?: string };
+
+export function cartLineKey(line: CartLine) {
+  return line.variantId ? `${line.id}::${line.variantId}` : line.id;
+}
 
 export function quoteFernoraCart(lines: CartLine[], country: FernoraCountry) {
   const items: Array<{
@@ -42,12 +47,16 @@ export function quoteFernoraCart(lines: CartLine[], country: FernoraCountry) {
     shipping: number;
     printCost: number;
     days: string;
+    variantId?: string;
+    variantLabel?: string;
+    gelatoProductUid?: string;
   }> = [];
   for (const line of lines) {
     const product = fernoraProduct(line.id);
     if (!product || line.quantity < 1) continue;
     const lane = shopLane(product, country);
     if (!lane) throw new Error(`${product.title} cannot ship to ${country}`);
+    const variant = findClothingVariant(product.variants, line.variantId);
     items.push({
       product,
       quantity: Math.min(99, Math.floor(line.quantity)),
@@ -55,9 +64,12 @@ export function quoteFernoraCart(lines: CartLine[], country: FernoraCountry) {
       shipping: lane.shipping,
       printCost: lane.printCost,
       days: lane.days,
+      variantId: variant?.id,
+      variantLabel: variant ? variantLabel(variant) : undefined,
+      gelatoProductUid: variant?.gelatoProductUid || product.gelatoProductUid,
     });
   }
-  if (!items.length) throw new Error("Your cart is empty");
+  if (!items.length) throw new Error("Your bag is empty");
   const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
   const shipping = items.reduce((sum, item) => sum + item.shipping * item.quantity, 0);
   const print = items.reduce((sum, item) => sum + item.printCost * item.quantity, 0);
@@ -78,12 +90,13 @@ export function checkoutToOrder(input: {
   address: Address;
 }): Omit<Order, "id"> {
   const items: OrderItem[] = input.quote.items.map((item, index) => ({
-    id: `frn_${item.product.id}_${index}`,
+    id: `frn_${item.product.id}_${item.variantId || "default"}_${index}`,
     listingId: item.product.id,
-    title: item.product.title,
+    title: item.variantLabel ? `${item.product.title} · ${item.variantLabel}` : item.product.title,
     quantity: item.quantity,
     price: item.unitPrice,
-    gelatoProductUid: item.product.gelatoProductUid,
+    variation: item.variantLabel,
+    gelatoProductUid: item.gelatoProductUid,
     printFileUrl: item.product.printFileUrl,
   }));
   const now = new Date().toISOString();

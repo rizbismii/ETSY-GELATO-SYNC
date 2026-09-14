@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { fernoraCatalog } from "@/lib/shop";
+import { getDeletedListingIds } from "@/lib/tombstones";
 import { formatMoney } from "@/lib/money";
 import { ProductArt } from "@/components/product-art";
 
+export const dynamic = "force-dynamic";
+
 export default function ShopHomePage() {
-  const products = fernoraCatalog();
+  const deleted = new Set(getDeletedListingIds());
+  const products = fernoraCatalog().filter((product) => !deleted.has(product.id));
   return (
     <div className="flex flex-col gap-10">
       <section className="max-w-2xl">
@@ -18,7 +22,12 @@ export default function ShopHomePage() {
         </p>
       </section>
       <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {products.map((product) => (
+        {products.length === 0 ? (
+          <p className="col-span-full py-12 text-center text-sm text-muted-foreground">
+            Nothing is for sale right now.
+          </p>
+        ) : (
+          products.map((product) => (
           <Link
             key={product.id}
             href={`/shop/products/${product.id}`}
@@ -43,7 +52,8 @@ export default function ShopHomePage() {
               </p>
             </div>
           </Link>
-        ))}
+          ))
+        )}
       </section>
     </div>
   );

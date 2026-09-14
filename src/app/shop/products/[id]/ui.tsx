@@ -1,19 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ProductArt } from "@/components/product-art";
 import { formatMoney } from "@/lib/money";
+import { CLOTHING_COLORS, CLOTHING_SIZES, findClothingVariant } from "@/lib/clothing";
 import { shopLane, type FernoraCountry } from "@/lib/shop";
 import type { LiveProduct } from "@/lib/live-catalog";
 import { useCart } from "../../cart-provider";
 
+const COLOR_SWATCH: Record<string, string> = {
+  black: "bg-zinc-900",
+  white: "bg-white",
+  navy: "bg-[#1d2a4d]",
+};
+
 export function ProductDetail({ product }: { product: LiveProduct }) {
   const { add } = useCart();
   const router = useRouter();
+  const clothing = Boolean(product.variants?.length);
   const [country, setCountry] = useState<FernoraCountry>("NZ");
+  const [color, setColor] = useState("black");
+  const [size, setSize] = useState("m");
+  const variant = useMemo(
+    () =>
+      findClothingVariant(
+        product.variants,
+        product.variants?.find((row) => row.colorUid === color && row.sizeUid === size)?.id,
+      ),
+    [product.variants, color, size],
+  );
   const lane = shopLane(product, country);
+
+  function addToBag() {
+    add(product.id, 1, variant?.id);
+  }
+
   return (
     <div className="grid gap-10 lg:grid-cols-2">
       <div className="overflow-hidden rounded-2xl border border-border/70 bg-card">
@@ -35,6 +58,41 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
         ) : null}
         <p className="text-sm leading-7 text-muted-foreground">{product.description}</p>
         <p className="text-xl">{formatMoney(product.price, product.currency)}</p>
+        {clothing ? (
+          <div className="space-y-4">
+            <div>
+              <p className="mb-2 text-xs uppercase tracking-[0.16em] text-muted-foreground">Colour</p>
+              <div className="flex flex-wrap gap-2">
+                {CLOTHING_COLORS.map((option) => (
+                  <Button
+                    key={option.uid}
+                    size="sm"
+                    variant={color === option.uid ? "default" : "outline"}
+                    onClick={() => setColor(option.uid)}
+                  >
+                    <span className={`mr-2 inline-block size-3 rounded-full border border-black/10 ${COLOR_SWATCH[option.uid]}`} />
+                    {option.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="mb-2 text-xs uppercase tracking-[0.16em] text-muted-foreground">Size</p>
+              <div className="flex flex-wrap gap-2">
+                {CLOTHING_SIZES.map((option) => (
+                  <Button
+                    key={option.uid}
+                    size="sm"
+                    variant={size === option.uid ? "default" : "outline"}
+                    onClick={() => setSize(option.uid)}
+                  >
+                    {option.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : null}
         <div className="flex flex-wrap gap-2">
           {(["NZ", "AU"] as const).map((code) => (
             <Button
@@ -55,17 +113,11 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
           <p className="text-sm text-destructive">This piece does not ship to that country.</p>
         )}
         <div className="flex flex-wrap gap-2">
-          <Button
-            onClick={() => {
-              add(product.id, 1);
-            }}
-          >
-            Add to bag
-          </Button>
+          <Button onClick={addToBag}>Add to bag</Button>
           <Button
             variant="outline"
             onClick={() => {
-              add(product.id, 1);
+              addToBag();
               router.push("/shop/checkout");
             }}
           >

@@ -90,17 +90,17 @@ The catalog is **20 live listings**: the original fern set plus quotes, botanica
 | Product | Mix | Price (NZD) |
 | --- | --- | --- |
 | Fern Arc Poster · A3 | original | 56.99 |
-| Fern Mark Hoodie · Black M | original | 125.99 |
+| Fern Mark Hoodie · Black, White, Navy · S–L | original | 125.99 |
 | Fern Spray Tote · Natural | original | 71.99 |
 | Fern Band Mug · 11 oz | original | 49.99 |
 | Bush Light Canvas · 16×20 | original | 176.99 |
 | Breathe. You are here. · A3 | quote | 56.99 |
 | Light finds a way · A2 | quote | 71.99 |
 | Kowhai Bells · 18×24 | botanical | 73.99 |
-| Be kind anyway Tee | quote | 102.99 |
+| Be kind anyway Tee · Black, White, Navy · S–L | quote | 102.99 |
 | Grow anyway Tote · Black | quote | 71.99 |
 | Good morning, love Mug | quote | 59.99 |
-| Soft days ahead Sweatshirt | quote | 109.99 |
+| Soft days ahead Sweatshirt · Black, White, Navy · S–L | quote | 109.99 |
 | Harbour Morning Canvas · 12×12 | scenic | 118.99 |
 | You belong here · iPhone 15 | quote | 67.99 |
 | Pōhutukawa Coast · 12×16 | botanical | 53.99 |
@@ -110,7 +110,7 @@ The catalog is **20 live listings**: the original fern set plus quotes, botanica
 | Be brave in the small hours · acrylic | home | 210.99 |
 | Dusk Hills · metallic | home | 153.99 |
 
-Publish options per product: **Save Etsy draft** or **Publish live**. Print files live at `/catalog/*.png` so Gelato can pull artwork from the public hostname.
+Publish options per product: **Save Etsy draft** or **Publish live**. Clothing listings offer Black, White and Navy in S, M and L. **Connect Gelato designs** attaches the print file to each Gelato store variant so the dashboard shows Connected. **Delete** removes the product from Gelato, inactivates it on Etsy, deletes it from Shopify, and takes it out of Pressroom and `/shop`. Print files live at `/catalog/*.png` so Gelato can pull artwork from the public hostname.
 
 ## Stack
 

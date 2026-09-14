@@ -9,7 +9,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatMoney } from "@/lib/money";
-import { fernoraProduct, type FernoraCountry } from "@/lib/shop";
+import { cartLineKey, fernoraProduct, type FernoraCountry } from "@/lib/shop";
 import { api } from "@/lib/api";
 import { useCart } from "../cart-provider";
 import { ProductArt } from "@/components/product-art";
@@ -29,6 +29,7 @@ type Quote = {
     unitPrice: number;
     shipping: number;
     imageUrl?: string;
+    variantLabel?: string;
   }>;
 };
 
@@ -155,7 +156,7 @@ export default function CheckoutPage() {
         <h2 className="font-heading text-2xl">Bag</h2>
         <ul className="space-y-4">
           {localLines.map((line) => (
-            <li key={line.id} className="flex gap-3">
+            <li key={cartLineKey(line)} className="flex gap-3">
               <div className="size-16 overflow-hidden rounded-md bg-muted">
                 <ProductArt
                   id={line.product!.id}
@@ -166,6 +167,12 @@ export default function CheckoutPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm">{line.product!.title}</p>
+                {line.variantId ? (
+                  <p className="text-xs text-muted-foreground">
+                    {line.product!.variants?.find((row) => row.id === line.variantId)?.color} ·{" "}
+                    {line.product!.variants?.find((row) => row.id === line.variantId)?.size}
+                  </p>
+                ) : null}
                 <p className="text-xs text-muted-foreground">
                   {formatMoney(line.product!.price, line.product!.currency)}
                 </p>
@@ -176,9 +183,9 @@ export default function CheckoutPage() {
                     min={1}
                     max={99}
                     value={line.quantity}
-                    onChange={(event) => setQuantity(line.id, Number(event.target.value))}
+                    onChange={(event) => setQuantity(cartLineKey(line), Number(event.target.value))}
                   />
-                  <button type="button" className="text-xs underline" onClick={() => remove(line.id)}>
+                  <button type="button" className="text-xs underline" onClick={() => remove(cartLineKey(line))}>
                     Remove
                   </button>
                 </div>

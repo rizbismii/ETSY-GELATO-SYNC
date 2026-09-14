@@ -1,10 +1,14 @@
 import { fernoraCatalog, quoteFernoraCart, isFernoraCountry } from "@/lib/shop";
+import { getDeletedListingIds } from "@/lib/tombstones";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const country = new URL(request.url).searchParams.get("country") || "NZ";
-  const catalog = fernoraCatalog().map((product) => {
+  const deleted = new Set(getDeletedListingIds());
+  const catalog = fernoraCatalog()
+    .filter((product) => !deleted.has(product.id))
+    .map((product) => {
     const lane = isFernoraCountry(country)
       ? product.lanes.find((row) => row.country === country || row.region === country)
       : undefined;
@@ -27,7 +31,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const body = (await request.json()) as {
-    lines?: Array<{ id: string; quantity: number }>;
+    lines?: Array<{ id: string; quantity: number; variantId?: string }>;
     country?: string;
   };
   try {
@@ -45,11 +49,12 @@ export async function POST(request: Request) {
         days: quote.days,
         items: quote.items.map((item) => ({
           id: item.product.id,
-          title: item.product.title,
+          title: item.variantLabel ? `${item.product.title} · ${item.variantLabel}` : item.product.title,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           shipping: item.shipping,
           imageUrl: item.product.imageUrl,
+          variantLabel: item.variantLabel,
         })),
       },
     });

@@ -5,11 +5,31 @@ import { getShop, updateShop } from "@/lib/store";
 import type { Address, Connections, Listing, OpsIssue, Order, Overview, ShopState } from "@/lib/types";
 import { existsSync } from "node:fs";
 import { createGelatoOrder, demoFulfill, pingGelato } from "@/lib/gelato";
-import { createEtsyDraft, pullEtsyCatalog, pushEtsyTracking, setEtsyListingState, updateEtsyListingPrice, uploadEtsyListingImage } from "@/lib/etsy";
+import {
+  createEtsyDraft,
+  pullEtsyCatalog,
+  pushEtsyTracking,
+  setEtsyListingState,
+  updateEtsyListingFields,
+  updateEtsyListingInventory,
+  updateEtsyListingPrice,
+  uploadEtsyListingImage,
+} from "@/lib/etsy";
 import { PRINT_FILE, HARVEST_DROP_ID, HARVEST_DROP_NAME } from "@/lib/constants";
 import { applyHarvestDrop } from "@/lib/drop";
 import { ETSY_KNOWN_LISTINGS, etsyListingUrl, liveProductById, READINESS_STATE_ID } from "@/lib/live-catalog";
 import { absoluteAssetUrl } from "@/lib/origin";
+import { etsyClothingInventory, isClothingCategory, resolveListingFulfillment } from "@/lib/clothing";
+import {
+  connectListingToGelatoStore,
+  deleteGelatoStoreProduct,
+  findStoreProductForListing,
+  getGelatoEtsyStore,
+  listGelatoStoreProducts,
+  syncGelatoStore,
+} from "@/lib/gelato-store";
+import { rememberDeletedListing } from "@/lib/tombstones";
+import { deleteShopifyProduct } from "@/lib/shopify";
 import {
   checkoutToOrder,
   isFernoraCountry,
@@ -66,10 +86,14 @@ export function enrichOrder(order: Order, listings: Listing[]): Order {
   const issues: string[] = [];
   const items = order.items.map((item) => {
     const listing = listings.find((row) => row.id === item.listingId);
+    const resolved = listing
+      ? resolveListingFulfillment(listing, item.variation, undefined)
+      : undefined;
     return {
       ...item,
-      gelatoProductUid: item.gelatoProductUid ?? listing?.gelatoProductUid,
-      printFileUrl: item.printFileUrl ?? listing?.printFileUrl,
+      gelatoProductUid: item.gelatoProductUid ?? resolved?.gelatoProductUid ?? listing?.gelatoProductUid,
+      printFileUrl: item.printFileUrl ?? resolved?.printFileUrl ?? listing?.printFileUrl,
+      variation: item.variation ?? resolved?.variation,
     };
   });
   const unmapped = items.some((item) => !item.gelatoProductUid || !item.printFileUrl);
@@ -636,7 +660,155 @@ export async function publishListing(id: string, mode: "draft" | "live") {
     row.imageUrl = meta.imageUrl;
     row.state = state === "live" ? "active" : "inactive";
   });
+  if (isClothingCategory(meta.category) && (meta.variants?.length || listing.variants?.length)) {
+    await updateEtsyListingInventory(listingId, etsyClothingInventory(meta));
+  }
   return { id, listingId, url, state };
+}
+
+function listingEtsyId(listing: Listing) {
+  return listing.etsyListingId || ETSY_KNOWN_LISTINGS[listing.id]?.id;
+}
+
+export async function pushClothingVariantsToEtsy(id?: string) {
+  const shop = await getShop();
+  const targets = shop.listings.filter(
+    (row) => isClothingCategory(row.category) && (!id || row.id === id),
+  );
+  const notes: string[] = [];
+  const updated: string[] = [];
+  for (const listing of targets) {
+    const meta = liveProductById(listing.id);
+    const listingId = listingEtsyId(listing);
+    if (!meta || !listingId) {
+      notes.push(`${listing.title}: not on Etsy yet`);
+      continue;
+    }
+    try {
+      await updateEtsyListingFields(listingId, {
+        title: meta.title.slice(0, 140),
+        description: meta.description.slice(0, 5000),
+        price: meta.price.toFixed(2),
+      });
+      await updateEtsyListingInventory(listingId, etsyClothingInventory(meta));
+      updated.push(listing.title);
+    } catch (error) {
+      notes.push(`${listing.title}: ${(error as Error).message}`);
+    }
+  }
+  return { updated, notes };
+}
+
+export async function connectGelatoDesigns() {
+  const connections = await connectionStatus();
+  if (!connections.gelato.configured) throw new Error("Gelato is not connected");
+  const clothing = await pushClothingVariantsToEtsy();
+  const store = await getGelatoEtsyStore();
+  const notes = [...clothing.notes];
+  try {
+    await syncGelatoStore(store.id);
+  } catch (error) {
+    notes.push(`Gelato store sync: ${(error as Error).message}`);
+  }
+  await new Promise((resolve) => setTimeout(resolve, 2500));
+  const products = await listGelatoStoreProducts(store.id);
+  const shop = await getShop();
+  const results: Array<{ id: string; title: string; connected: number; total: number }> = [];
+  for (const listing of shop.listings) {
+    const meta = liveProductById(listing.id);
+    const merged: Listing = {
+      ...listing,
+      ...(meta || {}),
+      id: listing.id,
+      etsyListingId: listing.etsyListingId || ETSY_KNOWN_LISTINGS[listing.id]?.id || listing.etsyListingId,
+      variants: meta?.variants || listing.variants,
+      printFileUrl: meta?.printFileUrl || listing.printFileUrl,
+      gelatoProductUid: meta?.gelatoProductUid || listing.gelatoProductUid,
+    };
+    const storeProduct = findStoreProductForListing(products, merged);
+    if (!storeProduct) {
+      notes.push(`${listing.title}: not in the Gelato Etsy store yet`);
+      continue;
+    }
+    try {
+      const result = await connectListingToGelatoStore(store.id, merged, storeProduct);
+      notes.push(...result.notes);
+      results.push({
+        id: listing.id,
+        title: listing.title,
+        connected: result.connected,
+        total: result.total,
+      });
+      await updateShop((state) => {
+        const row = state.listings.find((item) => item.id === listing.id);
+        if (!row) return;
+        row.gelatoStoreProductId = result.storeProductId;
+        row.gelatoConnectedCount = result.connected;
+        row.gelatoVariantCount = result.total;
+      });
+    } catch (error) {
+      notes.push(`${listing.title}: ${(error as Error).message}`);
+    }
+  }
+  return {
+    storeId: store.id,
+    clothingUpdated: clothing.updated,
+    connected: results.reduce((sum, row) => sum + row.connected, 0),
+    products: results.length,
+    results,
+    notes,
+  };
+}
+
+export async function deleteCatalogProduct(id: string) {
+  const shop = await getShop();
+  const listing = shop.listings.find((row) => row.id === id);
+  if (!listing) throw new Error("Catalog product not found");
+  const notes: string[] = [];
+  const etsyId = listingEtsyId(listing);
+
+  try {
+    const store = await getGelatoEtsyStore();
+    const products = await listGelatoStoreProducts(store.id);
+    const storeProduct =
+      findStoreProductForListing(products, listing) ||
+      products.find((row) => row.id === listing.gelatoStoreProductId);
+    if (storeProduct) {
+      await deleteGelatoStoreProduct(store.id, storeProduct.id);
+      notes.push("Removed from Gelato");
+    } else {
+      notes.push("Not found in Gelato store");
+    }
+  } catch (error) {
+    notes.push(`Gelato: ${(error as Error).message}`);
+  }
+
+  if (etsyId) {
+    try {
+      await setEtsyListingState(etsyId, "inactive");
+      notes.push("Etsy listing set to inactive");
+    } catch (error) {
+      notes.push(`Etsy: ${(error as Error).message}`);
+    }
+  } else {
+    notes.push("No Etsy listing to inactivate");
+  }
+
+  try {
+    const shopify = await deleteShopifyProduct(id);
+    notes.push(shopify.deleted ? "Deleted from Shopify" : shopify.note || "Shopify unchanged");
+  } catch (error) {
+    notes.push(`Shopify: ${(error as Error).message}`);
+  }
+
+  rememberDeletedListing(id);
+  await updateShop((state) => {
+    state.deletedListingIds = [...new Set([...(state.deletedListingIds || []), id])];
+    state.listings = state.listings.filter((row) => row.id !== id);
+    if (state.shopifyCatalog) delete state.shopifyCatalog[id];
+  });
+
+  return { id, title: listing.title, notes };
 }
 
 export async function placeFernoraOrder(input: {

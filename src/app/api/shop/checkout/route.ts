@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const body = (await request.json()) as {
-    lines?: Array<{ id: string; quantity: number }>;
+    lines?: Array<{ id: string; quantity: number; variantId?: string }>;
     country?: string;
     firstName?: string;
     lastName?: string;

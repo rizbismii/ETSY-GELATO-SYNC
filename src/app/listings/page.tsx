@@ -6,6 +6,14 @@ import { Loader2 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { StatusPill } from "@/components/status-pill";
 import { ProductArt } from "@/components/product-art";
 import { api } from "@/lib/api";
@@ -38,6 +46,9 @@ type Row = Listing & {
   description?: string;
   quote?: string;
   collection?: string;
+  variants?: Array<{ id: string; color: string; size: string }>;
+  gelatoConnectedCount?: number;
+  gelatoVariantCount?: number;
 };
 
 type Payload = {
@@ -68,6 +79,7 @@ export default function ListingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [mix, setMix] = useState<string>("all");
+  const [pendingDelete, setPendingDelete] = useState<Row | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -140,6 +152,48 @@ export default function ListingsPage() {
     }
   }
 
+  async function connectGelato() {
+    setBusy("gelato");
+    try {
+      const result = await api<{
+        connected: number;
+        products: number;
+        clothingUpdated?: string[];
+        notes?: string[];
+      }>("/api/listings/gelato-connect", { method: "POST" });
+      toast.success(
+        `Connected ${result.connected} Gelato variant${result.connected === 1 ? "" : "s"} across ${result.products} products`,
+      );
+      if (result.clothingUpdated?.length) {
+        toast.message(`Clothing variants on Etsy: ${result.clothingUpdated.join(", ")}`);
+      }
+      if (result.notes?.length) toast.warning(result.notes.slice(0, 4).join(" · "));
+      await load();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function deleteProduct() {
+    if (!pendingDelete) return;
+    setBusy(`delete:${pendingDelete.id}`);
+    try {
+      const result = await api<{ notes?: string[] }>(`/api/listings/${pendingDelete.id}`, {
+        method: "DELETE",
+      });
+      toast.success(`Deleted ${pendingDelete.title}`);
+      if (result.notes?.length) toast.message(result.notes.join(" · "));
+      setPendingDelete(null);
+      await load();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   if (error) return <p className="text-sm text-destructive">{error}</p>;
   if (!data) {
     return (
@@ -184,6 +238,14 @@ export default function ListingsPage() {
           >
             {busy === "reprice" ? <Loader2 className="animate-spin" /> : null}
             Push 40% prices to Etsy
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => void connectGelato()}
+            disabled={Boolean(busy) || !data.gelatoLive}
+          >
+            {busy === "gelato" ? <Loader2 className="animate-spin" /> : null}
+            Connect Gelato designs
           </Button>
           <a
             href={ETSY_SHOP_URL}
@@ -266,7 +328,16 @@ export default function ListingsPage() {
                         <p className="mt-1 text-xs capitalize text-muted-foreground">
                           {listing.gelatoProductName} · {listing.category}
                           {listing.etsyListingId ? ` · Etsy #${listing.etsyListingId}` : " · not on Etsy yet"}
+                          {listing.gelatoVariantCount
+                            ? ` · Gelato ${listing.gelatoConnectedCount ?? 0}/${listing.gelatoVariantCount} connected`
+                            : ""}
                         </p>
+                        {listing.variants?.length ? (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Colours {Array.from(new Set(listing.variants.map((row) => row.color))).join(", ")} ·
+                            sizes {Array.from(new Set(listing.variants.map((row) => row.size))).join(", ")}
+                          </p>
+                        ) : null}
                       </div>
                       <div className="text-sm sm:text-right">
                         <p className="font-heading text-2xl">{formatMoney(listing.price, currency)}</p>
@@ -355,6 +426,15 @@ export default function ListingsPage() {
                           View on Etsy
                         </a>
                       ) : null}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setPendingDelete(listing)}
+                        disabled={Boolean(busy)}
+                      >
+                        Delete
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -363,6 +443,31 @@ export default function ListingsPage() {
           })}
         </div>
       )}
+      <Dialog open={Boolean(pendingDelete)} onOpenChange={(open) => !open && setPendingDelete(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete {pendingDelete?.title}?</DialogTitle>
+            <DialogDescription>
+              This removes the product from the Gelato store, sets the Etsy listing inactive (the app
+              cannot hard-delete Etsy listings), and deletes it from Shopify. It also leaves the
+              Pressroom catalog and the Fernora shop.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendingDelete(null)} disabled={Boolean(busy)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => void deleteProduct()}
+              disabled={Boolean(busy)}
+            >
+              {busy?.startsWith("delete:") ? <Loader2 className="animate-spin" /> : null}
+              Delete everywhere
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

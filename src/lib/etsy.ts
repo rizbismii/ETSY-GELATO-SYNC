@@ -446,11 +446,18 @@ export async function setEtsyListingState(listingId: string, state: "draft" | "a
 }
 
 export async function updateEtsyListingPrice(listingId: string, price: number) {
+  return updateEtsyListingFields(listingId, { price: price.toFixed(2) });
+}
+
+export async function updateEtsyListingFields(
+  listingId: string,
+  fields: Record<string, string>,
+) {
   const etsy = await refreshEtsyToken();
   if (!etsy?.apiKey || !etsy.accessToken || !etsy.shopId) {
     throw new Error("Etsy is not authorized");
   }
-  const params = new URLSearchParams({ price: price.toFixed(2) });
+  const params = new URLSearchParams(fields);
   const response = await fetch(`${ETSY_API}/shops/${etsy.shopId}/listings/${listingId}`, {
     method: "PATCH",
     headers: {
@@ -464,9 +471,54 @@ export async function updateEtsyListingPrice(listingId: string, price: number) {
   });
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.error || data.error_description || `Etsy price ${response.status}`);
+    throw new Error(data.error || data.error_description || `Etsy listing update ${response.status}`);
   }
-  return data;
+  return data as { listing_id: number; state: string; url?: string; title?: string };
+}
+
+export async function updateEtsyListingInventory(
+  listingId: string,
+  products: Array<{
+    sku: string;
+    propertyValues: Array<{ property_id: number; property_name: string; values: string[] }>;
+    price: number;
+    quantity?: number;
+    readinessStateId?: number;
+  }>,
+) {
+  const etsy = await refreshEtsyToken();
+  if (!etsy?.apiKey || !etsy.accessToken) {
+    throw new Error("Etsy is not authorized");
+  }
+  const propertyIds = [
+    ...new Set(products.flatMap((product) => product.propertyValues.map((row) => row.property_id))),
+  ];
+  const payload = {
+    products: products.map((product) => ({
+      sku: product.sku,
+      property_values: product.propertyValues.map((row) => ({
+        property_id: row.property_id,
+        property_name: row.property_name,
+        values: row.values,
+      })),
+      offerings: [
+        {
+          price: Number(product.price.toFixed(2)),
+          quantity: product.quantity ?? 999,
+          is_enabled: true,
+          readiness_state_id: product.readinessStateId ?? 1514454820482,
+        },
+      ],
+    })),
+    price_on_property: [],
+    quantity_on_property: propertyIds,
+    sku_on_property: propertyIds,
+  };
+  return etsyFetch(`/listings/${listingId}/inventory`, etsy.accessToken, etsy.apiKey, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function updateEtsyShopAnnouncement(announcement: string) {

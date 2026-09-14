@@ -42,8 +42,8 @@ export const GELATO_CATALOG: ProductTemplate[] = [
     keywords: ["mug", "coffee", "ceramic"],
   },
   {
-    uid: "apparel_product_gca_t-shirt_gsc_crewneck_gcu_unisex_gqa_classic_gsi_m_gco_natural_gpr_4-4",
-    name: "Unisex tee · natural · M",
+    uid: "apparel_product_gca_t-shirt_gsc_crewneck_gcu_unisex_gqa_classic_gsi_m_gco_black_gpr_4-0",
+    name: "Unisex tee · Black, White, Navy · S–L",
     category: "apparel",
     unitCost: 12.4,
     shippingCost: 5.8,
@@ -51,7 +51,7 @@ export const GELATO_CATALOG: ProductTemplate[] = [
   },
   {
     uid: "apparel_product_gca_hoodie_gsc_pullover_gcu_unisex_gqa_classic_gsi_m_gco_black_gpr_4-0",
-    name: "Unisex pullover hoodie · black · M",
+    name: "Unisex pullover hoodie · Black, White, Navy · S–L",
     category: "hoodie",
     unitCost: 28.4,
     shippingCost: 6.8,
