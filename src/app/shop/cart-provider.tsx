@@ -15,21 +15,33 @@ type CartContextValue = {
 const CartContext = createContext<CartContextValue | null>(null);
 const KEY = "fernora-cart-v2";
 
+function readCart(): CartLine[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(KEY) || localStorage.getItem("fernora-cart");
+    return raw ? (JSON.parse(raw) as CartLine[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCart(lines: CartLine[]) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(KEY, JSON.stringify(lines));
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEY) || localStorage.getItem("fernora-cart");
-      if (raw) setLines(JSON.parse(raw) as CartLine[]);
-    } catch {
-      /* ignore */
-    }
+    setLines(readCart());
+    setReady(true);
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(KEY, JSON.stringify(lines));
-  }, [lines]);
+    if (ready) writeCart(lines);
+  }, [lines, ready]);
 
   const value = useMemo<CartContextValue>(
     () => ({
@@ -40,14 +52,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           const found = current.find(
             (line) => line.id === id && (line.variantId || "") === (variantId || ""),
           );
-          if (found) {
-            return current.map((line) =>
-              line.id === id && (line.variantId || "") === (variantId || "")
-                ? { ...line, quantity: Math.min(99, line.quantity + quantity) }
-                : line,
-            );
-          }
-          return [...current, { id, quantity, variantId }];
+          const next = found
+            ? current.map((line) =>
+                line.id === id && (line.variantId || "") === (variantId || "")
+                  ? { ...line, quantity: Math.min(99, line.quantity + quantity) }
+                  : line,
+              )
+            : [...current, { id, quantity, variantId }];
+          writeCart(next);
+          return next;
         });
       },
       setQuantity: (key, quantity) => {
