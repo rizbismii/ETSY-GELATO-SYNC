@@ -404,6 +404,7 @@ export async function fulfillOrder(id: string) {
   const shop = await updateShop(async (state) => {
     const order = state.orders.find((row) => row.id === id);
     if (!order) throw new Error("Order not found");
+    if (order.status === "cancelled") throw new Error("Order is cancelled");
     if (order.status === "pending") throw new Error("Collect payment before sending this order to Gelato");
     const ready = enrichOrder(order, state.listings);
     if (ready.status === "blocked" || ready.items.some((item) => !item.gelatoProductUid || !item.printFileUrl)) {
@@ -673,6 +674,20 @@ export async function markOrderPaid(id: string, fulfill = true) {
   }
   const shop = await getShop();
   return { shop, order: shop.orders.find((row) => row.id === id), gelatoOrderId, live };
+}
+
+export async function cancelOrder(id: string) {
+  await updateShop((state) => {
+    const order = state.orders.find((row) => row.id === id);
+    if (!order) throw new Error("Order not found");
+    if (order.status === "in_production" || order.status === "shipped" || order.status === "delivered") {
+      throw new Error("This order is already with Gelato");
+    }
+    order.status = "cancelled";
+    order.issues = ["Cancelled — not sent to Gelato"];
+  });
+  const shop = await getShop();
+  return { shop, order: shop.orders.find((row) => row.id === id) };
 }
 
 export async function ingestShopifyPaidOrder(payload: {

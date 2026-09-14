@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Send, Truck } from "lucide-react";
+import { Loader2, Send, Truck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,6 +22,7 @@ const filters = [
   { id: "blocked", label: "Blocked" },
   { id: "in_production", label: "Printing" },
   { id: "shipped", label: "Shipped" },
+  { id: "cancelled", label: "Cancelled" },
 ];
 
 export default function OrdersPage() {
@@ -45,7 +46,7 @@ export default function OrdersPage() {
 
   const orders = useMemo(() => {
     if (!data) return [];
-    if (filter === "all") return data.orders;
+    if (filter === "all") return data.orders.filter((order) => order.status !== "cancelled");
     return data.orders.filter((order) => order.status === filter);
   }, [data, filter]);
 
@@ -74,6 +75,19 @@ export default function OrdersPage() {
     try {
       await api(`/api/orders/${id}/tracking`, { method: "POST" });
       toast.success("Tracking written to the Etsy receipt");
+      await load();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function cancel(id: string) {
+    setBusy(id);
+    try {
+      await api(`/api/orders/${id}/cancel`, { method: "POST" });
+      toast.success("Cancelled — not sent to Gelato");
       await load();
     } catch (err) {
       toast.error((err as Error).message);
@@ -138,8 +152,9 @@ export default function OrdersPage() {
         <div>
           <h1 className="font-heading text-4xl tracking-tight">Orders</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Every paid Etsy receipt and every paid Fernora / Shopify order should either be
-            printing at Gelato or already have tracking. Pending rows are waiting on payment.
+            Pending Fernora rows are unpaid website checkouts (including test orders). Do not
+            click Mark paid & print unless money actually arrived — that sends a real Gelato
+            print. Cancel test rows. Paid Etsy receipts appear here after Sync.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -167,7 +182,8 @@ export default function OrdersPage() {
       {orders.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            No orders in this view. Paid Etsy receipts and Fernora checkouts land here.
+            No orders in this view. Unpaid website checkouts stay in Pending until you cancel
+            them. Live Etsy sales land here after Sync.
           </CardContent>
         </Card>
       ) : (
@@ -222,6 +238,18 @@ export default function OrdersPage() {
                     : ""}
                 </p>
                 <div className="flex flex-wrap gap-2">
+                  {order.status === "pending" ||
+                  (order.status === "paid" && !order.gelatoOrderId) ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void cancel(order.id)}
+                      disabled={busy === order.id}
+                    >
+                      {busy === order.id ? <Loader2 className="animate-spin" /> : <X />}
+                      Cancel test / unpaid
+                    </Button>
+                  ) : null}
                   {order.status === "pending" ? (
                     <Button
                       size="sm"

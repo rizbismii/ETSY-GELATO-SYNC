@@ -31,7 +31,7 @@ Open [http://127.0.0.1:43127](http://127.0.0.1:43127) for Pressroom, or [http://
 
 The customer website is `/shop`. It sells the existing 20-piece catalog only, quotes Gelato shipping for New Zealand or Australia, and will not accept any other country.
 
-Paid Fernora orders print through Gelato. Until Shopify checkout is authorized, new shop orders sit as **pending** on the Orders desk — mark them paid to send the print files.
+Paid Fernora orders print through Gelato. Until Shopify checkout is authorized, website checkouts sit as **pending** on the Orders desk. Those rows are unpaid — **Cancel test / unpaid** them. Do not click **Mark paid & print** unless money actually arrived; that submits a real Gelato print.
 
 ### Shopify (fernora.myshopify.com)
 
