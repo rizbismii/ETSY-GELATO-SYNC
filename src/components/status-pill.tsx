@@ -16,6 +16,8 @@ const styles: Record<string, string> = {
   demo: "bg-amber-100 text-amber-900 border-amber-200",
   critical: "bg-red-100 text-red-800 border-red-200",
   warning: "bg-amber-100 text-amber-900 border-amber-200",
+  updated: "bg-emerald-100 text-emerald-900 border-emerald-200",
+  not_updated: "bg-amber-100 text-amber-900 border-amber-200",
   drop: "bg-primary/15 text-primary border-primary/20",
 };
 
@@ -35,6 +37,8 @@ const labels: Record<string, string> = {
   demo: "Sample shop",
   critical: "Down",
   warning: "Waiting",
+  updated: "Tunnel updated",
+  not_updated: "Tunnel not updated",
   drop: "Live five",
 };
 

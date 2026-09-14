@@ -123,6 +123,23 @@ export default function ListingsPage() {
     }
   }
 
+  async function pushPrices() {
+    setBusy("reprice");
+    try {
+      const result = await api<{ updated: number; errors?: string[] }>("/api/listings/reprice", {
+        method: "POST",
+      });
+      if (result.updated) toast.success(`Pushed ${result.updated} prices to Etsy (40% after ads)`);
+      else toast.message(result.errors?.[0] || "No Etsy listings to reprice");
+      if (result.errors?.length && result.updated) toast.warning(result.errors.slice(0, 3).join(" · "));
+      await load();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   if (error) return <p className="text-sm text-destructive">{error}</p>;
   if (!data) {
     return (
@@ -143,8 +160,8 @@ export default function ListingsPage() {
           <h1 className="font-heading text-4xl tracking-tight">Catalog</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
             Mixed Fernora shop: positive quote prints, botanicals, scenic work and five home-décor
-            pieces — not an all-abstract wall. Prices in {currency}. New listings bake in Offsite Ads
-            ({adsRate}% of the sale) so advertised orders still keep about 42% after print.
+            pieces — not an all-abstract wall. Prices in {currency}. Every listing (current and
+            future) is set so Offsite Ads still leave at least 40% after print and Etsy fees.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -159,6 +176,14 @@ export default function ListingsPage() {
           <Button onClick={() => void publishAll("live")} disabled={Boolean(busy) || !data.etsyAuthorized}>
             {busy === "all:live" ? <Loader2 className="animate-spin" /> : null}
             Publish all live
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => void pushPrices()}
+            disabled={Boolean(busy) || !data.etsyAuthorized}
+          >
+            {busy === "reprice" ? <Loader2 className="animate-spin" /> : null}
+            Push 40% prices to Etsy
           </Button>
           <a
             href={ETSY_SHOP_URL}
@@ -248,9 +273,13 @@ export default function ListingsPage() {
                         <p className="text-profit">
                           NZ net {formatMoney(listing.net, currency)} · {formatPercent(listing.margin)}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p
+                          className={`text-xs ${
+                            (listing.adsMargin ?? 0) + 1e-9 >= 0.4 ? "text-profit" : "text-destructive"
+                          }`}
+                        >
                           After Offsite Ads {formatMoney(listing.adsNet ?? 0, currency)} ·{" "}
-                          {formatPercent(listing.adsMargin ?? 0)}
+                          {formatPercent(listing.adsMargin ?? 0)} · target 40%
                         </p>
                       </div>
                     </div>
@@ -279,7 +308,9 @@ export default function ListingsPage() {
                                 {formatMoney(lane.net, currency)} ({formatPercent(lane.margin)})
                               </td>
                               <td
-                                className={`px-3 py-2 ${(lane.adsNet ?? 0) < 8 ? "text-destructive" : "text-profit"}`}
+                                className={`px-3 py-2 ${
+                                  (lane.adsMargin ?? 0) + 1e-9 >= 0.4 ? "text-profit" : "text-destructive"
+                                }`}
                               >
                                 {formatMoney(lane.adsNet ?? 0, currency)} (
                                 {formatPercent(lane.adsMargin ?? 0)})
@@ -293,7 +324,8 @@ export default function ListingsPage() {
                     <p className="text-xs text-muted-foreground">
                       Buyer pays destination shipping. Organic net is price minus marketplace fees and
                       print. After ads subtracts Offsite Ads ({adsRate}% of price + shipping) only when
-                      Etsy attributes the order — never a CPC click budget.
+                      Etsy attributes the order. Prices are raised so that after-ads margin is at least
+                      40% in every destination.
                     </p>
                     <div className="flex flex-wrap gap-2">
                       <Button

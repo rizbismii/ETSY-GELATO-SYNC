@@ -1,4 +1,4 @@
-import { OFFSITE_ADS_RATE, recommendedPrice } from "@/lib/money";
+import { OFFSITE_ADS_RATE, TARGET_AFTER_ADS_MARGIN, recommendedPrice } from "@/lib/money";
 import type { Listing } from "@/lib/types";
 
 export const ETSY_SHOP_URL = "https://www.etsy.com/shop/FERNORATRENDS";
@@ -46,8 +46,17 @@ export type LiveProduct = Listing & {
   quote?: string;
 };
 
-function priceFor(printCosts: number[], adsRate = 0) {
-  return recommendedPrice(Math.max(...printCosts), 0, 0.42, adsRate);
+function priceFor(print: Record<string, number>, ship: Record<string, number>) {
+  return Math.max(
+    ...Object.keys(print).map((region) =>
+      recommendedPrice(
+        print[region],
+        ship[region] ?? 0,
+        TARGET_AFTER_ADS_MARGIN,
+        OFFSITE_ADS_RATE,
+      ),
+    ),
+  );
 }
 
 function lanes(
@@ -111,7 +120,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     description:
       "A tall botanical study of a New Zealand fern, printed to order on premium 200 gsm semi-gloss A3 paper. Unframed. Made to order.",
     state: "active",
-    price: priceFor(Object.values(posterPrint)),
+    price: priceFor(posterPrint, shipSmallPoster),
     currency: "NZD",
     quantity: 999,
     views: 0,
@@ -139,7 +148,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     description:
       "Heavyweight unisex pullover hoodie in black with a chest fern emblem. Size M shown; message for other sizes. Made to order.",
     state: "active",
-    price: priceFor(Object.values(hoodiePrint)),
+    price: priceFor(hoodiePrint, shipHoodie),
     currency: "NZD",
     quantity: 999,
     views: 0,
@@ -167,7 +176,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     title: "Fern Spray Canvas Tote · Natural",
     description: "Classic canvas tote in natural with a large fern spray print. Everyday bag, made to order.",
     state: "active",
-    price: priceFor(Object.values(totePrint)),
+    price: priceFor(totePrint, shipTote),
     currency: "NZD",
     quantity: 999,
     views: 0,
@@ -194,7 +203,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     title: "Fern Band Mug · 11 oz White Ceramic",
     description: "11 oz white ceramic mug wrapped with a repeating fern band. Made to order.",
     state: "active",
-    price: priceFor(Object.values(mugPrint)),
+    price: priceFor(mugPrint, shipMug),
     currency: "NZD",
     quantity: 999,
     views: 0,
@@ -222,7 +231,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     description:
       "Gallery-wrapped 16×20 in canvas of misty New Zealand bush with a silver fern in the foreground. Slim FSC wood stretcher. Made to order.",
     state: "active",
-    price: priceFor(Object.values(canvasPrint)),
+    price: priceFor(canvasPrint, shipCanvas),
     currency: "NZD",
     quantity: 999,
     views: 0,
@@ -252,7 +261,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
       "Landscape A3 semi-gloss print with a botanical border and the line “Breathe. You are here.” A calm reminder for a hallway, studio or bedside. Unframed.",
     quote: "Breathe. You are here.",
     state: "active",
-    price: priceFor(Object.values(posterPrint), OFFSITE_ADS_RATE),
+    price: priceFor(posterPrint, shipSmallPoster),
     currency: "NZD",
     quantity: 999,
     views: 0,
@@ -281,7 +290,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
       "Tall A2 poster: soft sunrise wash and the line “Light finds a way.” Hopeful wall art without the abstract-grid look. Unframed.",
     quote: "Light finds a way.",
     state: "active",
-    price: priceFor(Object.values(a2Print), OFFSITE_ADS_RATE),
+    price: priceFor(a2Print, shipLargePoster),
     currency: "NZD",
     quantity: 999,
     views: 0,
@@ -309,7 +318,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     description:
       "Large 18×24 in painterly study of New Zealand kōwhai bells on cream. Botanical, not abstract. Unframed.",
     state: "active",
-    price: priceFor(Object.values(p18Print), OFFSITE_ADS_RATE),
+    price: priceFor(p18Print, shipLargePoster),
     currency: "NZD",
     quantity: 999,
     views: 0,
@@ -338,7 +347,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
       "Unisex natural tee with a small chest line: “Be kind anyway.” Soft positive merch. Size M; message for other sizes.",
     quote: "Be kind anyway.",
     state: "active",
-    price: priceFor(Object.values(teePrint), OFFSITE_ADS_RATE),
+    price: priceFor(teePrint, shipTee),
     currency: "NZD",
     quantity: 999,
     views: 0,
@@ -368,7 +377,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
       "Black canvas tote with cream kōwhai linework and the words “Grow anyway.” Everyday bag with a positive tag.",
     quote: "Grow anyway.",
     state: "active",
-    price: priceFor(Object.values(totePrint), OFFSITE_ADS_RATE),
+    price: priceFor(totePrint, shipTote),
     currency: "NZD",
     quantity: 999,
     views: 0,
@@ -397,7 +406,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
       "Black 11 oz ceramic mug wrapped with “Good morning, love.” A warm daily ritual mug, made to order.",
     quote: "Good morning, love.",
     state: "active",
-    price: priceFor(Object.values(mugBlackPrint), OFFSITE_ADS_RATE),
+    price: priceFor(mugBlackPrint, shipMug),
     currency: "NZD",
     quantity: 999,
     views: 0,
@@ -426,7 +435,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
       "Black crewneck with cream lettering: “Soft days ahead.” Unisex size M; message for other sizes.",
     quote: "Soft days ahead.",
     state: "active",
-    price: priceFor(Object.values(sweatPrint), OFFSITE_ADS_RATE),
+    price: priceFor(sweatPrint, shipHoodie),
     currency: "NZD",
     quantity: 999,
     views: 0,
@@ -455,7 +464,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     description:
       "Square slim-wrap canvas of a quiet New Zealand harbour at first light. Scenic, not geometric abstract.",
     state: "active",
-    price: priceFor(Object.values(canvas12Print), OFFSITE_ADS_RATE),
+    price: priceFor(canvas12Print, shipCanvas),
     currency: "NZD",
     quantity: 999,
     views: 0,
@@ -484,7 +493,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
       "Slim glossy iPhone 15 case with a leaf and the line “You belong here.” Positive everyday carry.",
     quote: "You belong here.",
     state: "active",
-    price: priceFor(Object.values(casePrint), OFFSITE_ADS_RATE),
+    price: priceFor(casePrint, shipCase),
     currency: "NZD",
     quantity: 999,
     views: 0,
@@ -512,7 +521,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     description:
       "12×16 in coastal botanical of crimson pōhutukawa against summer sea. Unframed paper print.",
     state: "active",
-    price: priceFor(Object.values(p1216Print), OFFSITE_ADS_RATE),
+    price: priceFor(p1216Print, shipSmallPoster),
     currency: "NZD",
     quantity: 999,
     views: 0,
@@ -542,7 +551,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
       "Natural-wood framed 12×16 print: botanicals and “Home is a kind light.” Ready to hang home décor.",
     quote: "Home is a kind light.",
     state: "active",
-    price: priceFor(Object.values(framePrint), OFFSITE_ADS_RATE),
+    price: priceFor(framePrint, shipFrame),
     currency: "NZD",
     quantity: 999,
     views: 0,
@@ -571,7 +580,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     description:
       "A3 black-wood framed painting of flax, cliffs and pale surf. Landscape home décor, made to order.",
     state: "active",
-    price: priceFor(Object.values(frameA3Print), OFFSITE_ADS_RATE),
+    price: priceFor(frameA3Print, shipFrame),
     currency: "NZD",
     quantity: 999,
     views: 0,
@@ -600,7 +609,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     description:
       "10 mm plywood print of a tūī among kōwhai. Nature illustration for a shelf or wall. No glass, ready to hang.",
     state: "active",
-    price: priceFor(Object.values(woodPrint), OFFSITE_ADS_RATE),
+    price: priceFor(woodPrint, shipWood),
     currency: "NZD",
     quantity: 999,
     views: 0,
@@ -629,7 +638,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
       "Back-printed acrylic panel with a night-sea glow and “Be brave in the small hours.” Modern home décor.",
     quote: "Be brave in the small hours.",
     state: "active",
-    price: priceFor(Object.values(acrylicPrint), OFFSITE_ADS_RATE),
+    price: priceFor(acrylicPrint, shipAcrylic),
     currency: "NZD",
     quantity: 999,
     views: 0,
@@ -657,7 +666,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     description:
       "Brushed metallic print of dusky New Zealand hills and a gold horizon. Scenic home décor, not an abstract grid.",
     state: "active",
-    price: priceFor(Object.values(metalPrint), OFFSITE_ADS_RATE),
+    price: priceFor(metalPrint, shipAcrylic),
     currency: "NZD",
     quantity: 999,
     views: 0,

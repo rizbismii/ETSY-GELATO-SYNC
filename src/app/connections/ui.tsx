@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Copy, Eye, EyeOff } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,13 @@ type LiveStatus = {
   readyToSell: boolean;
 };
 
+type TunnelRow = {
+  origin: string;
+  status: "updated" | "not_updated";
+  note: string;
+  at?: string;
+};
+
 type Payload = {
   connections: Connections;
   callbackUrl?: string;
@@ -32,11 +39,26 @@ type Payload = {
   callbackIsPublic?: boolean;
   callbackReachable?: boolean;
   live?: LiveStatus;
-  etsy: { apiKeySet: boolean; sharedSecretSet: boolean; shopName?: string; shopId?: string };
-  gelato: { apiKeySet: boolean };
+  tunnel?: {
+    origin: string;
+    etsy: TunnelRow;
+    shopify: TunnelRow;
+    gelato: TunnelRow;
+  };
+  etsy: {
+    apiKeySet: boolean;
+    sharedSecretSet: boolean;
+    apiKey?: string;
+    sharedSecret?: string;
+    shopName?: string;
+    shopId?: string;
+  };
+  gelato: { apiKeySet: boolean; apiKey?: string };
   shopify?: {
     clientIdSet: boolean;
     clientSecretSet: boolean;
+    clientId?: string;
+    clientSecret?: string;
     shop?: string;
     authorized: boolean;
     storefrontStatus?: string;
@@ -54,7 +76,10 @@ export function ConnectionsClient() {
   const [shopifySecret, setShopifySecret] = useState("");
   const [shopifyShop, setShopifyShop] = useState("fernora.myshopify.com");
   const [busy, setBusy] = useState<string | null>(null);
-  const [copied, setCopied] = useState<"callback" | "website" | "desk" | "shop" | "shopify-callback" | null>(null);
+  const [show, setShow] = useState<Record<string, boolean>>({});
+  const [copied, setCopied] = useState<
+    "callback" | "website" | "desk" | "shop" | "shopify-callback" | "etsy-key" | "etsy-secret" | "gelato-key" | "shopify-key" | "shopify-secret" | null
+  >(null);
   const callbackUrl = data?.callbackUrl || "";
   const websiteUrl = data?.websiteUrl || "";
   const shopUrl = data?.shopUrl || (websiteUrl ? `${websiteUrl.replace(/\/$/, "")}/shop` : "/shop");
@@ -67,6 +92,11 @@ export function ConnectionsClient() {
     const next = await api<Payload>("/api/connections");
     setData(next);
     if (next.shopify?.shop) setShopifyShop(next.shopify.shop);
+    setEtsyKey((current) => current || next.etsy.apiKey || "");
+    setEtsySecret((current) => current || next.etsy.sharedSecret || "");
+    setGelatoKey((current) => current || next.gelato.apiKey || "");
+    setShopifyKey((current) => current || next.shopify?.clientId || "");
+    setShopifySecret((current) => current || next.shopify?.clientSecret || "");
   }, []);
 
   useEffect(() => {
@@ -109,8 +139,6 @@ export function ConnectionsClient() {
       } else {
         toast.warning(result.warning || "Keys saved. Authorize the shop next.");
       }
-      setEtsyKey("");
-      setEtsySecret("");
       await load();
     } catch (err) {
       toast.error((err as Error).message);
@@ -135,8 +163,6 @@ export function ConnectionsClient() {
       );
       if (result.shopify?.ok) toast.success("Shopify token accepted. Catalog can sync.");
       else toast.warning(result.shopify?.error || "Keys saved. Authorize the Fernora shop next.");
-      setShopifyKey("");
-      setShopifySecret("");
       await load();
     } catch (err) {
       toast.error((err as Error).message);
@@ -166,7 +192,6 @@ export function ConnectionsClient() {
       });
       if (result.live) toast.success("Gelato API key accepted");
       else toast.warning(result.warning || "Key saved, but Gelato did not confirm it yet");
-      setGelatoKey("");
       await load();
     } catch (err) {
       toast.error((err as Error).message);
@@ -200,11 +225,83 @@ export function ConnectionsClient() {
     }
   }
 
+  async function pushTunnel(platform: "etsy" | "shopify" | "gelato" | "all") {
+    setBusy(`tunnel-${platform}`);
+    try {
+      const result = await api<{ tunnel: NonNullable<Payload["tunnel"]> }>("/api/connections/tunnel", {
+        method: "POST",
+        body: JSON.stringify({ platform }),
+      });
+      setData((current) => (current ? { ...current, tunnel: result.tunnel } : current));
+      const rows =
+        platform === "all"
+          ? [result.tunnel.etsy, result.tunnel.shopify, result.tunnel.gelato]
+          : [result.tunnel[platform]];
+      if (rows.every((row) => row.status === "updated")) toast.success("Tunnel updated");
+      else toast.warning(rows.map((row) => `${row.status === "updated" ? "Tunnel updated" : "Tunnel not updated"}: ${row.note}`).join(" · "));
+      await load();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   if (!data) {
     return (
       <div className="flex flex-1 items-center justify-center text-muted-foreground">
         <Loader2 className="mr-2 size-4 animate-spin" />
         Checking connections…
+      </div>
+    );
+  }
+
+  function secretField(
+    id: string,
+    copyId: "etsy-key" | "etsy-secret" | "gelato-key" | "shopify-key" | "shopify-secret",
+    label: string,
+    value: string,
+    onChange: (value: string) => void,
+    placeholder: string,
+  ) {
+    const visible = Boolean(show[id]);
+    return (
+      <div className="space-y-2">
+        <Label htmlFor={id}>{label}</Label>
+        <div className="flex gap-2">
+          <Input
+            id={id}
+            type={visible ? "text" : "password"}
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            placeholder={placeholder}
+            autoComplete="off"
+          />
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            onClick={() => setShow((current) => ({ ...current, [id]: !current[id] }))}
+            aria-label={visible ? `Hide ${label}` : `Show ${label}`}
+          >
+            {visible ? <EyeOff /> : <Eye />}
+          </Button>
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            onClick={async () => {
+              if (!value) return;
+              await navigator.clipboard.writeText(value);
+              setCopied(copyId);
+              toast.success(`${label} copied`);
+            }}
+            aria-label={`Copy ${label}`}
+          >
+            <Copy />
+          </Button>
+        </div>
+        {copied === copyId ? <p className="text-xs text-muted-foreground">Copied</p> : null}
       </div>
     );
   }
@@ -277,6 +374,55 @@ export function ConnectionsClient() {
               new trycloudflare URL. Do not bookmark a previous hostname.
             </p>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Tunnel · Etsy · Shopify · Gelato</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm leading-6">
+          <p className="text-muted-foreground">
+            Cloudflare quick tunnels get a new hostname when they recycle. Push the live desk URL
+            from here so Pressroom OAuth, Shopify paid-order webhooks, and Gelato print-file URLs
+            all use the current tunnel. Etsy’s developer portal still needs the Website + Callback
+            URLs pasted if Authorize fails.
+          </p>
+          <ul className="space-y-3">
+            {(
+              [
+                ["etsy", "Etsy"],
+                ["shopify", "Shopify"],
+                ["gelato", "Gelato"],
+              ] as const
+            ).map(([id, label]) => {
+              const row = data.tunnel?.[id];
+              return (
+                <li key={id} className="flex flex-col gap-2 rounded-lg border border-border/70 p-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <StatusPill value={row?.status || "not_updated"} />
+                      <span className="font-medium">{label}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{row?.note || "Not pushed yet."}</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void pushTunnel(id)}
+                    disabled={Boolean(busy)}
+                  >
+                    {busy === `tunnel-${id}` ? <Loader2 className="animate-spin" /> : null}
+                    Push to {label}
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+          <Button onClick={() => void pushTunnel("all")} disabled={Boolean(busy)}>
+            {busy === "tunnel-all" ? <Loader2 className="animate-spin" /> : null}
+            Push this tunnel to all three
+          </Button>
         </CardContent>
       </Card>
 
@@ -489,24 +635,23 @@ export function ConnectionsClient() {
                 and approve access for this shop.
               </li>
             </ol>
-            <div className="space-y-2">
-              <Label htmlFor="etsy-key">Keystring</Label>
-              <Input
-                id="etsy-key"
-                value={etsyKey}
-                onChange={(event) => setEtsyKey(event.target.value)}
-                placeholder={data.etsy.apiKeySet ? "Saved · paste to replace" : "etsy_keystring"}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="etsy-secret">Shared secret</Label>
-              <Input
-                id="etsy-secret"
-                type="password"
-                value={etsySecret}
-                onChange={(event) => setEtsySecret(event.target.value)}
-                placeholder={data.etsy.sharedSecretSet ? "Saved · paste to replace" : "shared secret"}
-              />
+            <div className="space-y-4">
+              {secretField(
+                "etsy-key",
+                "etsy-key",
+                "Keystring",
+                etsyKey,
+                setEtsyKey,
+                data.etsy.apiKeySet ? "Saved on this desk" : "etsy_keystring",
+              )}
+              {secretField(
+                "etsy-secret",
+                "etsy-secret",
+                "Shared secret",
+                etsySecret,
+                setEtsySecret,
+                data.etsy.sharedSecretSet ? "Saved on this desk" : "shared secret",
+              )}
             </div>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => void saveEtsy()} disabled={busy === "etsy"}>
@@ -538,19 +683,17 @@ export function ConnectionsClient() {
                 </a>{" "}
                 → API.
               </li>
-              <li>Create an API key. It is sent as the X-API-KEY header, never in the browser after save.</li>
+              <li>Create an API key. Saved keys stay on this desk so you can copy them here. They are not committed to git.</li>
               <li>Paid Etsy receipts use that key to create v4 print orders.</li>
             </ol>
-            <div className="space-y-2">
-              <Label htmlFor="gelato-key">API key</Label>
-              <Input
-                id="gelato-key"
-                type="password"
-                value={gelatoKey}
-                onChange={(event) => setGelatoKey(event.target.value)}
-                placeholder={data.gelato.apiKeySet ? "Saved · paste to replace" : "gelato_live_…"}
-              />
-            </div>
+            {secretField(
+              "gelato-key",
+              "gelato-key",
+              "API key",
+              gelatoKey,
+              setGelatoKey,
+              data.gelato.apiKeySet ? "Saved on this desk" : "gelato_live_…",
+            )}
             <Button onClick={() => void saveGelato()} disabled={!gelatoKey || busy === "gelato"}>
               {busy === "gelato" ? <Loader2 className="animate-spin" /> : null}
               Save and test Gelato
@@ -607,25 +750,22 @@ export function ConnectionsClient() {
                 placeholder="fernora.myshopify.com"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="shopify-key">Client ID</Label>
-              <Input
-                id="shopify-key"
-                value={shopifyKey}
-                onChange={(event) => setShopifyKey(event.target.value)}
-                placeholder={data.shopify?.clientIdSet ? "Saved · paste to replace" : "Shopify client ID"}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="shopify-secret">Client secret</Label>
-              <Input
-                id="shopify-secret"
-                type="password"
-                value={shopifySecret}
-                onChange={(event) => setShopifySecret(event.target.value)}
-                placeholder={data.shopify?.clientSecretSet ? "Saved · paste to replace" : "shpss_…"}
-              />
-            </div>
+            {secretField(
+              "shopify-key",
+              "shopify-key",
+              "Client ID",
+              shopifyKey,
+              setShopifyKey,
+              data.shopify?.clientIdSet ? "Saved on this desk" : "Shopify client ID",
+            )}
+            {secretField(
+              "shopify-secret",
+              "shopify-secret",
+              "Client secret",
+              shopifySecret,
+              setShopifySecret,
+              data.shopify?.clientSecretSet ? "Saved on this desk" : "shpss_…",
+            )}
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => void saveShopify()} disabled={busy === "shopify"}>
                 Save Shopify app

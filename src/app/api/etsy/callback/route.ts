@@ -2,6 +2,7 @@ import { exchangeEtsyCode, loadEtsyShop } from "@/lib/etsy";
 import { syncLive } from "@/lib/ops";
 import { publicOrigin, requestOrigin } from "@/lib/origin";
 import { takeOAuthState } from "@/lib/public-origin";
+import { pushTunnel } from "@/lib/tunnel";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,7 @@ export async function GET(request: Request) {
     await exchangeEtsyCode(code, stored.verifier, stored.redirectUri);
     await loadEtsyShop();
     await syncLive();
+    await pushTunnel("etsy", origin).catch(() => undefined);
     return Response.redirect(`${origin}/connections?etsy=connected`);
   } catch (err) {
     const message = encodeURIComponent((err as Error).message);

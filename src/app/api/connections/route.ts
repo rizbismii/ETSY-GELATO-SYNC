@@ -4,6 +4,7 @@ import { pingEtsy } from "@/lib/etsy";
 import { etsyRedirectUri, isEtsyCallbackHost, publicOrigin, shopifyRedirectUri } from "@/lib/origin";
 import { probePublicCallback, vendorHealth } from "@/lib/health";
 import { pingShopify, probeShopifyStore } from "@/lib/shopify";
+import { tunnelSnapshot } from "@/lib/tunnel";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ export async function GET(request: Request) {
   const callbackIsPublic = isEtsyCallbackHost(origin) && callbackReachable;
   const shopifyShop = creds.shopify?.shop || "fernora.myshopify.com";
   const storefrontStatus = await probeShopifyStore(shopifyShop);
+  const tunnel = await tunnelSnapshot(origin);
   return Response.json({
     connections,
     callbackUrl,
@@ -28,6 +30,7 @@ export async function GET(request: Request) {
     shopUrl: `${origin.replace(/\/$/, "")}/shop`,
     callbackIsPublic,
     callbackReachable,
+    tunnel,
     live: {
       ...vendors,
       callbackReachable,
@@ -38,15 +41,20 @@ export async function GET(request: Request) {
     etsy: {
       apiKeySet: Boolean(creds.etsy?.apiKey),
       sharedSecretSet: Boolean(creds.etsy?.sharedSecret),
+      apiKey: creds.etsy?.apiKey || "",
+      sharedSecret: creds.etsy?.sharedSecret || "",
       shopName: creds.etsy?.shopName,
       shopId: creds.etsy?.shopId,
     },
     gelato: {
       apiKeySet: Boolean(creds.gelatoApiKey),
+      apiKey: creds.gelatoApiKey || "",
     },
     shopify: {
       clientIdSet: Boolean(creds.shopify?.clientId),
       clientSecretSet: Boolean(creds.shopify?.clientSecret),
+      clientId: creds.shopify?.clientId || "",
+      clientSecret: creds.shopify?.clientSecret || "",
       shop: shopifyShop,
       authorized: Boolean(creds.shopify?.accessToken),
       storefrontStatus,

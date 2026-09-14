@@ -1,15 +1,14 @@
 import { GELATO_CATALOG, suggestTemplate, templateByUid } from "@/lib/catalog";
 import { getCredentials } from "@/lib/credentials";
-import { listingNet, orderProfit, recommendedPrice } from "@/lib/money";
+import { listingNet, orderProfit, recommendedPrice, destinationEconomics, OFFSITE_ADS_RATE, TARGET_AFTER_ADS_MARGIN } from "@/lib/money";
 import { getShop, updateShop } from "@/lib/store";
 import type { Address, Connections, Listing, OpsIssue, Order, Overview, ShopState } from "@/lib/types";
 import { existsSync } from "node:fs";
 import { createGelatoOrder, demoFulfill, pingGelato } from "@/lib/gelato";
-import { pullEtsyCatalog, pushEtsyTracking } from "@/lib/etsy";
+import { createEtsyDraft, pullEtsyCatalog, pushEtsyTracking, setEtsyListingState, updateEtsyListingPrice, uploadEtsyListingImage } from "@/lib/etsy";
 import { PRINT_FILE, HARVEST_DROP_ID, HARVEST_DROP_NAME } from "@/lib/constants";
 import { applyHarvestDrop } from "@/lib/drop";
 import { ETSY_KNOWN_LISTINGS, etsyListingUrl, liveProductById, READINESS_STATE_ID } from "@/lib/live-catalog";
-import { createEtsyDraft, setEtsyListingState, uploadEtsyListingImage } from "@/lib/etsy";
 import { absoluteAssetUrl } from "@/lib/origin";
 import {
   checkoutToOrder,
@@ -385,17 +384,56 @@ export async function raiseThinPrices() {
   await updateShop((state) => {
     for (const listing of state.listings) {
       if (listing.state !== "active" || !listing.gelatoProductUid) continue;
-      const template = templateByUid(listing.gelatoProductUid);
-      const shipping = template?.shippingCost ?? 4.2;
-      const net = listingNet(listing.price, listing.gelatoUnitCost, shipping);
-      if (net >= 4) continue;
-      const next = recommendedPrice(listing.gelatoUnitCost, shipping);
+      const product = liveProductById(listing.id);
+      const worst = (product?.lanes ?? []).reduce(
+        (acc, lane) => {
+          const advertised = destinationEconomics(
+            listing.price,
+            lane.printCost,
+            lane.shipping,
+            OFFSITE_ADS_RATE,
+          );
+          if (!acc || advertised.margin < acc.margin) {
+            return { margin: advertised.margin, print: lane.printCost, shipping: lane.shipping };
+          }
+          return acc;
+        },
+        null as { margin: number; print: number; shipping: number } | null,
+      );
+      const shipping = worst?.shipping ?? templateByUid(listing.gelatoProductUid)?.shippingCost ?? 4.2;
+      const printCost = worst?.print ?? listing.gelatoUnitCost;
+      const advertised = destinationEconomics(listing.price, printCost, shipping, OFFSITE_ADS_RATE);
+      if (advertised.margin + 1e-9 >= TARGET_AFTER_ADS_MARGIN) continue;
+      const next = recommendedPrice(printCost, shipping, TARGET_AFTER_ADS_MARGIN, OFFSITE_ADS_RATE);
+      if (next <= listing.price) continue;
       changed.push({ id: listing.id, from: listing.price, to: next });
       listing.price = next;
     }
     state.listings = state.listings.map(enrichListing);
   });
   return changed;
+}
+
+export async function pushLivePricesToEtsy() {
+  const connections = await connectionStatus();
+  if (!connections.etsy.authorized) {
+    return { updated: 0, errors: ["Etsy is not authorized"] as string[] };
+  }
+  const shop = await getShop();
+  const updated: string[] = [];
+  const errors: string[] = [];
+  for (const listing of shop.listings) {
+    const product = liveProductById(listing.id);
+    const listingId = listing.etsyListingId || ETSY_KNOWN_LISTINGS[listing.id]?.id;
+    if (!product || !listingId) continue;
+    try {
+      await updateEtsyListingPrice(listingId, product.price);
+      updated.push(listing.title);
+    } catch (error) {
+      errors.push(`${listing.title}: ${(error as Error).message}`);
+    }
+  }
+  return { updated: updated.length, titles: updated, errors };
 }
 
 export async function fulfillOrder(id: string) {
@@ -504,6 +542,13 @@ export async function syncLive() {
     applyHarvestDrop(state);
     state.lastSyncAt = new Date().toISOString();
   });
+  try {
+    const prices = await pushLivePricesToEtsy();
+    if (prices.updated) notes.push(`Pushed ${prices.updated} catalog prices to Etsy (40% after ads)`);
+    if (prices.errors.length) notes.push(...prices.errors.slice(0, 3));
+  } catch (error) {
+    notes.push(`Etsy price push failed: ${(error as Error).message}`);
+  }
   return notes;
 }
 

@@ -1,6 +1,7 @@
 import { exchangeShopifyCode, pingShopify, registerShopifyWebhooks, restrictShopifyToAunz, syncFernoraCatalogToShopify } from "@/lib/shopify";
 import { publicOrigin, requestOrigin } from "@/lib/origin";
 import { takeOAuthState } from "@/lib/public-origin";
+import { pushTunnel } from "@/lib/tunnel";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +43,7 @@ export async function GET(request: Request) {
       /* store may still be frozen; authorization itself succeeded */
     }
     await pingShopify();
+    await pushTunnel("shopify", origin).catch(() => undefined);
     return Response.redirect(`${origin}/connections?shopify=connected`);
   } catch (err) {
     const message = encodeURIComponent((err as Error).message);

@@ -4,6 +4,7 @@ import {
   ETSY_CPC_ADS_ENABLED,
   OFFSITE_ADS_RATE,
   recommendedPrice,
+  TARGET_AFTER_ADS_MARGIN,
 } from "@/lib/money";
 import { templateByUid } from "@/lib/catalog";
 import { etsyListingUrl, liveProductById, SHIP_COUNTRIES } from "@/lib/live-catalog";
@@ -36,7 +37,12 @@ export async function GET() {
       adsNet: advertised.net,
       adsMargin: advertised.margin,
       adsFee: advertised.ads,
-      suggestedPrice: recommendedPrice(row.gelatoUnitCost || printCost, 0, 0.42, OFFSITE_ADS_RATE),
+      suggestedPrice: recommendedPrice(
+        row.gelatoUnitCost || printCost,
+        shipping,
+        TARGET_AFTER_ADS_MARGIN,
+        OFFSITE_ADS_RATE,
+      ),
       lanes: (meta?.lanes ?? []).map((lane) => {
         const organic = destinationEconomics(row.price, lane.printCost, lane.shipping);
         const withAds = destinationEconomics(row.price, lane.printCost, lane.shipping, OFFSITE_ADS_RATE);
@@ -60,6 +66,7 @@ export async function GET() {
     ads: {
       mode: "offsite_percent",
       rate: OFFSITE_ADS_RATE,
+      targetAfterAds: TARGET_AFTER_ADS_MARGIN,
       cpcEnabled: ETSY_CPC_ADS_ENABLED,
       countries: SHIP_COUNTRIES,
     },

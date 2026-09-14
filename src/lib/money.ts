@@ -3,6 +3,8 @@ export const ETSY_PAYMENT_RATE = 0.03;
 export const ETSY_PAYMENT_FIXED = 0.25;
 /** Etsy Offsite Ads: charged only when a sale is attributed. Shops under US$10k pay 15%. */
 export const OFFSITE_ADS_RATE = 0.15;
+/** Keep at least this share of listing price after marketplace fees, print, and Offsite Ads. */
+export const TARGET_AFTER_ADS_MARGIN = 0.4;
 /** On-site Etsy Ads are CPC. Keep them off so spend never runs without a sale. */
 export const ETSY_CPC_ADS_ENABLED = false;
 
@@ -80,8 +82,8 @@ export function destinationEconomics(
 export function recommendedPrice(
   unitCost: number,
   shippingCost: number,
-  targetMargin = 0.42,
-  adsRate = 0,
+  targetMargin = TARGET_AFTER_ADS_MARGIN,
+  adsRate = OFFSITE_ADS_RATE,
 ) {
   const stack = ETSY_TRANSACTION_RATE + ETSY_PAYMENT_RATE + adsRate + targetMargin;
   const denominator = 1 - stack;
