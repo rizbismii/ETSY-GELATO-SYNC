@@ -710,9 +710,24 @@ export async function connectGelatoDesigns() {
   } catch (error) {
     notes.push(`Gelato store sync: ${(error as Error).message}`);
   }
-  await new Promise((resolve) => setTimeout(resolve, 2500));
-  const products = await listGelatoStoreProducts(store.id);
   const shop = await getShop();
+  let products = await listGelatoStoreProducts(store.id);
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const waiting = shop.listings.filter((listing) => {
+      if (!isClothingCategory(listing.category)) return false;
+      const wanted = listing.variants?.length || liveProductById(listing.id)?.variants?.length || 9;
+      const found = findStoreProductForListing(products, listing);
+      return (found?.variants?.length || 0) < wanted;
+    });
+    if (!waiting.length) break;
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+    try {
+      await syncGelatoStore(store.id);
+    } catch {
+      /* keep polling */
+    }
+    products = await listGelatoStoreProducts(store.id);
+  }
   const results: Array<{ id: string; title: string; connected: number; total: number }> = [];
   for (const listing of shop.listings) {
     const meta = liveProductById(listing.id);
