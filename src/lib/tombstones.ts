@@ -17,9 +17,21 @@ export function getDeletedListingIds(): string[] {
 
 export function rememberDeletedListing(id: string) {
   const ids = [...new Set([...getDeletedListingIds(), id])];
-  mkdirSync(path.dirname(FILE), { recursive: true });
-  writeFileSync(FILE, JSON.stringify({ ids }, null, 2) + "\n");
+  writeDeletedListingIds(ids);
   return ids;
+}
+
+export function writeDeletedListingIds(ids: string[]) {
+  mkdirSync(path.dirname(FILE), { recursive: true });
+  writeFileSync(FILE, JSON.stringify({ ids: [...new Set(ids.filter(Boolean))] }, null, 2) + "\n");
+}
+
+export function forgetDeletedListing(id: string) {
+  writeDeletedListingIds(getDeletedListingIds().filter((row) => row !== id));
+}
+
+export function clearDeletedListings() {
+  writeDeletedListingIds([]);
 }
 
 export function isListingDeleted(id: string, extra: string[] = []) {

@@ -85,7 +85,7 @@ GELATO_API_KEY=
 
 ## Live catalog
 
-The catalog is **20 live listings**: the original fern set plus quotes, botanicals, scenic work, and five home-décor pieces. Shop origin on Etsy is Wellington 6012; Gelato still prints in-region. Advertising is Etsy **Offsite Ads** (15% of an attributed sale only). On-site CPC Etsy Ads stay off. Prices are set so **after-ads profit is at least 40%** in every destination (print + ship + fees + ads). Push those prices to live Etsy listings from Catalog.
+The catalog in this repo is the live Fernora sale: **20 listings**, with Etsy listing IDs and Gelato store product IDs in `src/lib/live-catalog.ts`. Shop origin on Etsy is Wellington 6012; Gelato still prints in-region. Advertising is Etsy **Offsite Ads** (15% of an attributed sale only). On-site CPC Etsy Ads stay off. Prices are set so **after-ads profit is at least 40%** in every destination (print + ship + fees + ads). Push those prices to live Etsy listings from Catalog.
 
 | Product | Mix | Price (NZD) |
 | --- | --- | --- |

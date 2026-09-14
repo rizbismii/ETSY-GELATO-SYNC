@@ -104,12 +104,65 @@ const shipFrame = { NZ: 15.27, AU: 15.07, US: 22.93, GB: 11.38, EU: 15.05 };
 const shipWood = { NZ: 25.24, AU: 22.95, US: 32.37, GB: 6.64, EU: 18.31 };
 const shipAcrylic = { NZ: 20.74, AU: 18.84, US: 17.42, GB: 18.37, EU: 25.68 };
 
+export const ETSY_KNOWN_LISTINGS: Record<string, { id: string; url: string }> = {
+  live_poster: { id: "4574328954", url: "https://www.etsy.com/listing/4574328954/fern-arc-poster-a3-semi-gloss" },
+  live_hoodie: { id: "4574309819", url: "https://www.etsy.com/listing/4574309819/fern-mark-unisex-hoodie" },
+  live_tote: { id: "4574329002", url: "https://www.etsy.com/listing/4574329002/fern-spray-canvas-tote-natural" },
+  live_mug: { id: "4574329006", url: "https://www.etsy.com/listing/4574329006/fern-band-mug-11-oz-white-ceramic" },
+  live_canvas: { id: "4574309835", url: "https://www.etsy.com/listing/4574309835/bush-light-canvas-1620-slim-wrap" },
+  live_quote_breathe: { id: "4574325379", url: "https://www.etsy.com/listing/4574325379/breathe-you-are-here-a3-quote-poster" },
+  live_quote_light: { id: "4574344244", url: "https://www.etsy.com/listing/4574344244/light-finds-a-way-a2-sunrise-quote" },
+  live_botanical_kowhai: { id: "4574344254", url: "https://www.etsy.com/listing/4574344254/kowhai-bells-1824-botanical-print" },
+  live_tee_kind: { id: "4574325401", url: "https://www.etsy.com/listing/4574325401/be-kind-anyway-tee" },
+  live_tote_grow: { id: "4574325409", url: "https://www.etsy.com/listing/4574325409/grow-anyway-tote-black-canvas" },
+  live_mug_morning: { id: "4574344284", url: "https://www.etsy.com/listing/4574344284/good-morning-love-mug-11-oz-black" },
+  live_sweat_soft: { id: "4574344292", url: "https://www.etsy.com/listing/4574344292/soft-days-ahead-sweatshirt" },
+  live_canvas_harbour: { id: "4574344298", url: "https://www.etsy.com/listing/4574344298/harbour-morning-canvas-1212" },
+  live_case_belong: { id: "4574344314", url: "https://www.etsy.com/listing/4574344314/you-belong-here-iphone-15-slim-case" },
+  live_poster_pohutukawa: { id: "4574344320", url: "https://www.etsy.com/listing/4574344320/phutukawa-coast-1216-print" },
+  live_frame_kind: { id: "4574344328", url: "https://www.etsy.com/listing/4574344328/home-is-a-kind-light-1216-oak-frame" },
+  live_frame_coast: { id: "4574344336", url: "https://www.etsy.com/listing/4574344336/wild-coast-a3-black-wood-frame" },
+  live_wood_tui: { id: "4574325495", url: "https://www.etsy.com/listing/4574325495/tui-on-kwhai-1216-wood-print" },
+  live_metal_dusk: { id: "4574344360", url: "https://www.etsy.com/listing/4574344360/dusk-hills-1216-metallic-print" },
+};
+
+export const GELATO_KNOWN_PRODUCTS: Record<string, { storeProductId: string; connected: number; variants: number }> = {
+  live_poster: { storeProductId: "77a51048-4077-434b-8a7a-35668e9d756e", connected: 1, variants: 1 },
+  live_hoodie: { storeProductId: "1ae57f04-c508-443a-87ae-f76062fb80ba", connected: 9, variants: 9 },
+  live_tote: { storeProductId: "d883b16f-0329-4dac-bd0d-c01ee61cb0e0", connected: 1, variants: 1 },
+  live_mug: { storeProductId: "f2447b03-b183-4dbc-9c75-c5442edefc45", connected: 1, variants: 1 },
+  live_canvas: { storeProductId: "bfe96394-4162-4f4c-ac6d-039d25db7add", connected: 1, variants: 1 },
+  live_quote_breathe: { storeProductId: "414c2c1f-f6ac-429d-a099-0ae9420dfa6b", connected: 1, variants: 1 },
+  live_quote_light: { storeProductId: "3856eed8-36d1-4e5d-a0e3-0ac6b6a3e62f", connected: 1, variants: 1 },
+  live_botanical_kowhai: { storeProductId: "61eb8b72-ffad-4cee-8a29-fc62d4794e12", connected: 1, variants: 1 },
+  live_tee_kind: { storeProductId: "f450d01d-e7a1-46e0-8151-edb59e718215", connected: 9, variants: 9 },
+  live_tote_grow: { storeProductId: "8fb7053b-4741-4eff-ba70-f7c099b3af4c", connected: 1, variants: 1 },
+  live_mug_morning: { storeProductId: "bf4ca989-c098-47c9-af6a-c3de6b8392a4", connected: 1, variants: 1 },
+  live_sweat_soft: { storeProductId: "b325cc11-4525-4466-b935-6138a7eddb21", connected: 9, variants: 9 },
+  live_canvas_harbour: { storeProductId: "e449d4b7-5a34-4540-9651-2ece53f09979", connected: 1, variants: 1 },
+  live_case_belong: { storeProductId: "ce702394-4267-4263-a46c-d0daf3c7fe43", connected: 1, variants: 1 },
+  live_poster_pohutukawa: { storeProductId: "22ece968-82cc-4609-b431-c293ac7366f1", connected: 1, variants: 1 },
+  live_frame_kind: { storeProductId: "cae48037-cbbb-424d-8bdd-4f9adff40bd1", connected: 1, variants: 1 },
+  live_frame_coast: { storeProductId: "afa0e8ff-68f2-4a31-bca5-27d0437334be", connected: 1, variants: 1 },
+  live_wood_tui: { storeProductId: "851e648d-ad5c-4773-951b-2c7444879dc4", connected: 1, variants: 1 },
+  live_metal_dusk: { storeProductId: "dd276d98-9bab-45ba-ab0a-f8a878d17194", connected: 1, variants: 1 },
+};
+
 function item(
   partial: LiveProduct,
 ): LiveProduct {
+  const known = ETSY_KNOWN_LISTINGS[partial.id];
+  const gelato = GELATO_KNOWN_PRODUCTS[partial.id];
   return {
     ...partial,
     description: `${partial.description} ${SHIP_BLURB}`,
+    etsyListingId: known?.id || partial.etsyListingId,
+    etsyUrl: known?.url || etsyListingUrl(partial.etsyListingId) || partial.etsyUrl,
+    publishState: known ? "live" : partial.publishState,
+    state: known ? "active" : partial.state,
+    gelatoStoreProductId: gelato?.storeProductId || partial.gelatoStoreProductId,
+    gelatoConnectedCount: gelato?.connected ?? partial.gelatoConnectedCount,
+    gelatoVariantCount: gelato?.variants ?? partial.gelatoVariantCount,
   };
 }
 
@@ -700,26 +753,3 @@ export function liveListings(): Listing[] {
 export function liveProductById(id: string) {
   return LIVE_PRODUCTS.find((row) => row.id === id);
 }
-
-export const ETSY_KNOWN_LISTINGS: Record<string, { id: string; url: string }> = {
-  live_poster: { id: "4574328954", url: "https://www.etsy.com/listing/4574328954/fern-arc-poster-a3-semi-gloss" },
-  live_hoodie: { id: "4574309819", url: "https://www.etsy.com/listing/4574309819/fern-mark-unisex-hoodie-black-m" },
-  live_tote: { id: "4574329002", url: "https://www.etsy.com/listing/4574329002/fern-spray-canvas-tote-natural" },
-  live_mug: { id: "4574329006", url: "https://www.etsy.com/listing/4574329006/fern-band-mug-11-oz-white-ceramic" },
-  live_canvas: { id: "4574309835", url: "https://www.etsy.com/listing/4574309835/bush-light-canvas-1620-slim-wrap" },
-  live_quote_breathe: { id: "4574325379", url: "https://www.etsy.com/listing/4574325379/breathe-you-are-here-a3-quote-poster" },
-  live_quote_light: { id: "4574344244", url: "https://www.etsy.com/listing/4574344244/light-finds-a-way-a2-sunrise-quote" },
-  live_botanical_kowhai: { id: "4574344254", url: "https://www.etsy.com/listing/4574344254/kowhai-bells-1824-botanical-print" },
-  live_tee_kind: { id: "4574325401", url: "https://www.etsy.com/listing/4574325401/be-kind-anyway-tee-natural-m" },
-  live_tote_grow: { id: "4574325409", url: "https://www.etsy.com/listing/4574325409/grow-anyway-tote-black-canvas" },
-  live_mug_morning: { id: "4574344284", url: "https://www.etsy.com/listing/4574344284/good-morning-love-mug-11-oz-black" },
-  live_sweat_soft: { id: "4574344292", url: "https://www.etsy.com/listing/4574344292/soft-days-ahead-sweatshirt-black-m" },
-  live_canvas_harbour: { id: "4574344298", url: "https://www.etsy.com/listing/4574344298/harbour-morning-canvas-1212" },
-  live_case_belong: { id: "4574344314", url: "https://www.etsy.com/listing/4574344314/you-belong-here-iphone-15-slim-case" },
-  live_poster_pohutukawa: { id: "4574344320", url: "https://www.etsy.com/listing/4574344320/phutukawa-coast-1216-print" },
-  live_frame_kind: { id: "4574344328", url: "https://www.etsy.com/listing/4574344328/home-is-a-kind-light-1216-oak-frame" },
-  live_frame_coast: { id: "4574344336", url: "https://www.etsy.com/listing/4574344336/wild-coast-a3-black-wood-frame" },
-  live_wood_tui: { id: "4574325495", url: "https://www.etsy.com/listing/4574325495/tui-on-kwhai-1216-wood-print" },
-  live_acrylic_brave: { id: "4574325509", url: "https://www.etsy.com/listing/4574325509/be-brave-in-the-small-hours-1216-acrylic" },
-  live_metal_dusk: { id: "4574344360", url: "https://www.etsy.com/listing/4574344360/dusk-hills-1216-metallic-print" },
-};
