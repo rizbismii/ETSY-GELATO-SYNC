@@ -58,6 +58,10 @@ Etsy’s developer portal **will not accept** `127.0.0.1` or `localhost` as a Ca
 
 The supervisor replaces a dead tunnel automatically (Cloudflare recycle or failed public health check). The hostname still changes when that happens — old names cannot be reused. On **Connections**, saved Etsy / Shopify / Gelato keys stay on the desk (show or copy them there). When the hostname changes, use **Push this tunnel to all three** — each platform shows **Tunnel updated** or **Tunnel not updated**. Etsy still needs the Website + Callback URLs pasted into fernora-etsgelto-app if Authorize fails. Shopify paid-order webhooks and Gelato print-file URLs update from that button.
 
+### Gelato API key
+
+The key is **not** on the Create store dashboard (`dashboard.gelato.com`). Open the [Gelato API Portal](https://developers.gelato.com), sign in as an admin, then in the left menu: **Developer → API Keys → Add API key**. Name it Pressroom, create it, and copy immediately — Gelato will not show the full secret again. Paste it on **Connections** and click **Save and test Gelato**. Gelato’s own article: [How do I add an API key?](https://support.gelato.com/en/articles/8996574-how-do-i-add-remove-deactivate-or-replace-an-api-key).
+
 ### Deployed origin
 
 On a public host (for example Vercel), set `ETSY_REDIRECT_URI` to `https://your-domain.com/api/etsy/callback` and use that same value in the Etsy app.

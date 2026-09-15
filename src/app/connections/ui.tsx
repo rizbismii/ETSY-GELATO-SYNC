@@ -674,15 +674,53 @@ export function ConnectionsClient() {
           <CardContent className="space-y-4">
             <ol className="list-decimal space-y-2 pl-4 text-sm leading-6 text-muted-foreground">
               <li>
-                Open{" "}
-                <a className="underline" href="https://dashboard.gelato.com/" target="_blank" rel="noreferrer">
-                  Gelato dashboard
+                Open the{" "}
+                <a
+                  className="underline"
+                  href="https://developers.gelato.com"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Gelato API Portal
+                </a>
+                . Sign in as an admin. This is not the Create store dashboard at{" "}
+                <a
+                  className="underline"
+                  href="https://dashboard.gelato.com/home/dashboard"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  dashboard.gelato.com
                 </a>{" "}
-                → API.
+                — there is no API key there.
               </li>
-              <li>Create an API key. Saved keys stay on this desk so you can copy them here. They are not committed to git.</li>
-              <li>Paid Etsy receipts use that key to create v4 print orders.</li>
+              <li>
+                In the left sidebar expand <strong className="font-medium text-foreground">Developer</strong>, then
+                click <strong className="font-medium text-foreground">API Keys</strong>. Existing keys show a
+                name and status only; Gelato never redisplays a saved secret.
+              </li>
+              <li>
+                Click <strong className="font-medium text-foreground">Add API key</strong> (top right), name it{" "}
+                Pressroom, then <strong className="font-medium text-foreground">Create key</strong>. Copy it
+                immediately — once you leave that page the full key is gone.
+              </li>
+              <li>
+                Paste it below and click{" "}
+                <strong className="font-medium text-foreground">Save and test Gelato</strong>. The desk keeps
+                the key on this machine only (not in git). Paid Etsy receipts use it to create v4 print orders.
+              </li>
             </ol>
+            <p className="text-sm leading-6 text-muted-foreground">
+              Gelato’s own steps:{" "}
+              <a
+                className="underline"
+                href="https://support.gelato.com/en/articles/8996574-how-do-i-add-remove-deactivate-or-replace-an-api-key"
+                target="_blank"
+                rel="noreferrer"
+              >
+                How do I add an API key?
+              </a>
+            </p>
             {secretField(
               "gelato-key",
               "gelato-key",
