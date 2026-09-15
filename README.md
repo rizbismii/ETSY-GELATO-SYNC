@@ -22,10 +22,10 @@ Gelato already offers a native Etsy channel. Pressroom is the control plane arou
 ```bash
 npm install
 cp .env.example .env.local
-npm run dev
+npm run desk
 ```
 
-Open [http://127.0.0.1:43127](http://127.0.0.1:43127) for Pressroom, or [http://127.0.0.1:43127/shop](http://127.0.0.1:43127/shop) for the Fernora storefront.
+Open the printed trycloudflare URL for Pressroom, or `/shop` on that host for the Fernora storefront. Locally you can also use [http://127.0.0.1:43127](http://127.0.0.1:43127). `npm run desk` keeps the public tunnel alive and opens a new hostname if Cloudflare drops the old one.
 
 ## Fernora shop (AU / NZ)
 
@@ -51,13 +51,12 @@ Etsy’s developer portal **will not accept** `127.0.0.1` or `localhost` as a Ca
 
 ### Local OAuth (HTTPS `.com` tunnel)
 
-1. Keep `npm run dev` running.
-2. In a second terminal: `npm run etsy-tunnel`.
-3. Copy the printed **Website URL** (`https://….trycloudflare.com`) and **Callback URL** (`https://….trycloudflare.com/api/etsy/callback`).
-4. In [Manage your apps](https://www.etsy.com/developers/your-apps) → **fernora-etsgelto-app**, paste those exact values and save.
-5. On **Connections**, click **Authorize with Etsy**.
+1. Run `npm run desk` (starts Pressroom and a live trycloudflare hostname). If the desk is already up, `npm run etsy-tunnel` is enough.
+2. Copy the printed **Website URL** (`https://….trycloudflare.com`) and **Callback URL** (`https://….trycloudflare.com/api/etsy/callback`).
+3. In [Manage your apps](https://www.etsy.com/developers/your-apps) → **fernora-etsgelto-app**, paste those exact values and save.
+4. On **Connections**, click **Authorize with Etsy**.
 
-The tunnel hostname changes if Cloudflare recycles it or if you restart `etsy-tunnel`. Quick tunnels cannot reuse a dead name. On **Connections**, saved Etsy / Shopify / Gelato keys stay on the desk (show or copy them there). When the hostname changes, use **Push this tunnel to all three** — each platform shows **Tunnel updated** or **Tunnel not updated**. Etsy still needs the Website + Callback URLs pasted into fernora-etsgelto-app if Authorize fails. Shopify paid-order webhooks and Gelato print-file URLs update from that button.
+The supervisor replaces a dead tunnel automatically (Cloudflare recycle or failed public health check). The hostname still changes when that happens — old names cannot be reused. On **Connections**, saved Etsy / Shopify / Gelato keys stay on the desk (show or copy them there). When the hostname changes, use **Push this tunnel to all three** — each platform shows **Tunnel updated** or **Tunnel not updated**. Etsy still needs the Website + Callback URLs pasted into fernora-etsgelto-app if Authorize fails. Shopify paid-order webhooks and Gelato print-file URLs update from that button.
 
 ### Deployed origin
 

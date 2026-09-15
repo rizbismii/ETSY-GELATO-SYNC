@@ -326,11 +326,8 @@ export function ConnectionsClient() {
             <>
               <p className="text-muted-foreground">
                 Open Pressroom here. Cloudflare quick tunnels get a new random hostname
-                when they recycle — old names cannot be restored.{" "}
-                <code className="rounded bg-muted px-1 text-xs text-foreground">
-                  remix-cookbook-brad-initiatives.trycloudflare.com
-                </code>{" "}
-                is dead. Use this one, and paste the matching Website URL into{" "}
+                when they recycle — old names cannot be restored. Use this URL, and paste
+                the matching Website URL into{" "}
                 <strong className="font-medium text-foreground">fernora-etsgelto-app</strong>.
               </p>
               <span className="flex flex-col gap-2 sm:flex-row">
@@ -369,9 +366,9 @@ export function ConnectionsClient() {
             </>
           ) : (
             <p className="text-muted-foreground">
-              No public .com hostname is reachable yet. Wait for{" "}
-              <code className="rounded bg-muted px-1">npm run etsy-tunnel</code> to print a
-              new trycloudflare URL. Do not bookmark a previous hostname.
+              No public .com hostname is reachable yet. Run{" "}
+              <code className="rounded bg-muted px-1">npm run desk</code> (Pressroom + live
+              tunnel) and wait for a trycloudflare URL. Do not bookmark a previous hostname.
             </p>
           )}
         </CardContent>
@@ -618,7 +615,7 @@ export function ConnectionsClient() {
                 ) : (
                   <>
                     No public .com callback is available yet. Run{" "}
-                    <code className="rounded bg-muted px-1">npm run etsy-tunnel</code> in this
+                    <code className="rounded bg-muted px-1">npm run desk</code> in this
                     repo (with the desk already running). That prints an{" "}
                     <code className="rounded bg-muted px-1">https://….trycloudflare.com</code>{" "}
                     website URL and matching Callback URL to paste into Etsy.

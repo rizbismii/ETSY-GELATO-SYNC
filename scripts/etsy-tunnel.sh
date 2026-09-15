@@ -20,7 +20,24 @@ fi
 
 write_origin() {
   local origin="$1"
-  python3 -c 'import json,sys; from pathlib import Path; Path(sys.argv[1]).write_text(json.dumps({"origin": sys.argv[2].rstrip("/")}, indent=2)+"\n")' "$ORIGIN_FILE" "$origin"
+  python3 - "$ORIGIN_FILE" "$origin" <<'PY'
+import json, sys
+from pathlib import Path
+path = Path(sys.argv[1])
+origin = sys.argv[2].rstrip("/")
+data = {}
+if path.exists():
+    try:
+        data = json.loads(path.read_text())
+    except Exception:
+        data = {}
+if not isinstance(data, dict):
+    data = {}
+if data.get("origin") != origin:
+    data["tunnel"] = {}
+data["origin"] = origin
+path.write_text(json.dumps(data, indent=2) + "\n")
+PY
   echo "Etsy website URL:  ${origin}"
   echo "Etsy Callback URL: ${origin}/api/etsy/callback"
 }
@@ -57,15 +74,33 @@ public_probe() {
   curl -fsS --max-time 8 --resolve "${host}:443:${ip}" "${origin}/api/health" >/dev/null 2>&1
 }
 
+wait_for_desk() {
+  if local_ready; then
+    return 0
+  fi
+  echo "Waiting for Pressroom on http://127.0.0.1:${PORT} …"
+  local i
+  for i in $(seq 1 90); do
+    if local_ready; then
+      echo "Pressroom is up."
+      return 0
+    fi
+    sleep 2
+  done
+  echo "Pressroom did not start on :${PORT}" >&2
+  return 1
+}
+
 trap stop_tunnel EXIT
 
 echo "Opening a .com HTTPS tunnel to http://127.0.0.1:${PORT}"
 echo "Replace the Callback URL in fernora-etsgelto-app whenever this hostname changes."
 
 while true; do
+  wait_for_desk || { sleep 5; continue; }
   stop_tunnel
   : > "$LOG"
-  "$BIN" tunnel --url "http://127.0.0.1:${PORT}" --no-autoupdate >>"$LOG" 2>&1 &
+  "$BIN" tunnel --url "http://127.0.0.1:${PORT}" --no-autoupdate --protocol http2 --edge-ip-version 4 >>"$LOG" 2>&1 &
   echo $! > "$PIDFILE"
 
   origin=""
@@ -107,15 +142,29 @@ while true; do
     continue
   fi
 
+  fails=0
   while kill -0 "$(cat "$PIDFILE")" 2>/dev/null; do
-    if grep -q "Tunnel not found" "$LOG" 2>/dev/null; then
-      echo "Cloudflare recycled the tunnel. Starting a new .com hostname…"
+    if grep -q "Tunnel not found" "$LOG" 2>/dev/null || grep -q "Unable to reach the origin service" "$LOG" 2>/dev/null; then
+      echo "Cloudflare recycled the tunnel or lost the origin. Starting a new .com hostname…"
       break
     fi
     if ! local_ready; then
       echo "Local desk is down. Waiting…"
+      fails=0
+      sleep 5
+      continue
     fi
-    sleep 20
+    if public_probe "$origin"; then
+      fails=0
+    else
+      fails=$((fails + 1))
+      echo "Public tunnel probe failed (${fails}/3)."
+      if [[ "$fails" -ge 3 ]]; then
+        echo "Tunnel is not live. Opening a new hostname…"
+        break
+      fi
+    fi
+    sleep 15
   done
   stop_tunnel
   sleep 2
