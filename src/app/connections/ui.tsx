@@ -682,8 +682,7 @@ export function ConnectionsClient() {
                   rel="noreferrer"
                 >
                   Gelato API Portal
-                </a>
-                . Sign in as an admin. This is not the Create store dashboard at{" "}
+                </a>. Sign in as an admin. This is not the Create store dashboard at{" "}
                 <a
                   className="underline"
                   href="https://dashboard.gelato.com/home/dashboard"
