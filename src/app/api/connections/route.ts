@@ -72,27 +72,16 @@ export async function POST(request: Request) {
     shopifyClientSecret?: string;
     shopifyShop?: string;
   };
-  const current = await getCredentials();
   await patchCredentials({
-    gelatoApiKey: body.gelatoApiKey?.trim() || current.gelatoApiKey,
+    gelatoApiKey: body.gelatoApiKey,
     etsy: {
-      apiKey: body.etsyApiKey?.trim() || current.etsy?.apiKey || "",
-      sharedSecret: body.etsySharedSecret?.trim() || current.etsy?.sharedSecret || "",
-      accessToken: current.etsy?.accessToken,
-      refreshToken: current.etsy?.refreshToken,
-      expiresAt: current.etsy?.expiresAt,
-      userId: current.etsy?.userId,
-      shopId: current.etsy?.shopId,
-      shopName: current.etsy?.shopName,
+      apiKey: body.etsyApiKey?.trim() || "",
+      sharedSecret: body.etsySharedSecret?.trim() || "",
     },
     shopify: {
-      clientId: body.shopifyClientId?.trim() || current.shopify?.clientId || "",
-      clientSecret: body.shopifyClientSecret?.trim() || current.shopify?.clientSecret || "",
-      shop: body.shopifyShop?.trim() || current.shopify?.shop || "fernora.myshopify.com",
-      accessToken: current.shopify?.accessToken,
-      scope: current.shopify?.scope,
-      expiresAt: current.shopify?.expiresAt,
-      storefrontStatus: current.shopify?.storefrontStatus,
+      clientId: body.shopifyClientId?.trim() || "",
+      clientSecret: body.shopifyClientSecret?.trim() || "",
+      shop: body.shopifyShop?.trim() || "fernora.myshopify.com",
     },
   });
   let etsyLive = false;
@@ -123,6 +112,19 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE() {
-  await saveCredentials({});
+  const current = await getCredentials();
+  await saveCredentials({
+    gelatoApiKey: current.gelatoApiKey,
+    etsy: current.etsy
+      ? { apiKey: current.etsy.apiKey, sharedSecret: current.etsy.sharedSecret }
+      : undefined,
+    shopify: current.shopify
+      ? {
+          clientId: current.shopify.clientId,
+          clientSecret: current.shopify.clientSecret,
+          shop: current.shopify.shop,
+        }
+      : undefined,
+  });
   return Response.json({ ok: true, connections: await connectionStatus() });
 }

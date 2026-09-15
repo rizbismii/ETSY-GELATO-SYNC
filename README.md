@@ -60,7 +60,7 @@ The supervisor replaces a dead tunnel automatically (Cloudflare recycle or faile
 
 ### Gelato API key
 
-The key is **not** on the Create store dashboard (`dashboard.gelato.com`). Open the [Gelato API Portal](https://developers.gelato.com), sign in as an admin, then in the left menu: **Developer → API Keys → Add API key**. Name it Pressroom, create it, and copy immediately — Gelato will not show the full secret again. Paste it on **Connections** and click **Save and test Gelato**. Gelato’s own article: [How do I add an API key?](https://support.gelato.com/en/articles/8996574-how-do-i-add-remove-deactivate-or-replace-an-api-key).
+The key is **not** on the Create store dashboard (`dashboard.gelato.com`). Open the [Gelato API Portal](https://developers.gelato.com), sign in as an admin, then in the left menu: **Developer → API Keys → Add API key**. Name it Pressroom, create it, and copy immediately — Gelato will not show the full secret again. Paste it on **Connections** and click **Save and test Gelato**. Etsy, Shopify, and Gelato app keys stay saved when the Cloudflare hostname changes; only the Website + Callback URLs need pasting into fernora-etsgelto-app. Gelato’s own article: [How do I add an API key?](https://support.gelato.com/en/articles/8996574-how-do-i-add-remove-deactivate-or-replace-an-api-key).
 
 ### Deployed origin
 

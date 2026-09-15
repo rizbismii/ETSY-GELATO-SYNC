@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, Copy, Eye, EyeOff } from "lucide-react";
@@ -76,6 +76,7 @@ export function ConnectionsClient() {
   const [shopifySecret, setShopifySecret] = useState("");
   const [shopifyShop, setShopifyShop] = useState("fernora.myshopify.com");
   const [busy, setBusy] = useState<string | null>(null);
+  const dirty = useRef<Record<string, boolean>>({});
   const [show, setShow] = useState<Record<string, boolean>>({});
   const [copied, setCopied] = useState<
     "callback" | "website" | "desk" | "shop" | "shopify-callback" | "etsy-key" | "etsy-secret" | "gelato-key" | "shopify-key" | "shopify-secret" | null
@@ -92,11 +93,11 @@ export function ConnectionsClient() {
     const next = await api<Payload>("/api/connections");
     setData(next);
     if (next.shopify?.shop) setShopifyShop(next.shopify.shop);
-    setEtsyKey((current) => current || next.etsy.apiKey || "");
-    setEtsySecret((current) => current || next.etsy.sharedSecret || "");
-    setGelatoKey((current) => current || next.gelato.apiKey || "");
-    setShopifyKey((current) => current || next.shopify?.clientId || "");
-    setShopifySecret((current) => current || next.shopify?.clientSecret || "");
+    if (!dirty.current.etsyKey) setEtsyKey(next.etsy.apiKey || "");
+    if (!dirty.current.etsySecret) setEtsySecret(next.etsy.sharedSecret || "");
+    if (!dirty.current.gelatoKey) setGelatoKey(next.gelato.apiKey || "");
+    if (!dirty.current.shopifyKey) setShopifyKey(next.shopify?.clientId || "");
+    if (!dirty.current.shopifySecret) setShopifySecret(next.shopify?.clientSecret || "");
   }, []);
 
   useEffect(() => {
@@ -139,6 +140,8 @@ export function ConnectionsClient() {
       } else {
         toast.warning(result.warning || "Keys saved. Authorize the shop next.");
       }
+      dirty.current.etsyKey = false;
+      dirty.current.etsySecret = false;
       await load();
     } catch (err) {
       toast.error((err as Error).message);
@@ -163,6 +166,8 @@ export function ConnectionsClient() {
       );
       if (result.shopify?.ok) toast.success("Shopify token accepted. Catalog can sync.");
       else toast.warning(result.shopify?.error || "Keys saved. Authorize the Fernora shop next.");
+      dirty.current.shopifyKey = false;
+      dirty.current.shopifySecret = false;
       await load();
     } catch (err) {
       toast.error((err as Error).message);
@@ -192,6 +197,7 @@ export function ConnectionsClient() {
       });
       if (result.live) toast.success("Gelato API key accepted");
       else toast.warning(result.warning || "Key saved, but Gelato did not confirm it yet");
+      dirty.current.gelatoKey = false;
       await load();
     } catch (err) {
       toast.error((err as Error).message);
@@ -263,8 +269,11 @@ export function ConnectionsClient() {
     value: string,
     onChange: (value: string) => void,
     placeholder: string,
+    dirtyKey: string,
+    saved?: boolean,
   ) {
     const visible = Boolean(show[id]);
+    const hint = saved && value.length >= 4 ? `Kept on this desk · ends ${value.slice(-4)}` : saved ? "Kept on this desk" : null;
     return (
       <div className="space-y-2">
         <Label htmlFor={id}>{label}</Label>
@@ -273,7 +282,10 @@ export function ConnectionsClient() {
             id={id}
             type={visible ? "text" : "password"}
             value={value}
-            onChange={(event) => onChange(event.target.value)}
+            onChange={(event) => {
+              dirty.current[dirtyKey] = true;
+              onChange(event.target.value);
+            }}
             placeholder={placeholder}
             autoComplete="off"
           />
@@ -301,6 +313,7 @@ export function ConnectionsClient() {
             <Copy />
           </Button>
         </div>
+        {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
         {copied === copyId ? <p className="text-xs text-muted-foreground">Copied</p> : null}
       </div>
     );
@@ -380,10 +393,11 @@ export function ConnectionsClient() {
         </CardHeader>
         <CardContent className="space-y-4 text-sm leading-6">
           <p className="text-muted-foreground">
-            Cloudflare quick tunnels get a new hostname when they recycle. Push the live desk URL
-            from here so Pressroom OAuth, Shopify paid-order webhooks, and Gelato print-file URLs
-            all use the current tunnel. Etsy’s developer portal still needs the Website + Callback
-            URLs pasted if Authorize fails.
+            Cloudflare quick tunnels get a new hostname when they recycle. That does not delete
+            saved Etsy, Shopify, or Gelato keys. Push the live desk URL so Pressroom OAuth,
+            Shopify paid-order webhooks, and Gelato print-file URLs all use the current tunnel.
+            Etsy’s developer portal still needs the Website + Callback URLs pasted if Authorize
+            fails.
           </p>
           <ul className="space-y-3">
             {(
@@ -610,7 +624,8 @@ export function ConnectionsClient() {
                       </div>
                     </div>
                     If the tunnel restarts, the hostname changes and you must update the Etsy
-                    app to match.
+                    app Website + Callback URLs. Keystring and shared secret stay saved — a new
+                    tunnel does not delete them.
                   </>
                 ) : (
                   <>
@@ -628,8 +643,8 @@ export function ConnectionsClient() {
                 )}
               </li>
               <li>
-                Keys are already saved. After Etsy accepts the .com callback, click authorize
-                and approve access for this shop.
+                Keys are already saved on this desk. After Etsy accepts the .com callback, click
+                authorize and approve access for this shop.
               </li>
             </ol>
             <div className="space-y-4">
@@ -640,6 +655,8 @@ export function ConnectionsClient() {
                 etsyKey,
                 setEtsyKey,
                 data.etsy.apiKeySet ? "Saved on this desk" : "etsy_keystring",
+                "etsyKey",
+                data.etsy.apiKeySet,
               )}
               {secretField(
                 "etsy-secret",
@@ -648,6 +665,8 @@ export function ConnectionsClient() {
                 etsySecret,
                 setEtsySecret,
                 data.etsy.sharedSecretSet ? "Saved on this desk" : "shared secret",
+                "etsySecret",
+                data.etsy.sharedSecretSet,
               )}
             </div>
             <div className="flex flex-wrap gap-2">
@@ -705,8 +724,9 @@ export function ConnectionsClient() {
               </li>
               <li>
                 Paste it below and click{" "}
-                <strong className="font-medium text-foreground">Save and test Gelato</strong>. The desk keeps
-                the key on this machine only (not in git). Paid Etsy receipts use it to create v4 print orders.
+                <strong className="font-medium text-foreground">Save and test Gelato</strong>.
+                Pressroom keeps this key permanently. A new tunnel hostname does not delete it.
+                Paid Etsy receipts use it to create v4 print orders.
               </li>
             </ol>
             <p className="text-sm leading-6 text-muted-foreground">
@@ -727,6 +747,8 @@ export function ConnectionsClient() {
               gelatoKey,
               setGelatoKey,
               data.gelato.apiKeySet ? "Saved on this desk" : "gelato_live_…",
+              "gelatoKey",
+              data.gelato.apiKeySet,
             )}
             <Button onClick={() => void saveGelato()} disabled={!gelatoKey || busy === "gelato"}>
               {busy === "gelato" ? <Loader2 className="animate-spin" /> : null}
@@ -791,6 +813,8 @@ export function ConnectionsClient() {
               shopifyKey,
               setShopifyKey,
               data.shopify?.clientIdSet ? "Saved on this desk" : "Shopify client ID",
+              "shopifyKey",
+              Boolean(data.shopify?.clientIdSet),
             )}
             {secretField(
               "shopify-secret",
@@ -799,6 +823,8 @@ export function ConnectionsClient() {
               shopifySecret,
               setShopifySecret,
               data.shopify?.clientSecretSet ? "Saved on this desk" : "shpss_…",
+              "shopifySecret",
+              Boolean(data.shopify?.clientSecretSet),
             )}
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => void saveShopify()} disabled={busy === "shopify"}>
