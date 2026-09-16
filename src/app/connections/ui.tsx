@@ -492,7 +492,7 @@ export function ConnectionsClient() {
                 Etsy shop
                 {data.connections.etsy.authorized
                   ? ` · ${data.connections.etsy.shopName || "authorized"}`
-                  : " · not authorized yet"}
+                  : " · keys work; click Authorize with Etsy as the FERNORATRENDS owner"}
               </span>
             </li>
             <li className="flex flex-wrap items-center gap-2">
@@ -643,8 +643,10 @@ export function ConnectionsClient() {
                 )}
               </li>
               <li>
-                Keys are already saved on this desk. After Etsy accepts the .com callback, click
-                authorize and approve access for this shop.
+                Keys are already saved — that is why the app API shows Live. The shop row stays
+                Waiting until you click <strong className="font-medium text-foreground">Authorize with Etsy</strong>{" "}
+                and approve access while signed in as the FERNORATRENDS owner. A new tunnel hostname
+                does not keep a previous OAuth login; authorize once on the current callback URL.
               </li>
             </ol>
             <div className="space-y-4">
