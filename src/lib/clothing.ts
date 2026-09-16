@@ -30,6 +30,16 @@ export function isClothingCategory(category: string) {
   return category === "hoodie" || category === "tee" || category === "sweatshirt";
 }
 
+/** Apparel DTG files are RGBA PNGs: ink only, no cream/black paper square. */
+export type ApparelPrintTreatment = "sage-emblem" | "knockout-light" | "knockout-dark";
+
+export function apparelPrintTreatment(category: string): ApparelPrintTreatment | undefined {
+  if (category === "hoodie") return "sage-emblem";
+  if (category === "tee") return "knockout-light";
+  if (category === "sweatshirt") return "knockout-dark";
+  return undefined;
+}
+
 export function apparelKindFor(category: string): ApparelKind | undefined {
   return KIND_BY_CATEGORY[category];
 }

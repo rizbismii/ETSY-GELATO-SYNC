@@ -1,3 +1,5 @@
+import { statSync } from "node:fs";
+import { join } from "node:path";
 import { getPublicOrigin, setPublicOrigin } from "@/lib/public-origin";
 
 export function requestOrigin(request: Request) {
@@ -62,4 +64,19 @@ export async function absoluteAssetUrl(assetPath: string, request?: Request) {
   if (assetPath.startsWith("http://") || assetPath.startsWith("https://")) return assetPath;
   const origin = await publicOrigin(request);
   return `${origin}${assetPath.startsWith("/") ? assetPath : `/${assetPath}`}`;
+}
+
+/** Cache-bust so Gelato re-fetches print files after a design replace. */
+export async function versionedAssetUrl(assetPath: string, request?: Request) {
+  const url = await absoluteAssetUrl(assetPath, request);
+  if (assetPath.startsWith("http://") || assetPath.startsWith("https://")) return url;
+  const rel = assetPath.split("?")[0].replace(/^\//, "");
+  let version = Date.now().toString();
+  try {
+    version = String(Math.floor(statSync(join(process.cwd(), "public", rel)).mtimeMs));
+  } catch {
+    /* keep now */
+  }
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}v=${version}`;
 }

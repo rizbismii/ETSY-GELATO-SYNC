@@ -1,6 +1,6 @@
 import { getCredentials } from "@/lib/credentials";
 import { templateByUid } from "@/lib/catalog";
-import { absoluteAssetUrl } from "@/lib/origin";
+import { versionedAssetUrl } from "@/lib/origin";
 import type { Order } from "@/lib/types";
 
 const ORDER_API = "https://order.gelatoapis.com/v4";
@@ -41,7 +41,7 @@ export async function createGelatoOrder(order: Order) {
       const uid = item.gelatoProductUid;
       if (!uid) throw new Error(`Item ${item.title} is not mapped to Gelato`);
       if (!item.printFileUrl) throw new Error(`Item ${item.title} is missing a print file`);
-      const printFileUrl = await absoluteAssetUrl(item.printFileUrl);
+      const printFileUrl = await versionedAssetUrl(item.printFileUrl);
       return {
         itemReferenceId: item.id || `item-${index}`,
         productUid: uid,

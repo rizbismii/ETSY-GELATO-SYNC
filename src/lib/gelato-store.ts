@@ -1,5 +1,5 @@
 import { getCredentials } from "@/lib/credentials";
-import { absoluteAssetUrl } from "@/lib/origin";
+import { versionedAssetUrl } from "@/lib/origin";
 import { clothingVariants, defaultClothingVariant, isClothingCategory, matchClothingVariant } from "@/lib/clothing";
 import { ETSY_KNOWN_LISTINGS, liveProductById } from "@/lib/live-catalog";
 import type { Listing } from "@/lib/types";
@@ -84,7 +84,7 @@ export async function connectGelatoVariant(
   variantId: string,
   input: { productUid: string; printFileUrl: string },
 ) {
-  const printUrl = await absoluteAssetUrl(input.printFileUrl);
+  const printUrl = await versionedAssetUrl(input.printFileUrl);
   const variantUrl = `${ECOM_API}/stores/${storeId}/products/${productId}/variants/${variantId}`;
   await ecommerceFetch(variantUrl, {
     method: "PUT",

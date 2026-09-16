@@ -215,7 +215,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     gelatoProductUid:
       defaultClothingVariant(clothingVariants("live_hoodie", "hoodie"))?.gelatoProductUid,
     gelatoProductName: "Unisex pullover hoodie · Black, White, Navy · S–L",
-    printFileUrl: "/catalog/print-hoodie-fern-mark.png",
+    printFileUrl: "/catalog/print-hoodie-fern-mark.png", // RGBA DTG: sage filled fern emblem, transparent ground
     imageUrl: "/catalog/catalog-hoodie.png",
     gelatoUnitCost: Math.max(...Object.values(hoodiePrint)),
     drop: LIVE_DROP_ID,
@@ -415,7 +415,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     gelatoProductUid:
       defaultClothingVariant(clothingVariants("live_tee_kind", "tee"))?.gelatoProductUid,
     gelatoProductName: "Unisex tee · Black, White, Navy · S–L",
-    printFileUrl: "/catalog/print-be-kind.png",
+    printFileUrl: "/catalog/print-be-kind.png", // RGBA DTG: dark type + fern, cream paper knocked out
     imageUrl: "/catalog/catalog-be-kind.png",
     gelatoUnitCost: Math.max(...Object.values(teePrint)),
     drop: LIVE_DROP_ID,
@@ -504,7 +504,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     gelatoProductUid:
       defaultClothingVariant(clothingVariants("live_sweat_soft", "sweatshirt"))?.gelatoProductUid,
     gelatoProductName: "Unisex sweatshirt · Black, White, Navy · S–L",
-    printFileUrl: "/catalog/print-soft-days.png",
+    printFileUrl: "/catalog/print-soft-days.png", // RGBA DTG: cream type + sunburst, black paper knocked out
     imageUrl: "/catalog/catalog-soft-days.png",
     gelatoUnitCost: Math.max(...Object.values(sweatPrint)),
     drop: LIVE_DROP_ID,

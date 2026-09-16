@@ -34,6 +34,9 @@ yarn-error.log*
 .env*
 !.env.example
 
+# generated DTG proof composites
+/scripts/apparel-preview
+
 # local shop state and secrets
 /data/runtime.json
 /data/credentials.json
