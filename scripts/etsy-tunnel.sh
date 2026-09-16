@@ -42,6 +42,17 @@ PY
   echo "Etsy Callback URL: ${origin}/api/etsy/callback"
 }
 
+push_origin() {
+  local origin="$1"
+  if curl -fsS --max-time 25 -X POST "http://127.0.0.1:${PORT}/api/connections/tunnel" \
+    -H "Content-Type: application/json" \
+    -d '{"platform":"all"}' >/tmp/pressroom-tunnel-push.json; then
+    echo "Pushed ${origin} to Etsy / Shopify / Gelato. Paste Website + Callback into fernora-etsgelto-app, then Authorize with Etsy."
+  else
+    echo "Could not auto-push ${origin}; use Push this tunnel to all three on Connections."
+  fi
+}
+
 extract_origin() {
   grep -oE 'https://[a-zA-Z0-9.-]+\.trycloudflare.com' "$LOG" 2>/dev/null | tail -1 || true
 }
@@ -130,8 +141,10 @@ while true; do
       echo "Tunnel is registered with Cloudflare."
       if public_probe "$origin"; then
         echo "Public callback is reachable from 1.1.1.1."
+        push_origin "$origin"
       else
         echo "Public DNS from this VM is delayed; keep the hostname anyway for Etsy/your browser."
+        push_origin "$origin"
       fi
       break
     fi
