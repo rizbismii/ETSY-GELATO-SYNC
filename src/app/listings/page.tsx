@@ -162,7 +162,7 @@ export default function ListingsPage() {
         notes?: string[];
       }>("/api/listings/gelato-connect", { method: "POST" });
       toast.success(
-        `Connected ${result.connected} Gelato variant${result.connected === 1 ? "" : "s"} across ${result.products} products`,
+        `Attached Gelato templates on ${result.connected} variant${result.connected === 1 ? "" : "s"} across ${result.products} products`,
       );
       if (result.clothingUpdated?.length) {
         toast.message(`Clothing variants on Etsy: ${result.clothingUpdated.join(", ")}`);
@@ -245,7 +245,7 @@ export default function ListingsPage() {
             disabled={Boolean(busy) || !data.gelatoLive}
           >
             {busy === "gelato" ? <Loader2 className="animate-spin" /> : null}
-            Connect Gelato designs
+            Attach Gelato templates
           </Button>
           <a
             href={ETSY_SHOP_URL}

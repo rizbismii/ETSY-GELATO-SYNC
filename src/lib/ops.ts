@@ -573,6 +573,15 @@ export async function syncLive() {
   } catch (error) {
     notes.push(`Etsy price push failed: ${(error as Error).message}`);
   }
+  if (connections.gelato.configured) {
+    try {
+      const gelato = await connectGelatoDesigns();
+      notes.push(`Gelato templates attached on ${gelato.connected} variants across ${gelato.products} products`);
+      if (gelato.notes.length) notes.push(...gelato.notes.slice(0, 5));
+    } catch (error) {
+      notes.push(`Gelato templates: ${(error as Error).message}`);
+    }
+  }
   return notes;
 }
 
@@ -663,11 +672,55 @@ export async function publishListing(id: string, mode: "draft" | "live") {
   if (isClothingCategory(meta.category) && (meta.variants?.length || listing.variants?.length)) {
     await updateEtsyListingInventory(listingId, etsyClothingInventory(meta));
   }
+  try {
+    await attachGelatoTemplatesForListing({
+      ...listing,
+      ...meta,
+      id: listing.id,
+      etsyListingId: listingId,
+      printFileUrl: printPath || listing.printFileUrl || meta.printFileUrl,
+    });
+  } catch {
+    /* Etsy publish still stands; Gelato templates attach on Connect or the next sync */
+  }
   return { id, listingId, url, state };
 }
 
 function listingEtsyId(listing: Listing) {
   return listing.etsyListingId || ETSY_KNOWN_LISTINGS[listing.id]?.id;
+}
+
+async function attachGelatoTemplatesForListing(listing: Listing) {
+  const store = await getGelatoEtsyStore();
+  try {
+    await syncGelatoStore(store.id);
+  } catch {
+    /* use whatever is already in the store */
+  }
+  let products = await listGelatoStoreProducts(store.id);
+  let storeProduct = findStoreProductForListing(products, listing);
+  for (let attempt = 0; attempt < 4 && !storeProduct; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      await syncGelatoStore(store.id);
+    } catch {
+      /* keep polling */
+    }
+    products = await listGelatoStoreProducts(store.id);
+    storeProduct = findStoreProductForListing(products, listing);
+  }
+  if (!storeProduct) {
+    throw new Error(`${listing.title}: not in the Gelato Etsy store yet`);
+  }
+  const result = await connectListingToGelatoStore(store.id, listing, storeProduct);
+  await updateShop((state) => {
+    const row = state.listings.find((item) => item.id === listing.id);
+    if (!row) return;
+    row.gelatoStoreProductId = result.storeProductId;
+    row.gelatoConnectedCount = result.connected;
+    row.gelatoVariantCount = result.total;
+  });
+  return result;
 }
 
 export async function pushClothingVariantsToEtsy(id?: string) {

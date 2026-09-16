@@ -85,13 +85,42 @@ export async function connectGelatoVariant(
   input: { productUid: string; printFileUrl: string },
 ) {
   const printUrl = await absoluteAssetUrl(input.printFileUrl);
-  return ecommerceFetch(`${ECOM_API}/stores/${storeId}/products/${productId}/variants/${variantId}`, {
+  const variantUrl = `${ECOM_API}/stores/${storeId}/products/${productId}/variants/${variantId}`;
+  await ecommerceFetch(variantUrl, {
     method: "PUT",
     body: JSON.stringify({
       productUid: input.productUid,
+      fileUrl: printUrl,
       files: [{ type: "default", url: printUrl }],
       connectionStatus: "connected",
     }),
+  });
+  await replaceVariantPrintFile(storeId, productId, variantId, printUrl);
+}
+
+async function replaceVariantPrintFile(
+  storeId: string,
+  productId: string,
+  variantId: string,
+  printUrl: string,
+) {
+  const filesUrl = `${ECOM_API}/stores/${storeId}/products/${productId}/variants/${variantId}/print-files`;
+  try {
+    const listing = (await ecommerceFetch(filesUrl)) as { files?: Array<{ id: string; type?: string }> };
+    for (const file of listing.files || []) {
+      if (file.type && file.type !== "default") continue;
+      try {
+        await ecommerceFetch(`${filesUrl}/${file.id}`, { method: "DELETE" });
+      } catch {
+        /* keep going so a stale file does not block the new template */
+      }
+    }
+  } catch {
+    /* no print-files yet */
+  }
+  await ecommerceFetch(filesUrl, {
+    method: "POST",
+    body: JSON.stringify({ fileUrl: printUrl, type: "default" }),
   });
 }
 
