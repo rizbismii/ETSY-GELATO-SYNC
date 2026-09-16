@@ -243,7 +243,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     collection: "original",
     gelatoProductUid: "bag_product_bsc_tote-bag_bqa_clc_bsi_std-t_bco_natural_bpr_4-0",
     gelatoProductName: "Canvas tote · natural",
-    printFileUrl: "/catalog/print-tote-fern-spray.png",
+    printFileUrl: "/catalog/print-tote-fern-spray.png", // RGBA DTG: large charcoal fern from catalog, transparent ground
     imageUrl: "/catalog/catalog-tote.png",
     gelatoUnitCost: Math.max(...Object.values(totePrint)),
     drop: LIVE_DROP_ID,
@@ -270,7 +270,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     collection: "original",
     gelatoProductUid: "mug_product_msz_11-oz_mmat_ceramic-white_cl_4-0",
     gelatoProductName: "Ceramic mug 11 oz · white",
-    printFileUrl: "/catalog/print-mug-fern-band.png",
+    printFileUrl: "/catalog/print-mug-fern-band.png", // wrap: sage fern band on white, matches catalog mug
     imageUrl: "/catalog/catalog-mug.png",
     gelatoUnitCost: Math.max(...Object.values(mugPrint)),
     drop: LIVE_DROP_ID,
@@ -445,7 +445,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     collection: "quote",
     gelatoProductUid: "bag_product_bsc_tote-bag_bqa_clc_bsi_std-t_bco_black_bpr_4-0",
     gelatoProductName: "Canvas tote · black",
-    printFileUrl: "/catalog/print-grow-anyway.png",
+    printFileUrl: "/catalog/print-grow-anyway.png", // RGBA DTG: cream kōwhai linework, black knocked out
     imageUrl: "/catalog/catalog-grow-anyway.png",
     gelatoUnitCost: Math.max(...Object.values(totePrint)),
     drop: LIVE_DROP_ID,
@@ -474,7 +474,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     collection: "quote",
     gelatoProductUid: "mug_product_msz_11-oz_mmat_ceramic-black_cl_4-0",
     gelatoProductName: "Ceramic mug 11 oz · black",
-    printFileUrl: "/catalog/print-good-morning.png",
+    printFileUrl: "/catalog/print-good-morning.png", // wrap: cream lettering on black, cream margins cropped
     imageUrl: "/catalog/catalog-good-morning.png",
     gelatoUnitCost: Math.max(...Object.values(mugBlackPrint)),
     drop: LIVE_DROP_ID,
@@ -562,7 +562,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     collection: "quote",
     gelatoProductUid: "phonecase_apple_iphone-15_slim_white_glossy",
     gelatoProductName: "iPhone 15 slim case · white",
-    printFileUrl: "/catalog/print-belong-here.png",
+    printFileUrl: "/catalog/print-belong-here.png", // RGBA: leaf + type, cream paper knocked out
     imageUrl: "/catalog/catalog-belong-here.png",
     gelatoUnitCost: Math.max(...Object.values(casePrint)),
     drop: LIVE_DROP_ID,

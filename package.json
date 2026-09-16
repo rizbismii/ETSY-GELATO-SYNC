@@ -9,7 +9,8 @@
     "lint": "eslint",
     "etsy-tunnel": "bash scripts/etsy-tunnel.sh",
     "desk": "bash scripts/public-desk.sh",
-    "apparel-prints": "python3 scripts/make-apparel-prints.py"
+    "apparel-prints": "python3 scripts/make-apparel-prints.py",
+    "print-files": "python3 scripts/make-apparel-prints.py"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

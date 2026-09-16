@@ -113,7 +113,7 @@ The catalog in this repo is the live Fernora sale: **20 listings**, with Etsy li
 | Be brave in the small hours · acrylic | home | 210.99 |
 | Dusk Hills · metallic | home | 153.99 |
 
-Publish options per product: **Save Etsy draft** or **Publish live**. Clothing listings offer Black, White and Navy in S, M and L. **Attach Gelato templates** puts the print file on every Gelato store variant (current and future publishes do this automatically). Hoodie, tee and sweatshirt files are transparent DTG art that matches the catalog mockup (sage fern emblem, type only — not a cream or black poster square). Rebuild them with `npm run apparel-prints`. **Delete** removes the product from Gelato, inactivates it on Etsy, deletes it from Shopify, and takes it out of Pressroom and `/shop`. Print files live at `/catalog/*.png` so Gelato can pull artwork from the public hostname.
+Publish options per product: **Save Etsy draft** or **Publish live**. Clothing listings offer Black, White and Navy in S, M and L. **Attach Gelato templates** puts the print file on every Gelato store variant (current and future publishes do this automatically). DTG products (hoodie, tee, sweatshirt, totes) use transparent ink that matches the catalog mockup — not a cream, black, or linen poster square. Mugs use a wrap that matches the listing photo. Rebuild with `npm run print-files`. **Delete** removes the product from Gelato, inactivates it on Etsy, deletes it from Shopify, and takes it out of Pressroom and `/shop`. Print files live at `/catalog/*.png` so Gelato can pull artwork from the public hostname.
 
 ## Stack
 
