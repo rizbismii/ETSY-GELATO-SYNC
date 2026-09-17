@@ -39,8 +39,8 @@ The Shopify shop is configured on Connections (currently **fernora-nzaus**). App
 
 Shopify cannot create a second store with that name from the app keys. To attach the Admin API:
 
-1. Fastest: in the shop admin, Settings → Apps → Develop apps → create a custom app, install it, paste the Admin API access token on **Connections**, Save Shopify app.
-2. Or OAuth: click the Active version (**Fernorav1**) → **Create version** → **URLs**. **App URL** must be exactly the live desk origin (`https://your-public-origin`) — not `your-app.com`, not `shopify.dev`, not a press site. **Allowed redirection URL** is `https://your-public-origin/api/shopify/callback`. Release, then **Authorize Shopify**.
+1. Fastest: Dev Dashboard → app → **Home** → **Install app** on this shop. Then on **Connections** click **Get Admin token**. Shopify no longer shows a copyable Admin API token.
+2. Or OAuth: click the Active version (**Fernorav1**) → **Create version** → **URLs**. **App URL** must be exactly the live desk origin. **Allowed redirection URL** is `https://your-public-origin/api/shopify/callback`. Release, then **Authorize Shopify**.
 3. Click **Publish catalog · AU/NZ**.
 
 That pushes the 20 products, limits shipping zones to Australia and New Zealand, and registers an orders/paid webhook so Gelato can print automatically.

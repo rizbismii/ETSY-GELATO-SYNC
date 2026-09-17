@@ -130,24 +130,38 @@ export async function refreshShopifyClientCredentials() {
   }
   const response = await fetch(await tokenEndpoint(creds.shopify.shop), {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
     body: new URLSearchParams({
       grant_type: "client_credentials",
       client_id: creds.shopify.clientId,
       client_secret: creds.shopify.clientSecret,
     }),
   });
-  const body = (await response.json().catch(() => ({}))) as {
-    access_token?: string;
-    scope?: string;
-    expires_in?: number;
-    error?: string;
-    error_description?: string;
-  };
+  const text = await response.text();
+  const body = (() => {
+    try {
+      return JSON.parse(text) as {
+        access_token?: string;
+        scope?: string;
+        expires_in?: number;
+        error?: string;
+        error_description?: string;
+      };
+    } catch {
+      return { error: text.slice(0, 400) };
+    }
+  })();
   if (!response.ok || !body.access_token) {
-    throw new Error(
-      body.error_description || body.error || `Shopify client credentials failed (${response.status})`,
-    );
+    const raw = typeof body.error === "string" ? body.error : "";
+    let message = body.error_description || raw || `Shopify client credentials failed (${response.status})`;
+    if (/app_not_installed/i.test(message) || /app_not_installed/i.test(JSON.stringify(body))) {
+      message =
+        "The app is not installed on this shop yet. In Dev Dashboard open the app → Home → Install app → choose this shop → Install. Then click Get Admin token. Do not use Authorize Shopify for this.";
+    } else if (/shop_not_permitted/i.test(message)) {
+      message =
+        "Client credentials only work when this shop is in the same Shopify organization as the Dev Dashboard app.";
+    }
+    throw new Error(message);
   }
   await patchCredentials({
     shopify: {

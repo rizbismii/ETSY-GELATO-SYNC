@@ -75,6 +75,7 @@ type Payload = {
     accessTokenSet?: boolean;
     accessToken?: string;
   };
+  shopifyInstallUrl?: string;
 };
 
 export function ConnectionsClient() {
@@ -203,6 +204,30 @@ export function ConnectionsClient() {
       dirty.current.shopifyKey = false;
       dirty.current.shopifySecret = false;
       dirty.current.shopifyToken = false;
+      await load();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function fetchAdminToken() {
+    setBusy("shopify-token");
+    try {
+      const result = await api<{ ok: boolean; shopify?: { ok?: boolean; name?: string } }>(
+        "/api/shopify/token",
+        { method: "POST" },
+      );
+      if (result.ok) {
+        toast.success(
+          result.shopify?.name
+            ? `Shopify connected · ${result.shopify.name}`
+            : "Shopify Admin token saved. Catalog can sync.",
+        );
+      } else {
+        toast.warning("Shopify did not accept the token yet.");
+      }
       await load();
     } catch (err) {
       toast.error((err as Error).message);
@@ -861,30 +886,68 @@ export function ConnectionsClient() {
               </a>{" "}
               sells the same catalog now, ships AU/NZ only, and sends paid orders to Gelato.
             </p>
+            <div
+              id="shopify-admin-token"
+              className="scroll-mt-24 space-y-3 rounded-lg border border-foreground/20 bg-muted/40 p-3"
+            >
+              <p className="font-medium text-foreground">Admin API access token</p>
+              <p className="text-sm leading-6 text-muted-foreground">
+                Shopify no longer shows a copyable <code className="rounded bg-muted px-1 text-xs">shpat_</code>{" "}
+                token in admin or on the Dev Dashboard. Client ID and secret are already saved here.
+                Pressroom fetches the token after the app is installed on this shop.
+              </p>
+              <ol className="list-decimal space-y-2 pl-4 text-sm leading-6 text-muted-foreground">
+                <li>
+                  Open{" "}
+                  <a
+                    className="underline"
+                    href="https://dev.shopify.com/dashboard"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Dev Dashboard
+                  </a>{" "}
+                  → this app → <strong className="font-medium text-foreground">Home</strong> →{" "}
+                  <strong className="font-medium text-foreground">Install app</strong> → choose{" "}
+                  <code className="rounded bg-muted px-1 text-xs">
+                    {data.shopify?.shop || "fernora.myshopify.com"}
+                  </code>{" "}
+                  → Install. Do not use Authorize Shopify (that is the matching-hosts page).
+                </li>
+                <li>
+                  Come back here and click <strong className="font-medium text-foreground">Get Admin token</strong>.
+                </li>
+              </ol>
+              <div className="flex flex-wrap gap-2">
+                {data.shopifyInstallUrl ? (
+                  <a
+                    href={data.shopifyInstallUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={buttonVariants({ variant: "outline" })}
+                  >
+                    Open Shopify install
+                  </a>
+                ) : null}
+                <Button
+                  onClick={() => void fetchAdminToken()}
+                  disabled={!data.shopify?.clientIdSet || busy === "shopify-token"}
+                >
+                  {busy === "shopify-token" ? <Loader2 className="animate-spin" /> : null}
+                  Get Admin token
+                </Button>
+              </div>
+            </div>
             <div className="rounded-lg border border-amber-500/40 bg-amber-50/40 p-3 text-sm leading-6 text-foreground">
-              <p className="font-medium">Fernorav1 is Active — matching hosts is still App URL</p>
+              <p className="font-medium">Fernorav1 matching hosts</p>
               <p className="mt-1 text-muted-foreground">
-                Releasing a version does not fix OAuth unless that version’s{" "}
-                <strong className="font-medium text-foreground">App URL</strong> is this desk’s
-                hostname. Click the Active row <strong className="font-medium text-foreground">Fernorav1</strong>{" "}
-                → URLs. If App URL is <code className="rounded bg-muted px-1 text-xs">https://your-app.com</code>,{" "}
-                <code className="rounded bg-muted px-1 text-xs">shopify.dev</code>, or a press/marketing
-                site, Shopify will keep showing matching hosts. Create a new version from
-                Fernorav1, paste the App URL below, Release, then Authorize.
+                Authorize Shopify still fails until App URL is this desk host. Skip that and install
+                from Dev Dashboard Home, then Get Admin token.
               </p>
             </div>
             <ol className="list-decimal space-y-3 pl-4 text-sm leading-6 text-muted-foreground">
               <li>
-                Fastest: in Shopify admin for{" "}
-                <code className="rounded bg-muted px-1 text-xs">
-                  {data.shopify?.shop || "fernora.myshopify.com"}
-                </code>{" "}
-                go to Settings → Apps → Develop apps → Create an app → Admin API scopes (products,
-                orders, fulfillments, shipping, markets, files) → Install app. Paste the Admin API
-                access token below and Save Shopify app. That skips OAuth.
-              </li>
-              <li>
-                Or OAuth:{" "}
+                Only if you still want OAuth:{" "}
                 <a
                   className="underline"
                   href="https://dev.shopify.com/dashboard"
@@ -946,18 +1009,13 @@ export function ConnectionsClient() {
             {secretField(
               "shopify-token",
               "shopify-token",
-              "Admin API access token (optional)",
+              "Legacy Admin token (only if you still have shpat_)",
               shopifyToken,
               setShopifyToken,
-              data.shopify?.accessTokenSet ? "Saved on this desk" : "shpat_…",
+              data.shopify?.accessTokenSet ? "Saved on this desk" : "Not shown in Shopify — use Get Admin token",
               "shopifyToken",
               Boolean(data.shopify?.accessTokenSet),
             )}
-            <p className="-mt-2 text-xs leading-5 text-muted-foreground">
-              If Versions + Release still will not authorize, create a custom app on this shop
-              (Settings → Apps → Develop apps), copy the Admin API access token, paste it here,
-              and Save Shopify app.
-            </p>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => void saveShopify()} disabled={busy === "shopify"}>
                 Save Shopify app
