@@ -987,15 +987,14 @@ export function ConnectionsClient() {
             <Button variant="outline" onClick={() => setShopifyAuthOpen(false)}>
               Cancel
             </Button>
-            <a
-              href="/api/shopify/connect"
-              className={cn(
-                buttonVariants(),
-                !data.shopify?.clientIdSet || !callbackIsPublic ? "pointer-events-none opacity-50" : "",
-              )}
+            <Button
+              onClick={() => {
+                window.location.assign("/api/shopify/connect");
+              }}
+              disabled={!data.shopify?.clientIdSet || !callbackIsPublic}
             >
               I saved both — Authorize
-            </a>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
