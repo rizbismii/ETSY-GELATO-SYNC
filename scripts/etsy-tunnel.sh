@@ -75,6 +75,11 @@ tunnel_registered() {
 
 public_probe() {
   local origin="$1"
+  # Direct HTTPS first — this VM often cannot resolve trycloudflare via 1.1.1.1,
+  # and recycling a live tunnel on that false negative is what 530s the desk URL.
+  if curl -fsS --max-time 10 "${origin}/api/health" >/dev/null 2>&1; then
+    return 0
+  fi
   local host="${origin#https://}"
   host="${host%%/*}"
   local ip
@@ -171,8 +176,8 @@ while true; do
       fails=0
     else
       fails=$((fails + 1))
-      echo "Public tunnel probe failed (${fails}/3)."
-      if [[ "$fails" -ge 3 ]]; then
+      echo "Public tunnel probe failed (${fails}/6)."
+      if [[ "$fails" -ge 6 ]]; then
         echo "Tunnel is not live. Opening a new hostname…"
         break
       fi
