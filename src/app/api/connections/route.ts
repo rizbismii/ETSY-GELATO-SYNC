@@ -63,9 +63,7 @@ export async function GET(request: Request) {
       accessTokenSet: Boolean(creds.shopify?.accessToken),
       accessToken: creds.shopify?.accessToken || "",
     },
-    shopifyInstallUrl: creds.shopify?.clientId
-      ? `https://admin.shopify.com/oauth/install?client_id=${creds.shopify.clientId}`
-      : "",
+    shopifyInstallUrl: "https://dev.shopify.com/dashboard",
   });
 }
 

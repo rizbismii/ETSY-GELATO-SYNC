@@ -133,6 +133,15 @@ export function ConnectionsClient() {
   }, [load]);
 
   useEffect(() => {
+    const framedByShopify = [...(window.location.ancestorOrigins || [])].some((origin) =>
+      origin.includes("shopify.com"),
+    );
+    if (framedByShopify && window.top && window.top !== window) {
+      window.top.location.href = window.location.href;
+    }
+  }, []);
+
+  useEffect(() => {
     if (live?.readyToSell) return;
     const id = window.setInterval(() => {
       void load().catch(() => undefined);
@@ -912,23 +921,23 @@ export function ConnectionsClient() {
                   <code className="rounded bg-muted px-1 text-xs">
                     {data.shopify?.shop || "fernora.myshopify.com"}
                   </code>{" "}
-                  → Install. Do not use Authorize Shopify (that is the matching-hosts page).
+                  → Install. Use a full browser tab. If you see “admin.shopify.com refused to
+                  connect”, Shopify was opened inside a frame — close that and install from Home
+                  instead.
                 </li>
                 <li>
                   Come back here and click <strong className="font-medium text-foreground">Get Admin token</strong>.
                 </li>
               </ol>
               <div className="flex flex-wrap gap-2">
-                {data.shopifyInstallUrl ? (
-                  <a
-                    href={data.shopifyInstallUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={buttonVariants({ variant: "outline" })}
-                  >
-                    Open Shopify install
-                  </a>
-                ) : null}
+                <a
+                  href="https://dev.shopify.com/dashboard"
+                  target="_blank"
+                  rel="noreferrer"
+                  className={buttonVariants({ variant: "outline" })}
+                >
+                  Open Dev Dashboard
+                </a>
                 <Button
                   onClick={() => void fetchAdminToken()}
                   disabled={!data.shopify?.clientIdSet || busy === "shopify-token"}
@@ -1095,7 +1104,7 @@ export function ConnectionsClient() {
             </Button>
             <Button
               onClick={() => {
-                window.location.assign("/api/shopify/connect");
+                (window.top ?? window).location.assign("/api/shopify/connect");
               }}
               disabled={!data.shopify?.clientIdSet || !callbackIsPublic}
             >

@@ -3,6 +3,7 @@ import { getCredentials, normalizeShopDomain, patchCredentials } from "@/lib/cre
 import { isEtsyCallbackHost, publicOrigin, shopifyRedirectUri } from "@/lib/origin";
 import { saveOAuthState } from "@/lib/public-origin";
 import { shopifyAuthorizeUrl } from "@/lib/shopify";
+import { topLevelRedirect } from "@/lib/top-redirect";
 
 export async function GET(request: Request) {
   const creds = await getCredentials();
@@ -43,5 +44,5 @@ export async function GET(request: Request) {
     createdAt: Date.now(),
     shop,
   });
-  return Response.redirect(shopifyAuthorizeUrl(shop, creds.shopify.clientId, redirectUri, state));
+  return topLevelRedirect(shopifyAuthorizeUrl(shop, creds.shopify.clientId, redirectUri, state));
 }
