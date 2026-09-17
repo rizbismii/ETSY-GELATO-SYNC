@@ -60,6 +60,8 @@ export async function GET(request: Request) {
       authorized: Boolean(creds.shopify?.accessToken),
       storefrontStatus,
       scope: creds.shopify?.scope,
+      accessTokenSet: Boolean(creds.shopify?.accessToken),
+      accessToken: creds.shopify?.accessToken || "",
     },
   });
 }
@@ -72,6 +74,7 @@ export async function POST(request: Request) {
     shopifyClientId?: string;
     shopifyClientSecret?: string;
     shopifyShop?: string;
+    shopifyAccessToken?: string;
   };
   await patchCredentials({
     gelatoApiKey: body.gelatoApiKey,
@@ -83,6 +86,9 @@ export async function POST(request: Request) {
       clientId: body.shopifyClientId?.trim() || "",
       clientSecret: body.shopifyClientSecret?.trim() || "",
       shop: body.shopifyShop?.trim() || "fernora.myshopify.com",
+      ...(body.shopifyAccessToken?.trim()
+        ? { accessToken: body.shopifyAccessToken.trim() }
+        : {}),
     },
   });
   let etsyLive = false;
@@ -99,7 +105,7 @@ export async function POST(request: Request) {
       etsyWarning = (error as Error).message;
     }
   }
-  if (next.shopify?.clientId && next.shopify.clientSecret) {
+  if (next.shopify?.accessToken || (next.shopify?.clientId && next.shopify.clientSecret)) {
     shopifyPing = await pingShopify();
   }
   return Response.json({

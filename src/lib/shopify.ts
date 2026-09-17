@@ -217,8 +217,8 @@ export async function pingShopify() {
       shop: creds.shopify?.shop,
       error:
         storefrontStatus === "frozen"
-          ? "fernora.myshopify.com is frozen until a Shopify plan is paid, and the app is not installed yet"
-          : "Authorize the Fernora Shopify shop",
+          ? "Storefront is frozen until a Shopify plan is paid, and the app is not installed yet"
+          : "Release App URL + Redirect URL on a Dev Dashboard version (not Credentials), then Authorize",
     };
   }
   try {

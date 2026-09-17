@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     if (/matching hosts|redirect_uri|application url/i.test(detail)) {
       return Response.redirect(
         `${origin}/connections?shopify=error&reason=${encodeURIComponent(
-          "Shopify App URL and Redirect URL must be this desk’s hostname. Copy both from Connections into the Dev Dashboard, save, then Authorize again.",
+          "Matching hosts: Application URL is still https://your-app.com. Credentials Redirect URLs do not count. Dev Dashboard → Versions → Create version → set App URL and Allowed redirection URL → Release, then Authorize.",
         )}`,
       );
     }

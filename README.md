@@ -35,14 +35,15 @@ Paid Fernora orders print through Gelato. Until Shopify checkout is authorized, 
 
 ### Shopify (fernora.myshopify.com)
 
-The Shopify shop name **fernora** already exists. The public myshopify storefront is currently frozen (HTTP 402 — unpaid plan). App client ID and secret are stored on Connections.
+The Shopify shop is configured on Connections (currently **fernora-nzaus**). App client ID and secret are stored there.
 
 Shopify cannot create a second store with that name from the app keys. To attach the Admin API:
 
-1. Unfreeze **fernora** in Shopify admin (pick a plan) if the storefront must go live. OAuth can still run while it is frozen.
-2. On **Connections**, copy **App URL** (`https://your-public-origin`) and **Allowed redirection URL** (`https://your-public-origin/api/shopify/callback`). They always share the live tunnel hostname.
-3. In the [Shopify Dev Dashboard](https://dev.shopify.com/dashboard) app → **URLs**, paste both, save, then click **Authorize Shopify**. Shopify rejects OAuth when those two hosts differ (“matching hosts”).
-4. After authorize, click **Publish catalog · AU/NZ**.
+1. Unfreeze the shop in Shopify admin (pick a plan) if the storefront must go live. OAuth can still run while it is frozen.
+2. On **Connections**, copy **App URL** (`https://your-public-origin`) and **Allowed redirection URL** (`https://your-public-origin/api/shopify/callback`).
+3. In the [Shopify Dev Dashboard](https://dev.shopify.com/dashboard) open the app → **Versions** → **Create version** → **URLs**. Paste both. **App URL has no path.** The redirect must end with `/api/shopify/callback`. Then click **Release** (and confirm). Editing Redirect URLs on the Credentials page (next to Delete API key) does **not** change Application URL — that is the “matching hosts” error (`https://your-app.com` vs the tunnel).
+4. On **Connections**, click **Authorize Shopify**. If OAuth still fails, paste an Admin API access token from a custom app on the shop (Settings → Apps → Develop apps) and Save Shopify app.
+5. Click **Publish catalog · AU/NZ**.
 
 That pushes the 20 products, limits shipping zones to Australia and New Zealand, and registers an orders/paid webhook so Gelato can print automatically.
 

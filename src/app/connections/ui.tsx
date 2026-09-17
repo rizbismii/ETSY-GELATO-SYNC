@@ -72,6 +72,8 @@ type Payload = {
     authorized: boolean;
     storefrontStatus?: string;
     scope?: string;
+    accessTokenSet?: boolean;
+    accessToken?: string;
   };
 };
 
@@ -83,6 +85,7 @@ export function ConnectionsClient() {
   const [gelatoKey, setGelatoKey] = useState("");
   const [shopifyKey, setShopifyKey] = useState("");
   const [shopifySecret, setShopifySecret] = useState("");
+  const [shopifyToken, setShopifyToken] = useState("");
   const [shopifyShop, setShopifyShop] = useState("fernora.myshopify.com");
   const [busy, setBusy] = useState<string | null>(null);
   const dirty = useRef<Record<string, boolean>>({});
@@ -99,6 +102,7 @@ export function ConnectionsClient() {
     | "gelato-key"
     | "shopify-key"
     | "shopify-secret"
+    | "shopify-token"
     | null
   >(null);
   const [shopifyAuthOpen, setShopifyAuthOpen] = useState(false);
@@ -120,6 +124,7 @@ export function ConnectionsClient() {
     if (!dirty.current.gelatoKey) setGelatoKey(next.gelato.apiKey || "");
     if (!dirty.current.shopifyKey) setShopifyKey(next.shopify?.clientId || "");
     if (!dirty.current.shopifySecret) setShopifySecret(next.shopify?.clientSecret || "");
+    if (!dirty.current.shopifyToken) setShopifyToken(next.shopify?.accessToken || "");
   }, []);
 
   useEffect(() => {
@@ -147,7 +152,7 @@ export function ConnectionsClient() {
     if (shopify === "error") {
       const reason = search.get("reason") || "Shopify connect failed";
       toast.error(reason);
-      if (/matching hosts|App URL|Redirect URL|application url|redirect_uri/i.test(reason)) {
+      if (/matching hosts|App URL|Redirect URL|application url|redirect_uri|your-app\.com|Credentials/i.test(reason)) {
         setShopifyAuthOpen(true);
       }
     }
@@ -189,13 +194,15 @@ export function ConnectionsClient() {
             shopifyClientId: shopifyKey,
             shopifyClientSecret: shopifySecret,
             shopifyShop,
+            shopifyAccessToken: shopifyToken,
           }),
         },
       );
       if (result.shopify?.ok) toast.success("Shopify token accepted. Catalog can sync.");
-      else toast.warning(result.shopify?.error || "Keys saved. Authorize the Fernora shop next.");
+      else toast.warning(result.shopify?.error || "Keys saved. Release App URL + Redirect URL, then Authorize.");
       dirty.current.shopifyKey = false;
       dirty.current.shopifySecret = false;
+      dirty.current.shopifyToken = false;
       await load();
     } catch (err) {
       toast.error((err as Error).message);
@@ -292,7 +299,7 @@ export function ConnectionsClient() {
 
   function secretField(
     id: string,
-    copyId: "etsy-key" | "etsy-secret" | "gelato-key" | "shopify-key" | "shopify-secret",
+    copyId: "etsy-key" | "etsy-secret" | "gelato-key" | "shopify-key" | "shopify-secret" | "shopify-token",
     label: string,
     value: string,
     onChange: (value: string) => void,
@@ -389,13 +396,13 @@ export function ConnectionsClient() {
       </div>
 
       {search.get("shopify") === "error" &&
-      /matching hosts|App URL|Redirect URL|application url|redirect_uri/i.test(search.get("reason") || "") ? (
+      /matching hosts|App URL|Redirect URL|application url|redirect_uri|your-app\.com|Credentials/i.test(search.get("reason") || "") ? (
         <Card className="border-amber-500/40">
           <CardContent className="pt-6 text-sm leading-6">
             <p className="font-medium text-foreground">Shopify matching hosts</p>
             <p className="mt-1 text-muted-foreground">
               {search.get("reason") ||
-                "The Dev Dashboard App URL is still an old tunnel hostname. Copy App URL and Redirect URL from this page, save them in the Shopify app URLs, then Authorize again."}
+                "Application URL is still https://your-app.com. Credentials Redirect URLs do not count. Create and Release a version with App URL + Allowed redirection URL, then Authorize."}
             </p>
             <Button className="mt-3" onClick={() => setShopifyAuthOpen(true)}>
               Copy matching URLs
@@ -839,49 +846,65 @@ export function ConnectionsClient() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm leading-6 text-muted-foreground">
-              Store name is <strong className="font-medium text-foreground">fernora</strong> (
-              <code className="rounded bg-muted px-1 text-xs">fernora.myshopify.com</code>
-              ). Shopify already has that shop, but the public storefront is frozen until a plan
-              is paid. The Fernora website at{" "}
+              Shop domain is{" "}
+              <code className="rounded bg-muted px-1 text-xs">
+                {data.shopify?.shop || "fernora.myshopify.com"}
+              </code>
+              {data.shopify?.storefrontStatus === "live"
+                ? " · storefront is live."
+                : data.shopify?.storefrontStatus === "frozen"
+                  ? " · storefront is frozen until a plan is paid."
+                  : "."}{" "}
+              The Fernora website at{" "}
               <a className="underline" href="/shop">
                 /shop
               </a>{" "}
               sells the same catalog now, ships AU/NZ only, and sends paid orders to Gelato.
             </p>
+            <div className="rounded-lg border border-amber-500/40 bg-amber-50/40 p-3 text-sm leading-6 text-foreground">
+              Adding a trycloudflare row on the <strong className="font-medium">Credentials</strong>{" "}
+              page (the screen with <strong className="font-medium">Delete API key</strong>) does
+              not set Application URL. Shopify still compares OAuth to{" "}
+              <code className="rounded bg-muted px-1 text-xs">https://your-app.com</code> and
+              returns matching hosts.
+            </div>
             <ol className="list-decimal space-y-3 pl-4 text-sm leading-6 text-muted-foreground">
               <li>
-                Open the{" "}
+                Open{" "}
                 <a
                   className="underline"
                   href="https://dev.shopify.com/dashboard"
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Shopify Dev Dashboard
+                  Dev Dashboard
                 </a>{" "}
-                app → <strong className="font-medium text-foreground">URLs</strong>. Shopify
-                rejects OAuth when <strong className="font-medium text-foreground">App URL</strong>{" "}
-                and <strong className="font-medium text-foreground">Allowed redirection URL</strong>{" "}
-                use different hostnames — that is the “matching hosts” error. Paste both of these
-                from the live desk (they share this tunnel hostname), then save:
+                → your app → <strong className="font-medium text-foreground">Versions</strong> →{" "}
+                <strong className="font-medium text-foreground">Create version</strong> →{" "}
+                <strong className="font-medium text-foreground">URLs</strong>. Paste both values,
+                then click <strong className="font-medium text-foreground">Release</strong> (and
+                confirm Release). URL changes do nothing until that version is released.
                 {shopifyAppUrl || shopifyCallbackUrl ? (
                   <div className="mt-2 space-y-2">
-                    {copyUrlRow("App URL", shopifyAppUrl, "shopify-app", "Shopify App URL copied")}
                     {copyUrlRow(
-                      "Allowed redirection URL",
+                      "App URL (no path — not the callback)",
+                      shopifyAppUrl,
+                      "shopify-app",
+                      "Shopify App URL copied",
+                    )}
+                    {copyUrlRow(
+                      "Allowed redirection URL (must end with /api/shopify/callback)",
                       shopifyCallbackUrl,
                       "shopify-callback",
                       "Shopify Redirect URL copied",
                     )}
                   </div>
                 ) : null}
-                If the tunnel hostname changes, update both fields before Authorize. Leave the
-                storefront frozen if you like — OAuth still needs matching hosts.
               </li>
               <li>
-                Click <strong className="font-medium text-foreground">Authorize Shopify</strong>{" "}
-                only after those two URLs are saved. Then publish the 20 live products and lock
-                shipping to AU/NZ.
+                Hover the Redirect URL chip in Shopify and confirm it is the full callback, not
+                only the hostname. Then click{" "}
+                <strong className="font-medium text-foreground">Authorize Shopify</strong>.
               </li>
             </ol>
             <div className="space-y-2">
@@ -913,6 +936,21 @@ export function ConnectionsClient() {
               "shopifySecret",
               Boolean(data.shopify?.clientSecretSet),
             )}
+            {secretField(
+              "shopify-token",
+              "shopify-token",
+              "Admin API access token (optional)",
+              shopifyToken,
+              setShopifyToken,
+              data.shopify?.accessTokenSet ? "Saved on this desk" : "shpat_…",
+              "shopifyToken",
+              Boolean(data.shopify?.accessTokenSet),
+            )}
+            <p className="-mt-2 text-xs leading-5 text-muted-foreground">
+              If Versions + Release still will not authorize, create a custom app on this shop
+              (Settings → Apps → Develop apps), copy the Admin API access token, paste it here,
+              and Save Shopify app.
+            </p>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => void saveShopify()} disabled={busy === "shopify"}>
                 Save Shopify app
@@ -960,16 +998,21 @@ export function ConnectionsClient() {
       <Dialog open={shopifyAuthOpen} onOpenChange={setShopifyAuthOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>App URL and Redirect URL must match</DialogTitle>
+            <DialogTitle>Release App URL — Credentials is the wrong page</DialogTitle>
             <DialogDescription>
-              Shopify shows “redirect_uri and application url must have matching hosts” when the
-              Dev Dashboard still has an old trycloudflare hostname. Paste both values below into{" "}
-              <a href="https://dev.shopify.com/dashboard" target="_blank" rel="noreferrer">
-                the app URLs page
-              </a>
-              , save, then continue.
+              Matching hosts means Application URL is still{" "}
+              <code>https://your-app.com</code>. The Redirect URLs list next to Delete API key
+              does not change that. Set App URL on a <strong>released</strong> version, then
+              authorize.
             </DialogDescription>
           </DialogHeader>
+          <ol className="list-decimal space-y-2 pl-4 text-sm leading-6 text-muted-foreground">
+            <li>
+              Dev Dashboard → app → Versions → Create version → URLs.
+            </li>
+            <li>Paste App URL (hostname only) and Allowed redirection URL (full callback).</li>
+            <li>Click Release, then confirm Release. Draft URL edits are ignored.</li>
+          </ol>
           <div className="space-y-3">
             {copyUrlRow("App URL", shopifyAppUrl, "shopify-app", "Shopify App URL copied")}
             {copyUrlRow(
@@ -979,8 +1022,8 @@ export function ConnectionsClient() {
               "Shopify Redirect URL copied",
             )}
             <p className="text-xs leading-5 text-muted-foreground">
-              Both must use {shopifyAppUrl || "this desk’s hostname"}. Do not mix an old tunnel
-              with the current Redirect URL.
+              Both must use {shopifyAppUrl || "this desk’s hostname"}. Do not leave{" "}
+              <code className="rounded bg-muted px-1">your-app.com</code> as App URL.
             </p>
           </div>
           <DialogFooter>
@@ -993,7 +1036,7 @@ export function ConnectionsClient() {
               }}
               disabled={!data.shopify?.clientIdSet || !callbackIsPublic}
             >
-              I saved both — Authorize
+              I released both — Authorize
             </Button>
           </DialogFooter>
         </DialogContent>

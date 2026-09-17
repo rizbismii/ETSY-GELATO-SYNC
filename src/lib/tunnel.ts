@@ -93,7 +93,7 @@ export async function pushTunnel(platform: TunnelPlatform, origin: string) {
         platform,
         cleaned,
         "not_updated",
-        "Copy App URL and Redirect URL from Connections into the Shopify Dev Dashboard (same hostname), save, then Authorize Shopify.",
+        "Copy App URL and Allowed redirection URL into Versions → Create version → URLs, then Release. Credentials Redirect URLs (Delete API key) do not set Application URL.",
       );
     }
     try {
