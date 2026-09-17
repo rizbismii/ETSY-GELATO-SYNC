@@ -862,15 +862,29 @@ export function ConnectionsClient() {
               sells the same catalog now, ships AU/NZ only, and sends paid orders to Gelato.
             </p>
             <div className="rounded-lg border border-amber-500/40 bg-amber-50/40 p-3 text-sm leading-6 text-foreground">
-              Adding a trycloudflare row on the <strong className="font-medium">Credentials</strong>{" "}
-              page (the screen with <strong className="font-medium">Delete API key</strong>) does
-              not set Application URL. Shopify still compares OAuth to{" "}
-              <code className="rounded bg-muted px-1 text-xs">https://your-app.com</code> and
-              returns matching hosts.
+              <p className="font-medium">Fernorav1 is Active — matching hosts is still App URL</p>
+              <p className="mt-1 text-muted-foreground">
+                Releasing a version does not fix OAuth unless that version’s{" "}
+                <strong className="font-medium text-foreground">App URL</strong> is this desk’s
+                hostname. Click the Active row <strong className="font-medium text-foreground">Fernorav1</strong>{" "}
+                → URLs. If App URL is <code className="rounded bg-muted px-1 text-xs">https://your-app.com</code>,{" "}
+                <code className="rounded bg-muted px-1 text-xs">shopify.dev</code>, or a press/marketing
+                site, Shopify will keep showing matching hosts. Create a new version from
+                Fernorav1, paste the App URL below, Release, then Authorize.
+              </p>
             </div>
             <ol className="list-decimal space-y-3 pl-4 text-sm leading-6 text-muted-foreground">
               <li>
-                Open{" "}
+                Fastest: in Shopify admin for{" "}
+                <code className="rounded bg-muted px-1 text-xs">
+                  {data.shopify?.shop || "fernora.myshopify.com"}
+                </code>{" "}
+                go to Settings → Apps → Develop apps → Create an app → Admin API scopes (products,
+                orders, fulfillments, shipping, markets, files) → Install app. Paste the Admin API
+                access token below and Save Shopify app. That skips OAuth.
+              </li>
+              <li>
+                Or OAuth:{" "}
                 <a
                   className="underline"
                   href="https://dev.shopify.com/dashboard"
@@ -879,15 +893,13 @@ export function ConnectionsClient() {
                 >
                   Dev Dashboard
                 </a>{" "}
-                → your app → <strong className="font-medium text-foreground">Versions</strong> →{" "}
-                <strong className="font-medium text-foreground">Create version</strong> →{" "}
-                <strong className="font-medium text-foreground">URLs</strong>. Paste both values,
-                then click <strong className="font-medium text-foreground">Release</strong> (and
-                confirm Release). URL changes do nothing until that version is released.
+                → Versions → <strong className="font-medium text-foreground">Fernorav1</strong> →{" "}
+                <strong className="font-medium text-foreground">Create version</strong> → URLs.
+                Paste both, then <strong className="font-medium text-foreground">Release</strong>.
                 {shopifyAppUrl || shopifyCallbackUrl ? (
                   <div className="mt-2 space-y-2">
                     {copyUrlRow(
-                      "App URL (no path — not the callback)",
+                      "Fernorav1 App URL (must be this host, not your-app.com)",
                       shopifyAppUrl,
                       "shopify-app",
                       "Shopify App URL copied",
@@ -900,11 +912,6 @@ export function ConnectionsClient() {
                     )}
                   </div>
                 ) : null}
-              </li>
-              <li>
-                Hover the Redirect URL chip in Shopify and confirm it is the full callback, not
-                only the hostname. Then click{" "}
-                <strong className="font-medium text-foreground">Authorize Shopify</strong>.
               </li>
             </ol>
             <div className="space-y-2">
@@ -998,20 +1005,18 @@ export function ConnectionsClient() {
       <Dialog open={shopifyAuthOpen} onOpenChange={setShopifyAuthOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Release App URL — Credentials is the wrong page</DialogTitle>
+            <DialogTitle>Fernorav1 App URL is still the wrong host</DialogTitle>
             <DialogDescription>
-              Matching hosts means Application URL is still{" "}
-              <code>https://your-app.com</code>. The Redirect URLs list next to Delete API key
-              does not change that. Set App URL on a <strong>released</strong> version, then
-              authorize.
+              Shopify only checks matching hosts after you sign in. Releasing Fernorav1 does not
+              help if its App URL is still your-app.com, shopify.dev, or a press site. Open
+              Fernorav1 → Create version → URLs, paste the App URL below, Release, then continue.
+              Or paste an Admin API token on Connections instead.
             </DialogDescription>
           </DialogHeader>
           <ol className="list-decimal space-y-2 pl-4 text-sm leading-6 text-muted-foreground">
-            <li>
-              Dev Dashboard → app → Versions → Create version → URLs.
-            </li>
-            <li>Paste App URL (hostname only) and Allowed redirection URL (full callback).</li>
-            <li>Click Release, then confirm Release. Draft URL edits are ignored.</li>
+            <li>Click the Active version Fernorav1, then Create version.</li>
+            <li>Set App URL to the hostname below. Redirect URL must end with /api/shopify/callback.</li>
+            <li>Release that new version. Then authorize.</li>
           </ol>
           <div className="space-y-3">
             {copyUrlRow("App URL", shopifyAppUrl, "shopify-app", "Shopify App URL copied")}

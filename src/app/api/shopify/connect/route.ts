@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { getCredentials } from "@/lib/credentials";
+import { getCredentials, normalizeShopDomain, patchCredentials } from "@/lib/credentials";
 import { isEtsyCallbackHost, publicOrigin, shopifyRedirectUri } from "@/lib/origin";
 import { saveOAuthState } from "@/lib/public-origin";
 import { shopifyAuthorizeUrl } from "@/lib/shopify";
@@ -19,7 +19,11 @@ export async function GET(request: Request) {
       )}`,
     );
   }
-  const shop = creds.shopify.shop || "fernora.myshopify.com";
+  const requestedShop = normalizeShopDomain(new URL(request.url).searchParams.get("shop") || "");
+  const shop = requestedShop || creds.shopify.shop || "fernora.myshopify.com";
+  if (requestedShop && requestedShop !== creds.shopify.shop) {
+    await patchCredentials({ shopify: { ...creds.shopify, shop: requestedShop } });
+  }
   const redirectUri = await shopifyRedirectUri(request);
   try {
     if (new URL(redirectUri).origin !== new URL(origin).origin) {

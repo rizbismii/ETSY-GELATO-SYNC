@@ -39,11 +39,9 @@ The Shopify shop is configured on Connections (currently **fernora-nzaus**). App
 
 Shopify cannot create a second store with that name from the app keys. To attach the Admin API:
 
-1. Unfreeze the shop in Shopify admin (pick a plan) if the storefront must go live. OAuth can still run while it is frozen.
-2. On **Connections**, copy **App URL** (`https://your-public-origin`) and **Allowed redirection URL** (`https://your-public-origin/api/shopify/callback`).
-3. In the [Shopify Dev Dashboard](https://dev.shopify.com/dashboard) open the app → **Versions** → **Create version** → **URLs**. Paste both. **App URL has no path.** The redirect must end with `/api/shopify/callback`. Then click **Release** (and confirm). Editing Redirect URLs on the Credentials page (next to Delete API key) does **not** change Application URL — that is the “matching hosts” error (`https://your-app.com` vs the tunnel).
-4. On **Connections**, click **Authorize Shopify**. If OAuth still fails, paste an Admin API access token from a custom app on the shop (Settings → Apps → Develop apps) and Save Shopify app.
-5. Click **Publish catalog · AU/NZ**.
+1. Fastest: in the shop admin, Settings → Apps → Develop apps → create a custom app, install it, paste the Admin API access token on **Connections**, Save Shopify app.
+2. Or OAuth: click the Active version (**Fernorav1**) → **Create version** → **URLs**. **App URL** must be exactly the live desk origin (`https://your-public-origin`) — not `your-app.com`, not `shopify.dev`, not a press site. **Allowed redirection URL** is `https://your-public-origin/api/shopify/callback`. Release, then **Authorize Shopify**.
+3. Click **Publish catalog · AU/NZ**.
 
 That pushes the 20 products, limits shipping zones to Australia and New Zealand, and registers an orders/paid webhook so Gelato can print automatically.
 
