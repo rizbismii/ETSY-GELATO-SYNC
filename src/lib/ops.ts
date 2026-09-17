@@ -17,7 +17,7 @@ import {
 } from "@/lib/etsy";
 import { PRINT_FILE, HARVEST_DROP_ID, HARVEST_DROP_NAME } from "@/lib/constants";
 import { applyHarvestDrop } from "@/lib/drop";
-import { ETSY_KNOWN_LISTINGS, etsyListingUrl, liveProductById, READINESS_STATE_ID } from "@/lib/live-catalog";
+import { ETSY_KNOWN_LISTINGS, etsyListingUrl, liveProductById, resolveLiveSku, READINESS_STATE_ID } from "@/lib/live-catalog";
 import { absoluteAssetUrl } from "@/lib/origin";
 import { etsyClothingInventory, isClothingCategory, resolveListingFulfillment } from "@/lib/clothing";
 import {
@@ -172,7 +172,8 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
       id: "pending-pay",
       severity: "warning",
       title: `${pending.length} Fernora order${pending.length === 1 ? "" : "s"} awaiting payment`,
-      detail: "Mark them paid to send the print files to Gelato.",
+      detail:
+        "These rows are unpaid website checkouts. Cancel test / unpaid ones. Only Mark paid & print if money actually arrived — that submits a real Gelato print.",
       action: { label: "Review orders", href: "/orders", kind: "fulfill" },
     });
   }
@@ -902,8 +903,9 @@ export async function placeFernoraOrder(input: {
         country,
         lines: quote.items.map((item) => ({
           listingId: item.product.id,
+          sku: item.variantId || item.product.id,
           quantity: item.quantity,
-          title: item.product.title,
+          title: item.variantLabel ? `${item.product.title} · ${item.variantLabel}` : item.product.title,
           price: item.unitPrice,
         })),
         address: {
@@ -1003,16 +1005,18 @@ export async function ingestShopifyPaidOrder(payload: {
   }
   const lines = (payload.line_items || [])
     .map((item, index) => {
-      const listingId = item.sku || "";
+      const resolved = resolveLiveSku(item.sku, item.title);
+      const listingId = resolved?.listingId || item.sku || "";
       const listing = shop.listings.find((row) => row.id === listingId) || liveProductById(listingId);
       return {
         id: `shp_${shopifyOrderId}_${index}`,
-        listingId: listing?.id || listingId || `unknown_${index}`,
+        listingId: listingId || `unknown_${index}`,
         title: item.title || listing?.title || "Item",
         quantity: item.quantity || 1,
         price: Number(item.price || listing?.price || 0),
-        gelatoProductUid: listing?.gelatoProductUid,
-        printFileUrl: listing?.printFileUrl,
+        variation: resolved?.variation,
+        gelatoProductUid: resolved?.gelatoProductUid || listing?.gelatoProductUid,
+        printFileUrl: resolved?.printFileUrl || listing?.printFileUrl,
       };
     })
     .filter((item) => item.quantity > 0);

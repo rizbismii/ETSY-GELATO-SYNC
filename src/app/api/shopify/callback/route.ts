@@ -1,7 +1,8 @@
-import { exchangeShopifyCode, pingShopify, registerShopifyWebhooks, restrictShopifyToAunz, syncFernoraCatalogToShopify } from "@/lib/shopify";
+import { exchangeShopifyCode, pingShopify, registerShopifyWebhooks, restrictShopifyToAunz, syncFernoraCatalogToShopify, verifyShopifyHmac } from "@/lib/shopify";
 import { publicOrigin, requestOrigin } from "@/lib/origin";
 import { takeOAuthState } from "@/lib/public-origin";
 import { pushTunnel } from "@/lib/tunnel";
+import { getCredentials } from "@/lib/credentials";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,12 @@ export async function GET(request: Request) {
   const shop = url.searchParams.get("shop");
   const error = url.searchParams.get("error");
   if (!code && !state && !error) return ready();
+  const creds = await getCredentials();
+  if (creds.shopify?.clientSecret && !verifyShopifyHmac(url.searchParams, creds.shopify.clientSecret)) {
+    return Response.redirect(
+      `${origin}/connections?shopify=error&reason=${encodeURIComponent("Shopify HMAC did not match. Check the app client secret.")}`,
+    );
+  }
   if (error) {
     const detail = url.searchParams.get("error_description") || error;
     if (/matching hosts|redirect_uri|application url/i.test(detail)) {

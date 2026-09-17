@@ -1,5 +1,4 @@
 import { createHash, randomBytes } from "node:crypto";
-import { File } from "node:buffer";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { getCredentials, patchCredentials } from "@/lib/credentials";

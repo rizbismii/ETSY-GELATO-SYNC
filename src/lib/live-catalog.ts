@@ -1,4 +1,4 @@
-import { clothingVariants, defaultClothingVariant } from "@/lib/clothing";
+import { clothingVariants, defaultClothingVariant, resolveCatalogLine } from "@/lib/clothing";
 import { OFFSITE_ADS_RATE, TARGET_AFTER_ADS_MARGIN, recommendedPrice } from "@/lib/money";
 import type { Listing } from "@/lib/types";
 
@@ -754,4 +754,8 @@ export function liveListings(): Listing[] {
 
 export function liveProductById(id: string) {
   return LIVE_PRODUCTS.find((row) => row.id === id);
+}
+
+export function resolveLiveSku(sku?: string | null, title?: string | null) {
+  return resolveCatalogLine(LIVE_PRODUCTS, sku, title);
 }
