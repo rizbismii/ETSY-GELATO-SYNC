@@ -75,19 +75,16 @@ tunnel_registered() {
 
 public_probe() {
   local origin="$1"
-  # Direct HTTPS first — this VM often cannot resolve trycloudflare via 1.1.1.1,
-  # and recycling a live tunnel on that false negative is what 530s the desk URL.
-  if curl -fsS --max-time 10 "${origin}/api/health" >/dev/null 2>&1; then
-    return 0
-  fi
   local host="${origin#https://}"
   host="${host%%/*}"
   local ip
   ip="$(dig +short @1.1.1.1 "$host" A | head -1 || true)"
-  if [[ ! "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    return 1
+  if [[ "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    if curl -fsS --max-time 8 --resolve "${host}:443:${ip}" "${origin}/api/health" >/dev/null 2>&1; then
+      return 0
+    fi
   fi
-  curl -fsS --max-time 8 --resolve "${host}:443:${ip}" "${origin}/api/health" >/dev/null 2>&1
+  curl -fsS --max-time 10 "${origin}/api/health" >/dev/null 2>&1
 }
 
 wait_for_desk() {
@@ -161,6 +158,7 @@ while true; do
   fi
 
   fails=0
+  born=$SECONDS
   while kill -0 "$(cat "$PIDFILE")" 2>/dev/null; do
     if grep -q "Tunnel not found" "$LOG" 2>/dev/null || grep -q "Unable to reach the origin service" "$LOG" 2>/dev/null; then
       echo "Cloudflare recycled the tunnel or lost the origin. Starting a new .com hostname…"
@@ -175,11 +173,15 @@ while true; do
     if public_probe "$origin"; then
       fails=0
     else
-      fails=$((fails + 1))
-      echo "Public tunnel probe failed (${fails}/6)."
-      if [[ "$fails" -ge 6 ]]; then
-        echo "Tunnel is not live. Opening a new hostname…"
-        break
+      if (( SECONDS - born < 90 )); then
+        echo "Public DNS still settling for ${origin}…"
+      else
+        fails=$((fails + 1))
+        echo "Public tunnel probe failed (${fails}/6)."
+        if [[ "$fails" -ge 6 ]]; then
+          echo "Tunnel is not live. Opening a new hostname…"
+          break
+        fi
       fi
     fi
     sleep 15
