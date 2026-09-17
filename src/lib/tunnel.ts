@@ -93,7 +93,7 @@ export async function pushTunnel(platform: TunnelPlatform, origin: string) {
         platform,
         cleaned,
         "not_updated",
-        "Redirect URL is ready to copy. Authorize Shopify after the Dev Dashboard has this callback, then push again to register the paid-order webhook.",
+        "Copy App URL and Redirect URL from Connections into the Shopify Dev Dashboard (same hostname), save, then Authorize Shopify.",
       );
     }
     try {

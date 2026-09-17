@@ -51,13 +51,31 @@ export async function publicOrigin(request?: Request) {
 }
 
 export async function etsyRedirectUri(request?: Request) {
-  if (process.env.ETSY_REDIRECT_URI) return process.env.ETSY_REDIRECT_URI;
-  return `${await publicOrigin(request)}/api/etsy/callback`;
+  const origin = await publicOrigin(request);
+  if (process.env.ETSY_REDIRECT_URI) {
+    try {
+      if (new URL(process.env.ETSY_REDIRECT_URI).origin === new URL(origin).origin) {
+        return process.env.ETSY_REDIRECT_URI;
+      }
+    } catch {
+      /* stale env host — use the live desk origin */
+    }
+  }
+  return `${origin}/api/etsy/callback`;
 }
 
 export async function shopifyRedirectUri(request?: Request) {
-  if (process.env.SHOPIFY_REDIRECT_URI) return process.env.SHOPIFY_REDIRECT_URI;
-  return `${await publicOrigin(request)}/api/shopify/callback`;
+  const origin = await publicOrigin(request);
+  if (process.env.SHOPIFY_REDIRECT_URI) {
+    try {
+      if (new URL(process.env.SHOPIFY_REDIRECT_URI).origin === new URL(origin).origin) {
+        return process.env.SHOPIFY_REDIRECT_URI;
+      }
+    } catch {
+      /* stale env host — Shopify rejects redirect_uri that does not match App URL */
+    }
+  }
+  return `${origin}/api/shopify/callback`;
 }
 
 export async function absoluteAssetUrl(assetPath: string, request?: Request) {

@@ -39,9 +39,10 @@ The Shopify shop name **fernora** already exists. The public myshopify storefron
 
 Shopify cannot create a second store with that name from the app keys. To attach the Admin API:
 
-1. Unfreeze **fernora** in Shopify admin (pick a plan).
-2. In the Dev Dashboard app, add Redirect URL `https://your-public-origin/api/shopify/callback`.
-3. On **Connections**, click **Authorize Shopify**, then **Publish catalog · AU/NZ**.
+1. Unfreeze **fernora** in Shopify admin (pick a plan) if the storefront must go live. OAuth can still run while it is frozen.
+2. On **Connections**, copy **App URL** (`https://your-public-origin`) and **Allowed redirection URL** (`https://your-public-origin/api/shopify/callback`). They always share the live tunnel hostname.
+3. In the [Shopify Dev Dashboard](https://dev.shopify.com/dashboard) app → **URLs**, paste both, save, then click **Authorize Shopify**. Shopify rejects OAuth when those two hosts differ (“matching hosts”).
+4. After authorize, click **Publish catalog · AU/NZ**.
 
 That pushes the 20 products, limits shipping zones to Australia and New Zealand, and registers an orders/paid webhook so Gelato can print automatically.
 

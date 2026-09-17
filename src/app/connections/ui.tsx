@@ -6,6 +6,14 @@ import { toast } from "sonner";
 import { Loader2, Copy, Eye, EyeOff } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StatusPill } from "@/components/status-pill";
@@ -35,6 +43,7 @@ type Payload = {
   callbackUrl?: string;
   websiteUrl?: string;
   shopifyCallbackUrl?: string;
+  shopifyAppUrl?: string;
   shopUrl?: string;
   callbackIsPublic?: boolean;
   callbackReachable?: boolean;
@@ -79,12 +88,25 @@ export function ConnectionsClient() {
   const dirty = useRef<Record<string, boolean>>({});
   const [show, setShow] = useState<Record<string, boolean>>({});
   const [copied, setCopied] = useState<
-    "callback" | "website" | "desk" | "shop" | "shopify-callback" | "etsy-key" | "etsy-secret" | "gelato-key" | "shopify-key" | "shopify-secret" | null
+    | "callback"
+    | "website"
+    | "desk"
+    | "shop"
+    | "shopify-callback"
+    | "shopify-app"
+    | "etsy-key"
+    | "etsy-secret"
+    | "gelato-key"
+    | "shopify-key"
+    | "shopify-secret"
+    | null
   >(null);
+  const [shopifyAuthOpen, setShopifyAuthOpen] = useState(false);
   const callbackUrl = data?.callbackUrl || "";
   const websiteUrl = data?.websiteUrl || "";
   const shopUrl = data?.shopUrl || (websiteUrl ? `${websiteUrl.replace(/\/$/, "")}/shop` : "/shop");
   const shopifyCallbackUrl = data?.shopifyCallbackUrl || "";
+  const shopifyAppUrl = data?.shopifyAppUrl || websiteUrl;
   const deskUrl = websiteUrl ? `${websiteUrl.replace(/\/$/, "")}/connections` : "";
   const callbackIsPublic = Boolean(data?.callbackIsPublic && data?.callbackReachable);
   const live = data?.live;
@@ -122,7 +144,13 @@ export function ConnectionsClient() {
     if (shopify === "connected") toast.success("Shopify shop authorized");
     if (shopify === "denied") toast.error("Shopify authorization was cancelled");
     if (shopify === "invalid") toast.error("Shopify OAuth state did not match — try again");
-    if (shopify === "error") toast.error(search.get("reason") || "Shopify connect failed");
+    if (shopify === "error") {
+      const reason = search.get("reason") || "Shopify connect failed";
+      toast.error(reason);
+      if (/matching hosts|App URL|Redirect URL|application url|redirect_uri/i.test(reason)) {
+        setShopifyAuthOpen(true);
+      }
+    }
   }, [search]);
 
   async function saveEtsy() {
@@ -319,6 +347,36 @@ export function ConnectionsClient() {
     );
   }
 
+  function copyUrlRow(
+    label: string,
+    value: string,
+    copyId: "shopify-app" | "shopify-callback",
+    toastLabel: string,
+  ) {
+    if (!value) return null;
+    return (
+      <div>
+        <p className="mb-1 text-xs uppercase tracking-wide">{label}</p>
+        <span className="flex flex-col gap-2 sm:flex-row">
+          <code className="block flex-1 break-all rounded bg-muted px-2 py-1 text-xs text-foreground">
+            {value}
+          </code>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={async () => {
+              await navigator.clipboard.writeText(value);
+              setCopied(copyId);
+              toast.success(toastLabel);
+            }}
+          >
+            {copied === copyId ? "Copied" : "Copy"}
+          </Button>
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -329,6 +387,22 @@ export function ConnectionsClient() {
           to Australia and New Zealand only, fulfilled by Gelato.
         </p>
       </div>
+
+      {search.get("shopify") === "error" &&
+      /matching hosts|App URL|Redirect URL|application url|redirect_uri/i.test(search.get("reason") || "") ? (
+        <Card className="border-amber-500/40">
+          <CardContent className="pt-6 text-sm leading-6">
+            <p className="font-medium text-foreground">Shopify matching hosts</p>
+            <p className="mt-1 text-muted-foreground">
+              {search.get("reason") ||
+                "The Dev Dashboard App URL is still an old tunnel hostname. Copy App URL and Redirect URL from this page, save them in the Shopify app URLs, then Authorize again."}
+            </p>
+            <Button className="mt-3" onClick={() => setShopifyAuthOpen(true)}>
+              Copy matching URLs
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card className="border-foreground/20">
         <CardHeader>
@@ -456,11 +530,9 @@ export function ConnectionsClient() {
           Shopify{" "}
           {data.connections.shopify.authorized
             ? data.shopify?.shop || "authorized"
-            : data.shopify?.storefrontStatus === "frozen"
-              ? "fernora frozen · authorize after unfreeze"
-              : data.shopify?.clientIdSet
-                ? "app keys saved · authorize shop"
-                : "not connected"}
+            : data.shopify?.clientIdSet
+              ? "app keys saved · paste matching App URL + Redirect URL, then authorize"
+              : "not connected"}
         </span>
       </div>
 
@@ -523,8 +595,10 @@ export function ConnectionsClient() {
                 Shopify Fernora
                 {data.connections.shopify.authorized
                   ? ` · ${data.shopify?.shop || "authorized"}`
-                  : data.shopify?.storefrontStatus === "frozen"
-                    ? " · fernora.myshopify.com exists but the storefront is frozen (unpaid Shopify plan)"
+                  : data.shopify?.clientIdSet
+                    ? data.shopify?.storefrontStatus === "frozen"
+                      ? " · fernora is frozen (unpaid plan). Paste matching App URL + Redirect URL, then Authorize"
+                      : " · paste matching App URL + Redirect URL in the Dev Dashboard, then Authorize"
                     : live?.shopify && !live.shopify.ok
                       ? ` · ${live.shopify.error}`
                       : " · not authorized"}
@@ -776,28 +850,39 @@ export function ConnectionsClient() {
             </p>
             <ol className="list-decimal space-y-3 pl-4 text-sm leading-6 text-muted-foreground">
               <li>
-                In the Shopify Dev Dashboard app, add this Redirect URL, then unfreeze the store
-                if Shopify still shows “Store unavailable”:
-                {shopifyCallbackUrl ? (
-                  <span className="mt-2 flex flex-col gap-2 sm:flex-row">
-                    <code className="block flex-1 break-all rounded bg-muted px-2 py-1 text-xs text-foreground">
-                      {shopifyCallbackUrl}
-                    </code>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={async () => {
-                        await navigator.clipboard.writeText(shopifyCallbackUrl);
-                        setCopied("shopify-callback");
-                        toast.success("Shopify callback copied");
-                      }}
-                    >
-                      {copied === "shopify-callback" ? "Copied" : "Copy"}
-                    </Button>
-                  </span>
+                Open the{" "}
+                <a
+                  className="underline"
+                  href="https://dev.shopify.com/dashboard"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Shopify Dev Dashboard
+                </a>{" "}
+                app → <strong className="font-medium text-foreground">URLs</strong>. Shopify
+                rejects OAuth when <strong className="font-medium text-foreground">App URL</strong>{" "}
+                and <strong className="font-medium text-foreground">Allowed redirection URL</strong>{" "}
+                use different hostnames — that is the “matching hosts” error. Paste both of these
+                from the live desk (they share this tunnel hostname), then save:
+                {shopifyAppUrl || shopifyCallbackUrl ? (
+                  <div className="mt-2 space-y-2">
+                    {copyUrlRow("App URL", shopifyAppUrl, "shopify-app", "Shopify App URL copied")}
+                    {copyUrlRow(
+                      "Allowed redirection URL",
+                      shopifyCallbackUrl,
+                      "shopify-callback",
+                      "Shopify Redirect URL copied",
+                    )}
+                  </div>
                 ) : null}
+                If the tunnel hostname changes, update both fields before Authorize. Leave the
+                storefront frozen if you like — OAuth still needs matching hosts.
               </li>
-              <li>Authorize the app on fernora. Then publish the 20 live products and lock shipping to AU/NZ.</li>
+              <li>
+                Click <strong className="font-medium text-foreground">Authorize Shopify</strong>{" "}
+                only after those two URLs are saved. Then publish the 20 live products and lock
+                shipping to AU/NZ.
+              </li>
             </ol>
             <div className="space-y-2">
               <Label htmlFor="shopify-shop">Shop domain</Label>
@@ -832,15 +917,12 @@ export function ConnectionsClient() {
               <Button variant="outline" onClick={() => void saveShopify()} disabled={busy === "shopify"}>
                 Save Shopify app
               </Button>
-              <a
-                href="/api/shopify/connect"
-                className={cn(
-                  buttonVariants(),
-                  !data.shopify?.clientIdSet || !callbackIsPublic ? "pointer-events-none opacity-50" : "",
-                )}
+              <Button
+                onClick={() => setShopifyAuthOpen(true)}
+                disabled={!data.shopify?.clientIdSet || !callbackIsPublic}
               >
                 Authorize Shopify
-              </a>
+              </Button>
               <Button
                 variant="outline"
                 onClick={() => void syncShopify()}
@@ -874,6 +956,49 @@ export function ConnectionsClient() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={shopifyAuthOpen} onOpenChange={setShopifyAuthOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>App URL and Redirect URL must match</DialogTitle>
+            <DialogDescription>
+              Shopify shows “redirect_uri and application url must have matching hosts” when the
+              Dev Dashboard still has an old trycloudflare hostname. Paste both values below into{" "}
+              <a href="https://dev.shopify.com/dashboard" target="_blank" rel="noreferrer">
+                the app URLs page
+              </a>
+              , save, then continue.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {copyUrlRow("App URL", shopifyAppUrl, "shopify-app", "Shopify App URL copied")}
+            {copyUrlRow(
+              "Allowed redirection URL",
+              shopifyCallbackUrl,
+              "shopify-callback",
+              "Shopify Redirect URL copied",
+            )}
+            <p className="text-xs leading-5 text-muted-foreground">
+              Both must use {shopifyAppUrl || "this desk’s hostname"}. Do not mix an old tunnel
+              with the current Redirect URL.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShopifyAuthOpen(false)}>
+              Cancel
+            </Button>
+            <a
+              href="/api/shopify/connect"
+              className={cn(
+                buttonVariants(),
+                !data.shopify?.clientIdSet || !callbackIsPublic ? "pointer-events-none opacity-50" : "",
+              )}
+            >
+              I saved both — Authorize
+            </a>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

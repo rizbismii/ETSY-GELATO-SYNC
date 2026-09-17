@@ -22,6 +22,14 @@ export async function GET(request: Request) {
   const error = url.searchParams.get("error");
   if (!code && !state && !error) return ready();
   if (error) {
+    const detail = url.searchParams.get("error_description") || error;
+    if (/matching hosts|redirect_uri|application url/i.test(detail)) {
+      return Response.redirect(
+        `${origin}/connections?shopify=error&reason=${encodeURIComponent(
+          "Shopify App URL and Redirect URL must be this desk’s hostname. Copy both from Connections into the Dev Dashboard, save, then Authorize again.",
+        )}`,
+      );
+    }
     return Response.redirect(`${origin}/connections?shopify=denied`);
   }
   const stored = state ? await takeOAuthState(state) : null;

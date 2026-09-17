@@ -27,6 +27,7 @@ export async function GET(request: Request) {
     callbackUrl,
     websiteUrl: origin,
     shopifyCallbackUrl,
+    shopifyAppUrl: origin,
     shopUrl: `${origin.replace(/\/$/, "")}/shop`,
     callbackIsPublic,
     callbackReachable,
