@@ -13,7 +13,7 @@ import type { Address, Order, OrderItem } from "@/lib/types";
 
 export const FERNORA_NAME = "Fernora";
 export const FERNORA_CURRENCY = "NZD";
-/** ISO country codes Gelato delivers to (AU, NZ, and the rest of the catalog lanes). */
+/** ISO country codes Fernora ships to (AU, NZ, and the rest of the catalog lanes). */
 export const FERNORA_SHIP_COUNTRIES = GELATO_COUNTRY_CODES;
 export type FernoraCountry = string;
 export type FernoraShipLane = ShipLaneCode;
@@ -54,7 +54,7 @@ export function cartLineKey(line: CartLine) {
 
 export function quoteFernoraCart(lines: CartLine[], country: string) {
   if (!isFernoraCountry(country)) {
-    throw new Error("Fernora only ships to countries Gelato delivers to");
+    throw new Error("Fernora only ships to the countries we deliver to");
   }
   const dest = gelatoDestination(country);
   const items: Array<{
@@ -132,7 +132,7 @@ export function quoteGelatoShipment(
   country: string,
 ) {
   if (!isFernoraCountry(country)) {
-    throw new Error("Fernora only ships to countries Gelato delivers to");
+    throw new Error("Fernora only ships to the countries we deliver to");
   }
   const dest = gelatoDestination(country);
   const items: Array<{ title: string; quantity: number; shipping: number; days: string }> = [];
@@ -159,7 +159,7 @@ export function quoteGelatoShipment(
     countryName: dest?.name || country,
     lane: dest?.lane,
     days: items.map((item) => item.days).sort()[0],
-    serviceName: `Gelato ${dest?.name || country}`,
+    serviceName: "Standard delivery",
   };
 }
 
@@ -190,6 +190,6 @@ export function checkoutToOrder(input: {
     items,
     shippingAddress: input.address,
     trackingPushedToEtsy: true,
-    issues: ["Awaiting payment before Gelato print"],
+    issues: ["Awaiting payment before print"],
   };
 }

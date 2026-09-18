@@ -122,4 +122,4 @@ export function gelatoCodesForLane(lane: ShipLaneCode) {
 }
 
 export const GELATO_SHIP_BLURB =
-  "Ships to New Zealand, Australia, the United States, the United Kingdom, the European Union and other countries Gelato delivers to. Printed near the buyer by Gelato. Checkout shipping is the destination rate — Wellington 6012 is the studio address, not the parcel origin.";
+  "Ships to New Zealand, Australia, the United States, the United Kingdom, the European Union and other countries we deliver to. Printed near you after you order. Checkout shipping is the destination rate — Wellington 6012 is the studio address, not the parcel origin.";

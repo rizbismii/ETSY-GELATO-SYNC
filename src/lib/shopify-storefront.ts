@@ -1,4 +1,4 @@
-import { fernoraCatalog, FERNORA_NAME, FERNORA_SHIP_BLURB } from "@/lib/shop";
+import { fernoraCatalog, FERNORA_NAME } from "@/lib/shop";
 import { gelatoCodesForLane, SHIP_LANES } from "@/lib/gelato-countries";
 import {
   onlineStorePublicationId,
@@ -321,27 +321,50 @@ async function mainThemeId() {
   return data.themes.nodes.find((row) => row.role === "MAIN")?.id || HORIZON_THEME;
 }
 
-export async function registerGelatoCarrierService(origin: string) {
+const FERNORA_CARRIER_NAME = "Fernora";
+
+export async function registerGelatoCarrierService(origin?: string) {
   const notes: string[] = [];
-  const callbackUrl = `${origin.replace(/\/$/, "")}/api/shopify/shipping-rates`;
+  const callbackUrl = origin ? `${origin.replace(/\/$/, "")}/api/shopify/shipping-rates` : undefined;
   const existing = await shopifyGraphql<{
     carrierServices: { nodes: Array<{ id: string; name: string; callbackUrl?: string | null }> };
   }>(`{ carrierServices(first: 10) { nodes { id name active callbackUrl } } }`);
-  const found = existing.carrierServices.nodes.find((row) => row.name === "Gelato");
+  const found = existing.carrierServices.nodes.find(
+    (row) => row.name === "Gelato" || row.name === FERNORA_CARRIER_NAME,
+  );
   if (found) {
+    const nextCallback = callbackUrl || found.callbackUrl || undefined;
     const updated = await shopifyGraphql<{
       carrierServiceUpdate: { userErrors: Array<{ message: string }> };
     }>(
       `mutation ($input: DeliveryCarrierServiceUpdateInput!) {
         carrierServiceUpdate(input: $input) { userErrors { field message } }
       }`,
-      { input: { id: found.id, name: "Gelato", callbackUrl, active: true, supportsServiceDiscovery: true } },
+      {
+        input: {
+          id: found.id,
+          name: FERNORA_CARRIER_NAME,
+          ...(nextCallback ? { callbackUrl: nextCallback } : {}),
+          active: true,
+          supportsServiceDiscovery: true,
+        },
+      },
     );
     if (updated.carrierServiceUpdate.userErrors.length) {
       notes.push("Carrier: " + updated.carrierServiceUpdate.userErrors.map((row) => row.message).join("; "));
+    } else if (found.name !== FERNORA_CARRIER_NAME) {
+      notes.push("Checkout shipping carrier renamed to Fernora.");
     } else {
-      notes.push(`Gelato shipping callback updated: ${callbackUrl}`);
+      notes.push(
+        nextCallback
+          ? `Fernora shipping callback updated: ${nextCallback}`
+          : "Fernora shipping carrier is active.",
+      );
     }
+    return notes;
+  }
+  if (!callbackUrl) {
+    notes.push("No Fernora carrier service to rename yet.");
     return notes;
   }
   const created = await shopifyGraphql<{
@@ -350,12 +373,12 @@ export async function registerGelatoCarrierService(origin: string) {
     `mutation ($input: DeliveryCarrierServiceCreateInput!) {
       carrierServiceCreate(input: $input) { userErrors { field message } }
     }`,
-    { input: { name: "Gelato", callbackUrl, active: true, supportsServiceDiscovery: true } },
+    { input: { name: FERNORA_CARRIER_NAME, callbackUrl, active: true, supportsServiceDiscovery: true } },
   );
   if (created.carrierServiceCreate.userErrors.length) {
     notes.push("Carrier: " + created.carrierServiceCreate.userErrors.map((row) => row.message).join("; "));
   } else {
-    notes.push(`Gelato carrier service registered. Checkout shipping uses destination print rates (${FERNORA_SHIP_BLURB})`);
+    notes.push(`Fernora carrier service registered. Checkout shipping uses destination print rates.`);
   }
   return notes;
 }
