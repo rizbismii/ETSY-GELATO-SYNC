@@ -8,7 +8,6 @@ import {
   isGelatoCountry,
   shipLaneForCountry,
 } from "./gelato-countries.ts";
-import { POLICY_COPY } from "./shop-policies.ts";
 import { printFileName, printSurface, printTreatment } from "./print-file.ts";
 import {
   gelatoCarrierRateResponse,
@@ -105,7 +104,7 @@ test("Horizon branding shows country · currency and made-to-order homepage copy
 
 test("customer-facing shop copy does not name Gelato as the supplier", () => {
   assert.doesNotMatch(GELATO_SHIP_BLURB, /Gelato/);
-  assert.doesNotMatch(JSON.stringify(POLICY_COPY), /Gelato/);
+  assert.doesNotMatch(readFileSync(new URL("./shop-policies.ts", import.meta.url), "utf8"), /Gelato/);
   const quoteSource = readFileSync(new URL("./shop.ts", import.meta.url), "utf8");
   assert.match(quoteSource, /serviceName: "Standard delivery"/);
   const shopifySource = readFileSync(new URL("./shopify.ts", import.meta.url), "utf8");
