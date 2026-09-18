@@ -10,18 +10,47 @@ import { brandHorizonStorefront } from "@/lib/shopify-horizon";
 const HORIZON_THEME = "gid://shopify/OnlineStoreTheme/189823058216";
 const FRONTPAGE = "gid://shopify/Collection/515726311720";
 
-const MARKET_LANES: Array<{
+/** Local currencies Shopify cannot present on this NZ shop — they fall back to shop NZD unless pinned to USD. */
+export const USD_FALLBACK_COUNTRIES = ["AR", "BR", "MX", "CL", "CO", "ZA", "NO"] as const;
+
+type MarketSpec = {
   name: string;
   handle: string;
   aliases: string[];
-  lane: (typeof SHIP_LANES)[number];
   currency: string;
-}> = [
-  { name: "New Zealand", handle: "nz", aliases: ["new zealand", "new-zealand"], lane: "NZ", currency: "NZD" },
-  { name: "Australia", handle: "australia", aliases: ["australia"], lane: "AU", currency: "AUD" },
-  { name: "United States & Americas", handle: "americas", aliases: ["united states", "americas"], lane: "US", currency: "USD" },
-  { name: "United Kingdom & Ireland", handle: "united-kingdom", aliases: ["united kingdom", "uk"], lane: "GB", currency: "GBP" },
-  { name: "Europe", handle: "europe", aliases: ["europe", "european union"], lane: "EU", currency: "EUR" },
+  localCurrencies: boolean;
+  countries: string[];
+};
+
+type MarketNode = {
+  id: string;
+  name: string;
+  handle?: string | null;
+  conditions?: {
+    regionsCondition?: {
+      regions?: { nodes: Array<{ id: string; code?: string | null }> };
+    };
+  } | null;
+};
+
+function laneCountries(lane: (typeof SHIP_LANES)[number]) {
+  return gelatoCodesForLane(lane).filter((code) => !(USD_FALLBACK_COUNTRIES as readonly string[]).includes(code));
+}
+
+const MARKET_LANES: MarketSpec[] = [
+  { name: "New Zealand", handle: "nz", aliases: ["new zealand", "new-zealand"], currency: "NZD", localCurrencies: true, countries: laneCountries("NZ") },
+  { name: "Australia", handle: "australia", aliases: ["australia"], currency: "AUD", localCurrencies: true, countries: laneCountries("AU") },
+  { name: "United States & Americas", handle: "americas", aliases: ["united states", "americas"], currency: "USD", localCurrencies: true, countries: laneCountries("US") },
+  { name: "United Kingdom & Ireland", handle: "united-kingdom", aliases: ["united kingdom", "uk"], currency: "GBP", localCurrencies: true, countries: laneCountries("GB") },
+  { name: "Europe", handle: "europe", aliases: ["europe", "european union"], currency: "EUR", localCurrencies: true, countries: laneCountries("EU") },
+  {
+    name: "International (USD)",
+    handle: "international-usd",
+    aliases: ["international usd", "international"],
+    currency: "USD",
+    localCurrencies: false,
+    countries: [...USD_FALLBACK_COUNTRIES],
+  },
 ];
 
 export async function publishFernoraToOnlineStore() {
@@ -43,24 +72,85 @@ export async function publishFernoraToOnlineStore() {
   return notes;
 }
 
+const MARKETS_QUERY = `{
+  markets(first: 25) {
+    nodes {
+      id name handle
+      conditions {
+        regionsCondition {
+          regions(first: 100) {
+            nodes { ... on MarketRegionCountry { id code } }
+          }
+        }
+      }
+    }
+  }
+}`;
+
+async function listShopifyMarkets() {
+  const data = await shopifyGraphql<{ markets: { nodes: MarketNode[] } }>(MARKETS_QUERY);
+  return data.markets.nodes;
+}
+
+function matchMarket(existing: MarketNode[], spec: MarketSpec) {
+  return (
+    existing.find((row) => row.handle?.toLowerCase() === spec.handle) ||
+    existing.find((row) => row.name.toLowerCase() === spec.name.toLowerCase()) ||
+    existing.find((row) => spec.aliases.includes(row.name.toLowerCase()) || spec.aliases.includes(row.handle?.toLowerCase() || ""))
+  );
+}
+
+async function updateMarket(id: string, input: Record<string, unknown>) {
+  return shopifyGraphql<{ marketUpdate: { userErrors: Array<{ message: string }> } }>(
+    `mutation ($id: ID!, $input: MarketUpdateInput!) {
+      marketUpdate(id: $id, input: $input) { userErrors { field message } }
+    }`,
+    { id, input },
+  );
+}
+
 export async function configureShopifyMarkets() {
   const notes: string[] = [];
-  const existing = await shopifyGraphql<{
-    markets: { nodes: Array<{ id: string; name: string; handle?: string }> };
-  }>(`{ markets(first: 25) { nodes { id name handle } } }`);
-  const byName = new Map(existing.markets.nodes.map((row) => [row.name.toLowerCase(), row]));
-  const byHandle = new Map(
-    existing.markets.nodes.filter((row) => row.handle).map((row) => [row.handle!.toLowerCase(), row]),
-  );
-  const resolved: Array<{ id: string; lane: (typeof MARKET_LANES)[number] }> = [];
-  for (const market of MARKET_LANES) {
-    const already =
-      byName.get(market.name.toLowerCase()) ||
-      byHandle.get(market.handle) ||
-      market.aliases.map((alias) => byName.get(alias) || byHandle.get(alias)).find(Boolean);
+  let existing = await listShopifyMarkets();
+  const fallback = new Set<string>(USD_FALLBACK_COUNTRIES);
+  const international = MARKET_LANES.find((row) => row.handle === "international-usd");
+
+  for (const market of existing) {
+    if (market.handle === international?.handle || market.name.toLowerCase() === international?.name.toLowerCase()) {
+      continue;
+    }
+    const regions = market.conditions?.regionsCondition?.regions?.nodes || [];
+    const regionIds = regions.filter((row) => row.code && fallback.has(row.code)).map((row) => row.id);
+    if (!regionIds.length) continue;
+    const removed = await updateMarket(market.id, {
+      conditions: { conditionsToDelete: { regionsCondition: { regionIds } } },
+    });
+    if (removed.marketUpdate.userErrors.length) {
+      notes.push(`${market.name} region move: ${removed.marketUpdate.userErrors.map((row) => row.message).join("; ")}`);
+    }
+  }
+
+  existing = await listShopifyMarkets();
+  const resolved: Array<{ id: string; spec: MarketSpec }> = [];
+  for (const spec of MARKET_LANES) {
+    const already = matchMarket(existing, spec);
     if (already) {
-      notes.push(`Market already exists: ${market.name}`);
-      resolved.push({ id: already.id, lane: market });
+      notes.push(`Market already exists: ${spec.name}`);
+      const have = new Set(
+        (already.conditions?.regionsCondition?.regions?.nodes || []).map((row) => row.code).filter(Boolean) as string[],
+      );
+      const missing = spec.countries.filter((code) => !have.has(code));
+      if (missing.length) {
+        const added = await updateMarket(already.id, {
+          conditions: {
+            conditionsToAdd: { regionsCondition: { regions: missing.map((countryCode) => ({ countryCode })) } },
+          },
+        });
+        if (added.marketUpdate.userErrors.length) {
+          notes.push(`${spec.name} regions: ${added.marketUpdate.userErrors.map((row) => row.message).join("; ")}`);
+        }
+      }
+      resolved.push({ id: already.id, spec });
       continue;
     }
     const created = await shopifyGraphql<{
@@ -74,54 +164,46 @@ export async function configureShopifyMarkets() {
       }`,
       {
         input: {
-          name: market.name,
-          handle: market.handle,
+          name: spec.name,
+          handle: spec.handle,
           status: "ACTIVE",
           conditions: {
             regionsCondition: {
-              regions: gelatoCodesForLane(market.lane).map((code) => ({ countryCode: code })),
+              regions: spec.countries.map((countryCode) => ({ countryCode })),
             },
           },
         },
       },
     );
     if (created.marketCreate.userErrors.length) {
-      notes.push(`${market.name}: ${created.marketCreate.userErrors.map((row) => row.message).join("; ")}`);
+      notes.push(`${spec.name}: ${created.marketCreate.userErrors.map((row) => row.message).join("; ")}`);
     } else if (created.marketCreate.market?.id) {
-      notes.push(`Created market ${created.marketCreate.market.name || market.name}.`);
-      resolved.push({ id: created.marketCreate.market.id, lane: market });
+      notes.push(`Created market ${created.marketCreate.market.name || spec.name}.`);
+      resolved.push({ id: created.marketCreate.market.id, spec });
     }
   }
   notes.push(...(await configureMarketCurrencies(resolved)));
   return notes;
 }
 
-async function configureMarketCurrencies(markets: Array<{ id: string; lane: (typeof MARKET_LANES)[number] }>) {
+async function configureMarketCurrencies(markets: Array<{ id: string; spec: MarketSpec }>) {
   const notes: string[] = [];
   for (const row of markets) {
-    const updated = await shopifyGraphql<{
-      marketUpdate: { userErrors: Array<{ message: string }> };
-    }>(
-      `mutation ($id: ID!, $input: MarketUpdateInput!) {
-        marketUpdate(id: $id, input: $input) { userErrors { field message } }
-      }`,
-      {
-        id: row.id,
-        input: {
-          currencySettings: {
-            baseCurrency: row.lane.currency,
-            localCurrencies: true,
-            roundingEnabled: true,
-          },
-        },
+    const updated = await updateMarket(row.id, {
+      currencySettings: {
+        baseCurrency: row.spec.currency,
+        localCurrencies: row.spec.localCurrencies,
+        roundingEnabled: true,
       },
-    );
+    });
     if (updated.marketUpdate.userErrors.length) {
-      notes.push(
-        `${row.lane.name} currency: ${updated.marketUpdate.userErrors.map((err) => err.message).join("; ")}`,
-      );
+      notes.push(`${row.spec.name} currency: ${updated.marketUpdate.userErrors.map((err) => err.message).join("; ")}`);
+    } else if (row.spec.localCurrencies) {
+      notes.push(`${row.spec.name} prices display in ${row.spec.currency} (and local currencies in that market).`);
     } else {
-      notes.push(`${row.lane.name} prices display in ${row.lane.currency} (and local currencies in that market).`);
+      notes.push(
+        `${row.spec.name} prices display in ${row.spec.currency} so countries without a presentment currency do not fall back to shop NZD.`,
+      );
     }
   }
   return notes;

@@ -84,4 +84,19 @@ test("Horizon branding shows country · currency and Gelato homepage copy", () =
   assert.match(source, /Made to order\. Never warehoused/);
   assert.match(source, /Shop by series/);
   assert.match(source, /privacyFeaturesDisable|publishGelatoLegalPages/);
+  assert.match(source, /product_grid_width = "full-width"/);
+  assert.match(source, /content_direction: "row"/);
+  assert.match(source, /vertical_on_mobile: true/);
+  assert.match(source, /menu_style = "text"/);
+  assert.match(source, /page_width = "wide"/);
+  assert.match(source, /title: "Botanical"/);
+  assert.match(source, /title: "Original fern"/);
+});
+
+test("markets pin countries without presentment currency to USD", () => {
+  const source = readFileSync(new URL("./shopify-storefront.ts", import.meta.url), "utf8");
+  assert.match(source, /USD_FALLBACK_COUNTRIES/);
+  assert.match(source, /international-usd/);
+  assert.match(source, /localCurrencies: false/);
+  assert.match(source, /"AR"/);
 });

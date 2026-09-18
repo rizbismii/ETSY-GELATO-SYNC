@@ -6,7 +6,15 @@ import { policyHtml } from "@/lib/shop-policies";
 const HERO_FILE = "fernora-hero.png";
 const COUNTRY_CURRENCY_MARK = "localization.country.name }} · {{ localization.country.currency.iso_code";
 const PICKER_CSS_MARK = "/* fernora-country-currency */";
+const MOBILE_LAYOUT_MARK = "/* fernora-mobile-layout */";
 const COLLECTION_HANDLES = ["botanical", "scenic", "quotes", "home-decor"] as const;
+const SERIES_COLLECTIONS = [
+  { handle: "botanical", title: "Botanical" },
+  { handle: "scenic", title: "Scenic" },
+  { handle: "quotes", title: "Quotes" },
+  { handle: "home-decor", title: "Home décor" },
+  { handle: "original-fern", title: "Original fern" },
+] as const;
 
 const PALETTE = {
   background: "#FBF6EC",
@@ -34,6 +42,7 @@ export async function brandHorizonStorefront(themeId: string, origin?: string) {
   });
   notes.push(...(await upsertHorizonJson(themeId, heroRef)));
   notes.push(...(await assignCollectionImages()));
+  notes.push(...(await patchMainCatalogMenu()));
   notes.push(...(await publishGelatoLegalPages()));
   return notes;
 }
@@ -77,8 +86,9 @@ function withCountryCurrencyLabel(source: string) {
 }
 
 function withVisiblePickerCss(header: string) {
-  if (header.includes(PICKER_CSS_MARK)) return header;
-  const css = `
+  let next = header;
+  if (!next.includes(PICKER_CSS_MARK)) {
+    const css = `
   ${PICKER_CSS_MARK}
   .dropdown-localization,
   .dropdown-localization__button {
@@ -94,10 +104,30 @@ function withVisiblePickerCss(header: string) {
     letter-spacing: 0.02em;
   }
 `;
-  if (header.includes("{% endstylesheet %}")) {
-    return header.replace("{% endstylesheet %}", `${css}{% endstylesheet %}`);
+    next = next.includes("{% endstylesheet %}")
+      ? next.replace("{% endstylesheet %}", `${css}{% endstylesheet %}`)
+      : `${next}\n{% stylesheet %}${css}{% endstylesheet %}\n`;
   }
-  return `${header}\n{% stylesheet %}${css}{% endstylesheet %}\n`;
+  if (next.includes(MOBILE_LAYOUT_MARK)) return next;
+  const mobile = `
+  ${MOBILE_LAYOUT_MARK}
+  @media screen and (max-width: 749px) {
+    .dropdown-localization,
+    .mobile-localization {
+      max-width: min(52vw, 14rem);
+    }
+    .dropdown-localization__button,
+    .mobile-localization .currency-code {
+      font-size: 0.75rem;
+    }
+    .header__column--right {
+      gap: 0.35rem;
+    }
+  }
+`;
+  return next.includes("{% endstylesheet %}")
+    ? next.replace("{% endstylesheet %}", `${mobile}{% endstylesheet %}`)
+    : `${next}\n{% stylesheet %}${mobile}{% endstylesheet %}\n`;
 }
 
 async function patchHorizonLocalization(themeId: string) {
@@ -260,7 +290,7 @@ async function assignCollectionImages() {
       } }`,
   );
   for (const collection of listed.collections.nodes) {
-    if (!(COLLECTION_HANDLES as readonly string[]).includes(collection.handle)) continue;
+    if (!SERIES_COLLECTIONS.some((series) => series.handle === collection.handle)) continue;
     if (collection.image?.url) continue;
     const src = collection.products.nodes[0]?.featuredImage?.url;
     if (!src) {
@@ -307,6 +337,25 @@ function textBlock(text: string, extra: Record<string, unknown> = {}): ThemeBloc
       "padding-inline-start": extra["padding-inline-start"] ?? 0,
       "padding-inline-end": extra["padding-inline-end"] ?? 0,
       ...(extra.text_color ? { text_color: extra.text_color } : {}),
+    },
+  };
+}
+
+function imageBlock(image: string): ThemeBlock {
+  return {
+    type: "image",
+    settings: {
+      image,
+      image_ratio: "portrait",
+      width: "fill",
+      width_mobile: "fill",
+      height: "fill",
+      border: "none",
+      border_radius: 8,
+      "padding-block-start": 0,
+      "padding-block-end": 0,
+      "padding-inline-start": 0,
+      "padding-inline-end": 0,
     },
   };
 }
@@ -501,59 +550,56 @@ async function upsertHorizonJson(themeId: string, heroRef: string) {
   };
 
   template.sections.story_fernora = {
-    type: "media-with-content",
+    type: "section",
     blocks: {
-      media: {
-        type: "_media-without-appearance",
-        static: true,
+      image: imageBlock(heroRef || "shopify://shop_images/fernora-hero.jpg"),
+      copy: {
+        type: "group",
         settings: {
-          media_type: "image",
-          image: heroRef || "shopify://shop_images/fernora-hero.jpg",
-          image_position: "cover",
-        },
-      },
-      content: {
-        type: "_content-without-appearance",
-        static: true,
-        settings: {
+          content_direction: "column",
+          vertical_on_mobile: true,
           horizontal_alignment_flex_direction_column: "flex-start",
-          vertical_alignment_flex_direction_column: "space-between",
-          gap: 24,
+          vertical_alignment_flex_direction_column: "center",
+          gap: 16,
+          width: "fill",
+          height: "fill",
+          "padding-block-start": 8,
+          "padding-block-end": 8,
+          "padding-inline-start": 8,
+          "padding-inline-end": 8,
         },
         blocks: {
           caption: textBlock("<p>The studio</p>", { type_preset: "h6" }),
-          group: {
-            type: "group",
-            settings: { height: "fit", gap: 12 },
-            blocks: {
-              heading: textBlock("<h3>Made to order. Never warehoused.</h3>", { type_preset: "h3", width: "100%" }),
-              copy: textBlock(
-                "<p>Fernora is printed by Gelato in-region after payment. Choose your country in the header — the control shows the country name and currency code, and catalog prices convert with it. Change of mind is not returnable; defects are reprinted.</p>",
-                { type_preset: "rte", width: "100%", max_width: "narrow" },
-              ),
-            },
-            block_order: ["heading", "copy"],
-          },
+          heading: textBlock("<h3>Made to order. Never warehoused.</h3>", { type_preset: "h3", width: "100%" }),
+          body: textBlock(
+            "<p>Fernora is printed by Gelato in-region after payment. Choose your country in the header — the control shows the country name and currency code, and catalog prices convert with it. Change of mind is not returnable; defects are reprinted.</p>",
+            { type_preset: "rte", width: "100%", max_width: "normal" },
+          ),
           button: {
             type: "button",
             settings: {
               label: "Read returns and refunds",
               link: "shopify://policies/refund-policy",
               style_class: "button",
+              width: "fit-content",
             },
           },
         },
-        block_order: ["caption", "group", "button"],
+        block_order: ["caption", "heading", "body", "button"],
       },
     },
+    block_order: ["image", "copy"],
     settings: {
-      media_position: "left",
-      media_width: "medium",
-      media_height: "60svh",
+      content_direction: "row",
+      vertical_on_mobile: true,
+      horizontal_alignment: "flex-start",
+      vertical_alignment: "center",
+      gap: 32,
       section_width: "page-width",
+      background_media: "none",
       background_color: PALETTE.background,
-      "padding-block-start": 24,
-      "padding-block-end": 24,
+      "padding-block-start": 40,
+      "padding-block-end": 48,
     },
   };
 
@@ -577,7 +623,7 @@ async function upsertHorizonJson(themeId: string, heroRef: string) {
       current?: Record<string, unknown> & { color_palette?: Record<string, string> };
     };
     if (settings.current) {
-      settings.current.page_width = "full";
+      settings.current.page_width = "wide";
       settings.current.card_hover_effect = "lift";
       settings.current.color_palette = PALETTE;
     }
@@ -605,12 +651,95 @@ async function upsertHorizonJson(themeId: string, heroRef: string) {
         section.settings.country_selector_style = true;
         section.settings.show_language = false;
       }
+      if (section.blocks) {
+        for (const block of Object.values(section.blocks)) {
+          if (block.type === "_header-menu" && block.settings) {
+            block.settings.menu_style = "text";
+            block.settings.drawer_accordion = true;
+          }
+        }
+      }
     }
     const headerErrors = await upsertThemeText(themeId, "sections/header-group.json", JSON.stringify(header, null, 2));
-    notes.push(headerErrors.length ? `Announcement: ${headerErrors.join("; ")}` : "Announcement and country flag enabled.");
+    notes.push(headerErrors.length ? `Announcement: ${headerErrors.join("; ")}` : "Announcement, country flag, and Catalog text dropdown enabled.");
   }
 
+  notes.push(...(await patchCollectionTemplate(themeId)));
   notes.push(...(await patchFooterCopy(themeId)));
+  return notes;
+}
+
+async function patchCollectionTemplate(themeId: string) {
+  const notes: string[] = [];
+  const raw = await themeFileText(themeId, "templates/collection.json");
+  const start = raw.indexOf("{");
+  if (start < 0) {
+    notes.push("Collection template could not be read.");
+    return notes;
+  }
+  const template = JSON.parse(raw.slice(start)) as { sections?: Record<string, ThemeSection> };
+  const heading = template.sections?.section;
+  if (heading?.settings) heading.settings.section_width = "page-width";
+  const main = template.sections?.main;
+  if (main?.settings) {
+    main.settings.product_grid_width = "full-width";
+    main.settings.full_width_on_mobile = true;
+  }
+  const filters = main?.blocks?.filters;
+  if (filters?.settings) {
+    filters.settings.filter_style = "horizontal";
+    filters.settings.filter_width = "full-width";
+  }
+  const errors = await upsertThemeText(themeId, "templates/collection.json", JSON.stringify(template, null, 2));
+  notes.push(errors.length ? `Catalog grid: ${errors.join("; ")}` : "Catalog product grid uses the full page width.");
+  return notes;
+}
+
+async function patchMainCatalogMenu() {
+  const notes: string[] = [];
+  const data = await shopifyGraphql<{
+    menus: { nodes: Array<{ id: string; handle: string }> };
+    collections: { nodes: Array<{ id: string; handle: string }> };
+    pages: { nodes: Array<{ id: string; handle: string }> };
+  }>(
+    `{
+      menus(first: 10) { nodes { id handle } }
+      collections(first: 30) { nodes { id handle } }
+      pages(first: 50) { nodes { id handle } }
+    }`,
+  );
+  const menu = data.menus.nodes.find((row) => row.handle === "main-menu");
+  if (!menu) {
+    notes.push("Main menu was not found.");
+    return notes;
+  }
+  const collections = new Map(data.collections.nodes.map((row) => [row.handle, row.id]));
+  const contact = data.pages.nodes.find((row) => row.handle === "contact")?.id;
+  const catalogItems = [
+    { title: "All", type: "CATALOG" },
+    ...SERIES_COLLECTIONS.flatMap((series) => {
+      const resourceId = collections.get(series.handle);
+      return resourceId ? [{ title: series.title, type: "COLLECTION", resourceId }] : [];
+    }),
+  ];
+  const items: Array<{ title: string; type: string; resourceId?: string; items?: typeof catalogItems }> = [
+    { title: "Home", type: "FRONTPAGE" },
+    { title: "Catalog", type: "CATALOG", items: catalogItems },
+  ];
+  if (contact) items.push({ title: "Contact", type: "PAGE", resourceId: contact });
+  const updated = await shopifyGraphql<{
+    menuUpdate: { userErrors: Array<{ message: string }> };
+  }>(
+    `mutation ($id: ID!, $title: String!, $items: [MenuItemUpdateInput!]!) {
+      menuUpdate(id: $id, title: $title, items: $items) { userErrors { field message } }
+    }`,
+    { id: menu.id, title: "Main menu", items },
+  );
+  if (updated.menuUpdate.userErrors.length) {
+    notes.push(`Catalog menu: ${updated.menuUpdate.userErrors.map((row) => row.message).join("; ")}`);
+  } else {
+    notes.push("Catalog is a dropdown of All, Botanical, Scenic, Quotes, Home décor, and Original fern.");
+  }
   return notes;
 }
 
