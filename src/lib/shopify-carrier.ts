@@ -1,4 +1,4 @@
-/** Shopify carrier-service callback helpers (cents strings, empty rates when Gelato cannot ship). */
+/** Shopify carrier-service callback helpers (cents strings, empty rates when Fernora cannot ship). */
 
 export type ShopifyCarrierItem = {
   sku?: string | null;

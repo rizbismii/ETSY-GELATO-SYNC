@@ -4,9 +4,11 @@ import { test } from "node:test";
 import {
   gelatoCodesForLane,
   gelatoDestination,
+  GELATO_SHIP_BLURB,
   isGelatoCountry,
   shipLaneForCountry,
 } from "./gelato-countries.ts";
+import { POLICY_COPY } from "./shop-policies.ts";
 import { printFileName, printSurface, printTreatment } from "./print-file.ts";
 import {
   gelatoCarrierRateResponse,
@@ -50,33 +52,35 @@ test("print templates keep a downloadable filename and surface for current produ
   assert.ok(gelatoCodesForLane("NZ").includes("NZ"));
 });
 
-test("Shopify carrier callback quotes Gelato destination rates in cents", () => {
+test("Shopify carrier callback quotes destination rates in cents", () => {
   assert.equal(shippingToCarrierCents(10.09), "1009");
   assert.equal(carrierDestinationCountry({ rate: { destination: { country: "au" } } }), "AU");
   assert.deepEqual(carrierLineItems({ rate: { items: [{ sku: "live_poster", quantity: 2 }] } }), [
     { sku: "live_poster", title: undefined, quantity: 2 },
   ]);
   const payload = gelatoCarrierRateResponse({
-    serviceName: "Gelato Australia",
+    serviceName: "Standard delivery",
     lane: "AU",
     country: "AU",
     currency: "NZD",
     days: "3–10 days",
     shipping: 12.76,
   });
+  assert.equal(payload.rates[0].service_name, "Standard delivery");
   assert.equal(payload.rates[0].total_price, "1276");
   assert.equal(payload.rates[0].service_code, "gelato-AU");
 });
 
-test("returns policy follows Gelato made-to-order rules", () => {
+test("returns policy follows made-to-order rules without naming the printer", () => {
   const source = readFileSync(new URL("./shop-policies.ts", import.meta.url), "utf8");
   assert.match(source, /30 days/);
   assert.match(source, /change of mind/);
   assert.match(source, /do not provide a return address/);
   assert.match(source, /country name and currency code/);
+  assert.doesNotMatch(source, /Gelato/);
 });
 
-test("Horizon branding shows country · currency and Gelato homepage copy", () => {
+test("Horizon branding shows country · currency and made-to-order homepage copy", () => {
   const source = readFileSync(new URL("./shopify-horizon.ts", import.meta.url), "utf8");
   assert.match(source, /localization\.country\.name \}\} · \{\{ localization\.country\.currency\.iso_code/);
   assert.match(source, /snippets\/header-drawer\.liquid/);
@@ -91,8 +95,38 @@ test("Horizon branding shows country · currency and Gelato homepage copy", () =
   assert.match(source, /page_width = "normal"/);
   assert.match(source, /story_fernora/);
   assert.match(source, /Nothing is stored in a warehouse/);
+  assert.match(source, /Printed to order/);
+  assert.match(source, /Quality guarantee/);
   assert.match(source, /title: "Botanical"/);
   assert.match(source, /title: "Original fern"/);
+  assert.doesNotMatch(source, /by Gelato/);
+  assert.doesNotMatch(source, /Gelato quality/);
+});
+
+test("customer-facing shop copy does not name Gelato as the supplier", () => {
+  assert.doesNotMatch(GELATO_SHIP_BLURB, /Gelato/);
+  assert.doesNotMatch(JSON.stringify(POLICY_COPY), /Gelato/);
+  const quoteSource = readFileSync(new URL("./shop.ts", import.meta.url), "utf8");
+  assert.match(quoteSource, /serviceName: "Standard delivery"/);
+  const shopifySource = readFileSync(new URL("./shopify.ts", import.meta.url), "utf8");
+  assert.match(shopifySource, /title: "Standard delivery"/);
+  assert.match(shopifySource, /name: "Standard delivery"/);
+  const carrierSource = readFileSync(new URL("./shopify-storefront.ts", import.meta.url), "utf8");
+  assert.match(carrierSource, /FERNORA_CARRIER_NAME = "Fernora"/);
+  const pages = [
+    "../app/shop/layout.tsx",
+    "../app/shop/page.tsx",
+    "../app/shop/shop-header.tsx",
+    "../app/shop/checkout/page.tsx",
+    "../app/shop/order/[id]/ui.tsx",
+    "../app/shop/products/[id]/ui.tsx",
+    "../app/api/shop/catalog/route.ts",
+    "../app/api/shop/checkout/route.ts",
+  ];
+  for (const file of pages) {
+    const source = readFileSync(new URL(file, import.meta.url), "utf8");
+    assert.doesNotMatch(source, /\bGelato\b/, file);
+  }
 });
 
 test("markets pin countries without presentment currency to USD", () => {

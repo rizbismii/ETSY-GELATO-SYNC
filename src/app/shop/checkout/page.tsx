@@ -116,7 +116,7 @@ export default function CheckoutPage() {
       <div className="mx-auto max-w-lg py-16 text-center">
         <h1 className="font-heading text-4xl">Your bag is empty</h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          The catalog ships to New Zealand, Australia, and other countries Gelato delivers to.
+          The catalog ships to New Zealand, Australia, and the other countries we deliver to.
         </p>
         <Link href="/shop" className={`${buttonVariants()} mt-6`}>
           Back to the shop
@@ -130,8 +130,8 @@ export default function CheckoutPage() {
       <form className="space-y-4" onSubmit={(event) => void placeOrder(event)}>
         <h1 className="font-heading text-4xl">Checkout</h1>
         <p className="text-sm text-muted-foreground">
-          Country matches Gelato delivery. After you place the order, pay the Shopify invoice
-          (cards, Shop Pay, Apple Pay where available). Gelato prints only after payment.
+          Choose your country in the header. After you place the order, pay the Shopify invoice
+          (cards, Shop Pay, Apple Pay where available). Printing starts only after payment.
         </p>
         <CountrySelect
           value={country}
@@ -233,7 +233,7 @@ export default function CheckoutPage() {
               <dd>{formatMoney(quote.subtotal, quote.currency)}</dd>
             </div>
             <div className="flex justify-between">
-              <dt>Gelato shipping ({quote.countryName || gelatoCountryName(country)})</dt>
+              <dt>Shipping ({quote.countryName || gelatoCountryName(country)})</dt>
               <dd>{formatMoney(quote.shipping, quote.currency)}</dd>
             </div>
             {quote.days ? (

@@ -39,8 +39,8 @@ export default async function ShopHomePage({
             Quiet work for the house.
           </h1>
           <p className="mt-5 max-w-xl text-sm leading-7 text-muted-foreground">
-            Botanical studies, kind quotes, scenic canvases and home décor — printed to order by
-            Gelato near you. {FERNORA_SHIP_BLURB}
+            Botanical studies, kind quotes, scenic canvases and home décor — printed to order near
+            you. {FERNORA_SHIP_BLURB}
           </p>
         </div>
         <ul className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">

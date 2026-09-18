@@ -2,11 +2,7 @@ import crypto from "node:crypto";
 import { getCredentials, normalizeShopDomain, patchCredentials } from "@/lib/credentials";
 import { fernoraCatalog, FERNORA_NAME, gelatoShipFamilies, shopLane } from "@/lib/shop";
 import { FERNORA_SHOPIFY_SHOP, FERNORA_STOREFRONT_ORIGIN } from "@/lib/shopify-shop";
-import {
-  gelatoCodesForLane,
-  gelatoCountryName,
-  GELATO_SHIP_BLURB,
-} from "@/lib/gelato-countries";
+import { gelatoCodesForLane, GELATO_SHIP_BLURB } from "@/lib/gelato-countries";
 import { policyHtml } from "@/lib/shop-policies";
 import { absoluteAssetUrl } from "@/lib/origin";
 import { getShop, updateShop } from "@/lib/store";
@@ -456,6 +452,122 @@ function shopifyProductHtml(product: ReturnType<typeof fernoraCatalog>[number]) 
   ].join("");
 }
 
+export async function refreshShopifyProductCopy() {
+  const notes: string[] = [];
+  let updated = 0;
+  for (const product of fernoraCatalog()) {
+    const skuQuery = product.variants?.length
+      ? `sku:${product.id} OR sku:${product.variants[0].sku}`
+      : `sku:${product.id}`;
+    const existing = await shopifyGraphql<{
+      products: { nodes: Array<{ id: string }> };
+    }>(
+      `query ($q: String!) {
+        products(first: 1, query: $q) { nodes { id } }
+      }`,
+      { q: skuQuery },
+    );
+    const found = existing.products.nodes[0];
+    if (!found?.id) continue;
+    const result = await shopifyGraphql<{
+      productUpdate: { userErrors: Array<{ message: string }> };
+    }>(
+      `mutation ($product: ProductUpdateInput!) {
+        productUpdate(product: $product) { userErrors { field message } }
+      }`,
+      { product: { id: found.id, descriptionHtml: shopifyProductHtml(product) } },
+    );
+    if (result.productUpdate.userErrors.length) {
+      notes.push(`${product.title}: ${result.productUpdate.userErrors.map((row) => row.message).join("; ")}`);
+    } else {
+      updated += 1;
+    }
+  }
+  notes.push(
+    updated
+      ? `Updated descriptions on ${updated} Shopify products so the printer is not named.`
+      : "No Shopify product descriptions needed updating.",
+  );
+  return notes;
+}
+
+export async function hideGelatoFromCheckoutShipping() {
+  const notes: string[] = [];
+  const data = await shopifyGraphql<{
+    deliveryProfiles: {
+      nodes: Array<{
+        id: string;
+        profileLocationGroups: Array<{
+          locationGroup: { id: string };
+          locationGroupZones: {
+            nodes: Array<{
+              zone: { id: string };
+              methodDefinitions: { nodes: Array<{ id: string; name: string }> };
+            }>;
+          };
+        }>;
+      }>;
+    };
+  }>(`{
+    deliveryProfiles(first: 25) {
+      nodes {
+        id
+        profileLocationGroups {
+          locationGroup { id }
+          locationGroupZones(first: 40) {
+            nodes {
+              zone { id }
+              methodDefinitions(first: 20) { nodes { id name } }
+            }
+          }
+        }
+      }
+    }
+  }`);
+  let renamed = 0;
+  for (const profile of data.deliveryProfiles.nodes) {
+    for (const group of profile.profileLocationGroups) {
+      const zonesToUpdate = group.locationGroupZones.nodes.flatMap((row) => {
+        const methods = row.methodDefinitions.nodes.filter((method) => /gelato/i.test(method.name));
+        if (!methods.length) return [];
+        return [
+          {
+            id: row.zone.id,
+            methodDefinitionsToUpdate: methods.map((method) => ({ id: method.id, name: "Standard delivery" })),
+          },
+        ];
+      });
+      if (!zonesToUpdate.length) continue;
+      const updated = await shopifyGraphql<{
+        deliveryProfileUpdate: { userErrors: Array<{ message: string }> };
+      }>(
+        `mutation ($id: ID!, $profile: DeliveryProfileInput!) {
+          deliveryProfileUpdate(id: $id, profile: $profile) { userErrors { field message } }
+        }`,
+        {
+          id: profile.id,
+          profile: {
+            locationGroupsToUpdate: [{ id: group.locationGroup.id, zonesToUpdate }],
+          },
+        },
+      );
+      if (updated.deliveryProfileUpdate.userErrors.length) {
+        notes.push(
+          "Shipping labels: " + updated.deliveryProfileUpdate.userErrors.map((row) => row.message).join("; "),
+        );
+      } else {
+        renamed += zonesToUpdate.reduce((sum, zone) => sum + zone.methodDefinitionsToUpdate.length, 0);
+      }
+    }
+  }
+  notes.push(
+    renamed
+      ? `Renamed ${renamed} checkout shipping methods to Standard delivery.`
+      : "Checkout shipping methods already omit the printer name.",
+  );
+  return notes;
+}
+
 export async function restrictShopifyToAunz() {
   return configureShopifyGelatoShipping();
 }
@@ -476,7 +588,7 @@ function gelatoZonesToCreate(rates?: Record<string, number>) {
     countries: zone.codes.map((code) => ({ code, includeAllProvinces: true })),
     methodDefinitionsToCreate: [
       {
-        name: `Gelato ${zone.name}`,
+        name: "Standard delivery",
         active: true,
         rateDefinition: { price: { amount: zone.price.toFixed(2), currencyCode: "NZD" } },
       },
@@ -790,12 +902,12 @@ export async function createShopifyDraftInvoice(input: {
       input: {
         email: input.email,
         note: input.note,
-        tags: ["Fernora", "Gelato"],
+        tags: ["Fernora"],
         shippingAddress: input.address,
         billingAddress: input.address,
         lineItems,
         shippingLine: {
-          title: `Gelato ${gelatoCountryName(input.country) || input.country}`,
+          title: "Standard delivery",
           price: shipping.toFixed(2),
         },
       },

@@ -29,13 +29,13 @@ Open the printed trycloudflare URL for Pressroom, or `/shop` on that host for th
 
 ## Fernora shop (Gelato destinations)
 
-The customer website is the **Shopify Online Store** on [fernora.nz](https://fernora.nz) (Horizon theme). The header country control shows **country name · currency code** (for example New Zealand · NZD). Catalog prices convert to that market’s currency (AUD, USD, GBP, EUR). Shipping is the Gelato destination rate. Change of mind is not refundable — Gelato print-on-demand rules. The homepage uses a studio hero, a kōwhai-and-fern palette, and professional collection copy.
+The customer website is the **Shopify Online Store** on [fernora.nz](https://fernora.nz) (Horizon theme). The header country control shows **country name · currency code** (for example New Zealand · NZD). Catalog prices convert to that market’s currency (AUD, USD, GBP, EUR). Checkout shipping is the destination rate. Change of mind is not refundable — made-to-order print rules. Customer-facing copy does not name Gelato as the printer. The homepage uses a studio hero, a kōwhai-and-fern palette, and professional collection copy.
 
 Use Shopify’s theme — not a custom Next.js shop — for the public site. Horizon (already live) plus native checkout, Shop Pay, customer accounts, markets, and shipping is what customers need. Pressroom `/shop` stays as a catalog preview for operators.
 
 Paid Fernora orders print through Gelato. Customers pay on Shopify checkout (Shopify Payments: cards, Shop Pay, Apple Pay where available). Pressroom still receives paid-order webhooks so Gelato can print.
 
-Shopify-required pages are the Online Store policies (returns follow Gelato: no change-of-mind returns, 30-day defect reprints). Shopify may auto-manage the privacy policy — turn that off in **Settings → Policies** if you want the Gelato-aligned privacy copy to replace it.
+Shopify-required pages are the Online Store policies (returns: no change-of-mind returns, 30-day defect reprints). Shopify may auto-manage the privacy policy — turn that off in **Settings → Policies** if you want Fernora’s privacy copy to replace it.
 
 ### Shopify (fernora.nz)
 
