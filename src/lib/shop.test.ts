@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
   gelatoCodesForLane,
@@ -65,4 +66,22 @@ test("Shopify carrier callback quotes Gelato destination rates in cents", () => 
   });
   assert.equal(payload.rates[0].total_price, "1276");
   assert.equal(payload.rates[0].service_code, "gelato-AU");
+});
+
+test("returns policy follows Gelato made-to-order rules", () => {
+  const source = readFileSync(new URL("./shop-policies.ts", import.meta.url), "utf8");
+  assert.match(source, /30 days/);
+  assert.match(source, /change of mind/);
+  assert.match(source, /do not provide a return address/);
+  assert.match(source, /country name and currency code/);
+});
+
+test("Horizon branding shows country · currency and Gelato homepage copy", () => {
+  const source = readFileSync(new URL("./shopify-horizon.ts", import.meta.url), "utf8");
+  assert.match(source, /localization\.country\.name \}\} · \{\{ localization\.country\.currency\.iso_code/);
+  assert.match(source, /snippets\/header-drawer\.liquid/);
+  assert.match(source, /Original botanicals for considered homes/);
+  assert.match(source, /Made to order\. Never warehoused/);
+  assert.match(source, /Shop by series/);
+  assert.match(source, /privacyFeaturesDisable|publishGelatoLegalPages/);
 });

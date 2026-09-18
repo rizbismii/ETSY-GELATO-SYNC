@@ -671,6 +671,30 @@ async function configureGelatoProductShippingProfiles(
 
 export async function syncShopifyPolicies() {
   const notes: string[] = [];
+  try {
+    const disabled = await shopifyGraphql<{
+      privacyFeaturesDisable: {
+        featuresDisabled?: string[] | null;
+        userErrors: Array<{ message: string }>;
+      };
+    }>(
+      `mutation {
+        privacyFeaturesDisable(featuresToDisable: [PRIVACY_POLICY]) {
+          featuresDisabled
+          userErrors { field message }
+        }
+      }`,
+    );
+    if (disabled.privacyFeaturesDisable.userErrors.length) {
+      notes.push(
+        `privacy auto-manage: ${disabled.privacyFeaturesDisable.userErrors.map((row) => row.message).join("; ")}`,
+      );
+    } else {
+      notes.push("Shopify automatic privacy policy disabled so Gelato-aligned copy can publish.");
+    }
+  } catch (error) {
+    notes.push(`privacy auto-manage: ${(error as Error).message}`);
+  }
   const policies: Array<{ type: string; body: string; label: string }> = [
     { type: "REFUND_POLICY", body: policyHtml("returns"), label: "returns" },
     { type: "PRIVACY_POLICY", body: policyHtml("privacy"), label: "privacy" },
@@ -699,8 +723,11 @@ export async function syncShopifyPolicies() {
       notes.push(`${policy.label}: ${(error as Error).message}`);
     }
   }
-  if (!notes.length) notes.push("Shopify legal policies (returns, privacy, terms, shipping, payments) updated.");
-  else notes.unshift("Shopify policies:");
+  if (!notes.some((row) => row.includes("auto-manage") || row.includes(":"))) {
+    notes.push("Shopify legal policies (returns, privacy, terms, shipping, payments) updated.");
+  } else {
+    notes.unshift("Shopify policies:");
+  }
   return notes;
 }
 

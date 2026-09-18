@@ -5,16 +5,23 @@ import {
   publishableToOnlineStore,
   shopifyGraphql,
 } from "@/lib/shopify";
+import { brandHorizonStorefront } from "@/lib/shopify-horizon";
 
 const HORIZON_THEME = "gid://shopify/OnlineStoreTheme/189823058216";
 const FRONTPAGE = "gid://shopify/Collection/515726311720";
 
-const MARKET_LANES: Array<{ name: string; handle: string; aliases: string[]; lane: (typeof SHIP_LANES)[number] }> = [
-  { name: "New Zealand", handle: "nz", aliases: ["new zealand", "new-zealand"], lane: "NZ" },
-  { name: "Australia", handle: "australia", aliases: ["australia"], lane: "AU" },
-  { name: "United States & Americas", handle: "americas", aliases: ["united states", "americas"], lane: "US" },
-  { name: "United Kingdom & Ireland", handle: "united-kingdom", aliases: ["united kingdom", "uk"], lane: "GB" },
-  { name: "Europe", handle: "europe", aliases: ["europe", "european union"], lane: "EU" },
+const MARKET_LANES: Array<{
+  name: string;
+  handle: string;
+  aliases: string[];
+  lane: (typeof SHIP_LANES)[number];
+  currency: string;
+}> = [
+  { name: "New Zealand", handle: "nz", aliases: ["new zealand", "new-zealand"], lane: "NZ", currency: "NZD" },
+  { name: "Australia", handle: "australia", aliases: ["australia"], lane: "AU", currency: "AUD" },
+  { name: "United States & Americas", handle: "americas", aliases: ["united states", "americas"], lane: "US", currency: "USD" },
+  { name: "United Kingdom & Ireland", handle: "united-kingdom", aliases: ["united kingdom", "uk"], lane: "GB", currency: "GBP" },
+  { name: "Europe", handle: "europe", aliases: ["europe", "european union"], lane: "EU", currency: "EUR" },
 ];
 
 export async function publishFernoraToOnlineStore() {
@@ -45,13 +52,15 @@ export async function configureShopifyMarkets() {
   const byHandle = new Map(
     existing.markets.nodes.filter((row) => row.handle).map((row) => [row.handle!.toLowerCase(), row]),
   );
+  const resolved: Array<{ id: string; lane: (typeof MARKET_LANES)[number] }> = [];
   for (const market of MARKET_LANES) {
     const already =
-      byName.has(market.name.toLowerCase()) ||
-      byHandle.has(market.handle) ||
-      market.aliases.some((alias) => byName.has(alias) || byHandle.has(alias));
+      byName.get(market.name.toLowerCase()) ||
+      byHandle.get(market.handle) ||
+      market.aliases.map((alias) => byName.get(alias) || byHandle.get(alias)).find(Boolean);
     if (already) {
       notes.push(`Market already exists: ${market.name}`);
+      resolved.push({ id: already.id, lane: market });
       continue;
     }
     const created = await shopifyGraphql<{
@@ -78,8 +87,41 @@ export async function configureShopifyMarkets() {
     );
     if (created.marketCreate.userErrors.length) {
       notes.push(`${market.name}: ${created.marketCreate.userErrors.map((row) => row.message).join("; ")}`);
+    } else if (created.marketCreate.market?.id) {
+      notes.push(`Created market ${created.marketCreate.market.name || market.name}.`);
+      resolved.push({ id: created.marketCreate.market.id, lane: market });
+    }
+  }
+  notes.push(...(await configureMarketCurrencies(resolved)));
+  return notes;
+}
+
+async function configureMarketCurrencies(markets: Array<{ id: string; lane: (typeof MARKET_LANES)[number] }>) {
+  const notes: string[] = [];
+  for (const row of markets) {
+    const updated = await shopifyGraphql<{
+      marketUpdate: { userErrors: Array<{ message: string }> };
+    }>(
+      `mutation ($id: ID!, $input: MarketUpdateInput!) {
+        marketUpdate(id: $id, input: $input) { userErrors { field message } }
+      }`,
+      {
+        id: row.id,
+        input: {
+          currencySettings: {
+            baseCurrency: row.lane.currency,
+            localCurrencies: true,
+            roundingEnabled: true,
+          },
+        },
+      },
+    );
+    if (updated.marketUpdate.userErrors.length) {
+      notes.push(
+        `${row.lane.name} currency: ${updated.marketUpdate.userErrors.map((err) => err.message).join("; ")}`,
+      );
     } else {
-      notes.push(`Created market ${created.marketCreate.market?.name || market.name}.`);
+      notes.push(`${row.lane.name} prices display in ${row.lane.currency} (and local currencies in that market).`);
     }
   }
   return notes;
@@ -185,92 +227,8 @@ export async function fillShopifyCollections() {
   return notes;
 }
 
-export async function brandHorizonTheme() {
-  const notes: string[] = [];
-  const themeId = await mainThemeId();
-  try {
-    await shopifyGraphql(
-      `mutation ($id: ID!, $input: OnlineStoreThemeInput!) {
-        themeUpdate(id: $id, input: $input) { userErrors { field message } }
-      }`,
-      { id: themeId, input: { name: "Fernora" } },
-    );
-  } catch (error) {
-    notes.push(`Theme rename: ${(error as Error).message}`);
-  }
-  const current = await shopifyGraphql<{
-    theme: {
-      files: { nodes: Array<{ filename: string; body?: { content?: string } }> };
-    };
-  }>(
-    `query ($id: ID!) {
-      theme(id: $id) {
-        files(filenames: ["templates/index.json"], first: 1) {
-          nodes { filename body { ... on OnlineStoreThemeFileBodyText { content } } }
-        }
-      }
-    }`,
-    { id: themeId },
-  );
-  const raw = current.theme.files.nodes[0]?.body?.content || "";
-  const jsonStart = raw.indexOf("{");
-  if (jsonStart < 0) {
-    notes.push("Horizon index.json could not be read.");
-    return notes;
-  }
-  const template = JSON.parse(raw.slice(jsonStart)) as {
-    sections: Record<
-      string,
-      {
-        type?: string;
-        blocks?: Record<string, { type?: string; settings?: Record<string, unknown> }>;
-        settings?: Record<string, unknown>;
-      }
-    >;
-    order?: string[];
-  };
-  for (const section of Object.values(template.sections || {})) {
-    if (section.type === "hero") {
-      for (const block of Object.values(section.blocks || {})) {
-        if (block.type === "text" && block.settings) {
-          block.settings.text = "<p>Quiet work for the house.</p>";
-          block.settings.type_preset = "h2";
-        }
-        if (block.type === "button" && block.settings) {
-          block.settings.label = "Shop the catalog";
-          block.settings.link = "shopify://collections/all";
-        }
-      }
-    }
-    if (section.type === "product-list" && section.settings) {
-      section.settings.collection = "all";
-      section.settings.max_products = 16;
-      section.settings.columns = 4;
-    }
-  }
-  const upserted = await shopifyGraphql<{
-    themeFilesUpsert: { userErrors: Array<{ message: string }> };
-  }>(
-    `mutation ($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
-      themeFilesUpsert(themeId: $themeId, files: $files) {
-        userErrors { field filename message }
-      }
-    }`,
-    {
-      themeId,
-      files: [
-        {
-          filename: "templates/index.json",
-          body: { type: "TEXT", value: JSON.stringify(template, null, 2) },
-        },
-      ],
-    },
-  );
-  if (upserted.themeFilesUpsert.userErrors.length) {
-    notes.push("Theme: " + upserted.themeFilesUpsert.userErrors.map((row) => row.message).join("; "));
-  } else {
-    notes.push("Horizon homepage now says Quiet work for the house and lists the live catalog.");
-  }
+export async function brandHorizonTheme(origin?: string) {
+  const notes = await brandHorizonStorefront(await mainThemeId(), origin);
   return notes;
 }
 
@@ -325,7 +283,7 @@ export async function prepareShopifyCustomerStore(origin: string) {
   notes.push(...(await publishFernoraToOnlineStore()));
   notes.push(...(await configureShopifyMarkets()));
   notes.push(...(await fillShopifyCollections()));
-  notes.push(...(await brandHorizonTheme()));
+  notes.push(...(await brandHorizonTheme(origin)));
   notes.push(...(await registerGelatoCarrierService(origin)));
   return notes;
 }
