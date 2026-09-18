@@ -12,7 +12,7 @@ export function ShopHeader() {
         <Link href="/shop" className="leading-none">
           <p className="font-heading text-3xl tracking-tight">Fernora</p>
           <p className="mt-1 text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-            NZ · AU · Gelato destinations
+            NZ · AU · printed near you
           </p>
         </Link>
         <nav className="flex items-center gap-5 text-sm">

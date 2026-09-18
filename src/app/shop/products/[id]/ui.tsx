@@ -76,7 +76,7 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
           ) : null}
         </div>
         <p className="text-xs leading-5 text-muted-foreground">
-          The print file is the same template Gelato uses. It is not cropped to the mockup frame, so the
+          The print file is the same template the printer uses. It is not cropped to the mockup frame, so the
           design on the product matches the artwork.
         </p>
       </div>
@@ -123,10 +123,10 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
             </div>
           </div>
         ) : null}
-        <CountrySelect value={country} onChange={setCountry} label="Ship to (Gelato destinations)" />
+        <CountrySelect value={country} onChange={setCountry} label="Ship to" />
         {lane ? (
           <p className="text-sm text-muted-foreground">
-            Gelato shipping to {gelatoCountryName(country)} {formatMoney(lane.shipping, product.currency)} · {lane.days}
+            Shipping to {gelatoCountryName(country)} {formatMoney(lane.shipping, product.currency)} · {lane.days}
             {country !== lane.country && lane.region === "EU" ? " · EU print lane" : ""}
           </p>
         ) : (
@@ -173,7 +173,7 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
           </table>
         </div>
         <p className="text-xs leading-6 text-muted-foreground">
-          Buyer pays destination shipping. Other Gelato countries use the matching lane (Americas and
+          Buyer pays destination shipping. Other countries use the matching lane (Americas and
           Asia on the US rate, Ireland on the UK rate, Switzerland and Norway on the EU rate).{" "}
           <Link className="underline" href={POLICY_PATHS.shipping}>
             Shipping policy

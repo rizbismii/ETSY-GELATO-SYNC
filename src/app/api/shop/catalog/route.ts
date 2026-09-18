@@ -51,7 +51,7 @@ export async function POST(request: Request) {
   };
   try {
     if (!isFernoraCountry(body.country || "")) {
-      return Response.json({ error: "Ships only to countries Gelato delivers to" }, { status: 400 });
+      return Response.json({ error: "Ships only to the countries we deliver to" }, { status: 400 });
     }
     const quote = quoteFernoraCart(body.lines || [], body.country!);
     return Response.json({
