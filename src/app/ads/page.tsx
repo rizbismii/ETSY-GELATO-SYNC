@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StatusPill } from "@/components/status-pill";
 import { api } from "@/lib/api";
+import { isMetaAccountDisabledError } from "@/lib/meta-connect-error";
 import type { Connections, MetaAdsCampaign } from "@/lib/types";
 
 type Payload = {
@@ -119,6 +120,7 @@ export default function AdsPage() {
 
   const currency = data.ping?.currency || data.campaign.currency || "NZD";
   const status = data.campaign.status;
+  const metaDisabled = isMetaAccountDisabledError(data.pingError);
 
   return (
     <div className="flex flex-col gap-6">
@@ -145,17 +147,51 @@ export default function AdsPage() {
         </p>
       </div>
 
+      <div
+        className={`rounded-xl border px-4 py-3 text-sm leading-6 ${
+          metaDisabled ? "border-destructive/40 bg-destructive/5" : "border-border bg-background"
+        }`}
+      >
+        <p className="font-medium">If Facebook says the account is disabled</p>
+        <p className="mt-1 text-muted-foreground">
+          Pressroom cannot unlock a Facebook login Meta has disabled (the Dealstic checkpoint for
+          account integrity). That login cannot issue an ads token, and Meta will not take another
+          review. Do not paste a token from it.
+        </p>
+        <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted-foreground">
+          <li>
+            Open{" "}
+            <a className="underline" href="https://business.facebook.com" target="_blank" rel="noreferrer">
+              business.facebook.com
+            </a>{" "}
+            and skip <strong>Continue with Facebook</strong> for the disabled profile.
+          </li>
+          <li>
+            Use <strong>Continue with Instagram</strong> or a <strong>Managed Meta Account</strong> that
+            Meta still allows — not a new personal Facebook made to dodge the disable.
+          </li>
+          <li>
+            In Business Settings create a system user (or use a live admin) and generate a token with{" "}
+            <code>ads_management</code> and <code>ads_read</code>. Copy the ad account ID, Pixel ID, and
+            Page ID.
+          </li>
+          <li>Paste those four values below and save. Campaigns stay off until that ping succeeds.</li>
+        </ol>
+      </div>
+
       <section className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Meta account</CardTitle>
-            <StatusPill value={data.connections.meta.authorized ? "live" : "warning"} />
+            <StatusPill
+              value={data.connections.meta.authorized ? "live" : metaDisabled ? "blocked" : "warning"}
+            />
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-xs leading-5 text-muted-foreground">
-              In Meta Events Manager create a Pixel. In Business Manager copy the ad account ID, a
-              user token with <code>ads_management</code> and <code>ads_read</code>, and the Facebook
-              Page ID.{" "}
+              The login must be a live Business Suite identity. A disabled Facebook profile cannot
+              connect. From that live account copy the ad account ID, a system-user or admin token with{" "}
+              <code>ads_management</code> and <code>ads_read</code>, the Pixel, and the Page ID.{" "}
               <a className="underline" href="https://business.facebook.com" target="_blank" rel="noreferrer">
                 business.facebook.com
               </a>

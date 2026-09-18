@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  explainMetaConnectError,
+  isMetaAccountDisabledError,
+  META_ACCOUNT_DISABLED_HELP,
+} from "./meta-connect-error.ts";
+import {
   clampMetaDailyBudget,
   dailyBudgetToMinor,
   META_ADS_DAILY_BUDGET_DEFAULT,
@@ -39,6 +44,13 @@ test("theme pixel snippet inits the Pixel and can be replaced", () => {
   const replaced = withMetaPixelInTheme(injected, "222");
   assert.match(replaced, /fbq\('init', "222"\)/);
   assert.doesNotMatch(replaced, /"111"/);
+});
+
+test("disabled Facebook logins get a Pressroom-safe Meta error", () => {
+  assert.equal(explainMetaConnectError("We've disabled your account", 190, 459), META_ACCOUNT_DISABLED_HELP);
+  assert.equal(isMetaAccountDisabledError("Community Standards on account integrity"), true);
+  assert.equal(explainMetaConnectError("Invalid OAuth access token"), "Invalid OAuth access token");
+  assert.equal(isMetaAccountDisabledError("Invalid OAuth access token"), false);
 });
 
 test("CAPI purchase hashes email and keeps the shop URL", () => {

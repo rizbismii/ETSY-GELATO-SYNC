@@ -1,6 +1,7 @@
 import { getCredentials } from "@/lib/credentials";
 import { getShop, updateShop } from "@/lib/store";
 import type { MetaAdsCampaign } from "@/lib/types";
+import { explainMetaConnectError } from "@/lib/meta-connect-error";
 import {
   clampMetaDailyBudget,
   dailyBudgetToMinor,
@@ -30,10 +31,23 @@ export {
   normalizePixelId,
   withMetaPixelInTheme,
 } from "@/lib/meta-budget";
+export {
+  explainMetaConnectError,
+  isMetaAccountDisabledError,
+  META_ACCOUNT_DISABLED_HELP,
+} from "@/lib/meta-connect-error";
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 
-type GraphError = { error?: { message?: string; error_user_msg?: string } };
+type GraphError = {
+  error?: {
+    message?: string;
+    error_user_msg?: string;
+    error_user_title?: string;
+    code?: number;
+    error_subcode?: number;
+  };
+};
 
 async function graph<T>(
   path: string,
@@ -53,7 +67,13 @@ async function graph<T>(
   });
   const json = (await response.json().catch(() => ({}))) as T & GraphError;
   if (!response.ok || json.error) {
-    throw new Error(json.error?.error_user_msg || json.error?.message || `Meta API ${response.status}`);
+    throw new Error(
+      explainMetaConnectError(
+        json.error?.error_user_msg || json.error?.error_user_title || json.error?.message,
+        json.error?.code,
+        json.error?.error_subcode,
+      ) || `Meta API ${response.status}`,
+    );
   }
   return json as T;
 }

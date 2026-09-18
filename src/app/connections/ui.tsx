@@ -578,7 +578,7 @@ export function ConnectionsClient() {
               ? "app keys saved · paste matching App URL + Redirect URL, then authorize"
               : "not connected"}
         </span>
-        <StatusPill value={data.connections.meta.authorized ? "live" : "demo"} />
+        <StatusPill value={data.connections.meta.authorized ? "live" : "warning"} />
         <span className="text-sm text-muted-foreground">
           Meta ads{" "}
           {data.connections.meta.authorized ? (
@@ -587,7 +587,7 @@ export function ConnectionsClient() {
             </a>
           ) : (
             <a className="underline" href="/ads">
-              not connected
+              not connected — disabled Facebook logins cannot issue a token
             </a>
           )}
         </span>
@@ -667,7 +667,7 @@ export function ConnectionsClient() {
                 Meta ads
                 {data.connections.meta.authorized
                   ? " · ad account linked · low daily cap on Ads"
-                  : " · not connected · open Ads"}
+                  : " · not connected · if Facebook disabled the login, open Ads for the live-account path"}
               </span>
             </li>
             <li className="flex flex-wrap items-center gap-2">
