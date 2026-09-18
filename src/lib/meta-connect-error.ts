@@ -1,5 +1,5 @@
 export const META_ACCOUNT_DISABLED_HELP =
-  "Meta has disabled this Facebook login (account integrity). Pressroom cannot connect that account or any token it issues. Open Business Suite with Instagram or a Managed Meta Account that is still live, then paste a new token on Ads.";
+  "Meta has disabled this Facebook login (account integrity). Pressroom cannot connect that account or any token it issues. A Managed Meta Account on the same email will say the account already exists. Continue with Instagram only if that login is still live and is not Dealstic, then paste a new token on Ads.";
 
 export function isMetaAccountDisabledError(message?: string | null, code?: number, subcode?: number) {
   if (code === 190 && (subcode === 459 || subcode === 464 || subcode === 490)) return true;

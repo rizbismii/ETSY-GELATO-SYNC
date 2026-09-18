@@ -158,24 +158,31 @@ export default function AdsPage() {
           account integrity). That login cannot issue an ads token, and Meta will not take another
           review. Do not paste a token from it.
         </p>
+        <p className="mt-3 font-medium">If Managed Meta Account says account already exists</p>
+        <p className="mt-1 text-muted-foreground">
+          That email is already a Meta identity — Dealstic. Meta will not create a second managed
+          account on it. Signing in with the same email returns you to the disabled checkpoint. A
+          Managed Meta Account is an organisation-issued work login you activate from an invitation,
+          not a self-serve replacement for a disabled personal Facebook.
+        </p>
         <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted-foreground">
           <li>
-            Open{" "}
-            <a className="underline" href="https://business.facebook.com" target="_blank" rel="noreferrer">
-              business.facebook.com
-            </a>{" "}
-            and skip <strong>Continue with Facebook</strong> for the disabled profile.
+            Skip <strong>Continue with Facebook</strong> and skip creating a Managed Meta Account with
+            the Dealstic email.
           </li>
           <li>
-            Use <strong>Continue with Instagram</strong> or a <strong>Managed Meta Account</strong> that
-            Meta still allows — not a new personal Facebook made to dodge the disable.
+            Use <strong>Continue with Instagram</strong> only if that Instagram is a different login
+            that Meta still allows — not the same Dealstic Facebook.
           </li>
           <li>
-            In Business Settings create a system user (or use a live admin) and generate a token with{" "}
-            <code>ads_management</code> and <code>ads_read</code>. Copy the ad account ID, Pixel ID, and
+            Or have a partner who already has a live Business Suite generate a system-user token with{" "}
+            <code>ads_management</code> and <code>ads_read</code>, plus the ad account ID, Pixel ID, and
             Page ID.
           </li>
-          <li>Paste those four values below and save. Campaigns stay off until that ping succeeds.</li>
+          <li>
+            Paste those four values below and save. If Dealstic is the only Meta identity, campaigns
+            stay off — Pressroom cannot override Meta.
+          </li>
         </ol>
       </div>
 
@@ -189,8 +196,9 @@ export default function AdsPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-xs leading-5 text-muted-foreground">
-              The login must be a live Business Suite identity. A disabled Facebook profile cannot
-              connect. From that live account copy the ad account ID, a system-user or admin token with{" "}
+              The login must be a live Business Suite identity that is not Dealstic. A disabled
+              Facebook profile, or a Managed Meta Account on that same email, cannot connect. From a
+              live account copy the ad account ID, a system-user or admin token with{" "}
               <code>ads_management</code> and <code>ads_read</code>, the Pixel, and the Page ID.{" "}
               <a className="underline" href="https://business.facebook.com" target="_blank" rel="noreferrer">
                 business.facebook.com

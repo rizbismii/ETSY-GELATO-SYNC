@@ -49,6 +49,7 @@ test("theme pixel snippet inits the Pixel and can be replaced", () => {
 test("disabled Facebook logins get a Pressroom-safe Meta error", () => {
   assert.equal(explainMetaConnectError("We've disabled your account", 190, 459), META_ACCOUNT_DISABLED_HELP);
   assert.equal(isMetaAccountDisabledError("Community Standards on account integrity"), true);
+  assert.match(META_ACCOUNT_DISABLED_HELP, /account already exists/i);
   assert.equal(explainMetaConnectError("Invalid OAuth access token"), "Invalid OAuth access token");
   assert.equal(isMetaAccountDisabledError("Invalid OAuth access token"), false);
 });
