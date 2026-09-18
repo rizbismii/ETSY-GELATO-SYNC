@@ -244,7 +244,7 @@ export async function brandHorizonTheme() {
     }
     if (section.type === "product-list" && section.settings) {
       section.settings.collection = "all";
-      section.settings.max_products = 20;
+      section.settings.max_products = 16;
       section.settings.columns = 4;
     }
   }

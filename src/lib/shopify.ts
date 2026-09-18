@@ -473,7 +473,7 @@ function gelatoZoneDefs(rates?: Record<string, number>) {
 function gelatoZonesToCreate(rates?: Record<string, number>) {
   return gelatoZoneDefs(rates).map((zone) => ({
     name: zone.name,
-    countries: zone.codes.map((code) => ({ code })),
+    countries: zone.codes.map((code) => ({ code, includeAllProvinces: true })),
     methodDefinitionsToCreate: [
       {
         name: `Gelato ${zone.name}`,
