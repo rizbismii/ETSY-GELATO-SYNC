@@ -4,6 +4,7 @@ import { pingEtsy } from "@/lib/etsy";
 import { etsyRedirectUri, isEtsyCallbackHost, publicOrigin, shopifyRedirectUri } from "@/lib/origin";
 import { probePublicCallback, vendorHealth } from "@/lib/health";
 import { pingShopify, probeShopifyStore } from "@/lib/shopify";
+import { FERNORA_SHOPIFY_SHOP } from "@/lib/shopify-shop";
 import { tunnelSnapshot } from "@/lib/tunnel";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +20,7 @@ export async function GET(request: Request) {
   const shopifyCallbackUrl = await shopifyRedirectUri(request);
   const callbackReachable = await probePublicCallback(origin);
   const callbackIsPublic = isEtsyCallbackHost(origin) && callbackReachable;
-  const shopifyShop = creds.shopify?.shop || "fernora.myshopify.com";
+  const shopifyShop = creds.shopify?.shop || FERNORA_SHOPIFY_SHOP;
   const storefrontStatus = await probeShopifyStore(shopifyShop);
   const tunnel = await tunnelSnapshot(origin);
   return Response.json({
@@ -86,7 +87,7 @@ export async function POST(request: Request) {
     shopify: {
       clientId: body.shopifyClientId?.trim() || "",
       clientSecret: body.shopifyClientSecret?.trim() || "",
-      shop: body.shopifyShop?.trim() || "fernora.myshopify.com",
+      shop: body.shopifyShop?.trim() || FERNORA_SHOPIFY_SHOP,
       ...(body.shopifyAccessToken?.trim()
         ? { accessToken: body.shopifyAccessToken.trim() }
         : {}),

@@ -3,6 +3,7 @@ import { getCredentials, normalizeShopDomain, patchCredentials } from "@/lib/cre
 import { isEtsyCallbackHost, publicOrigin, shopifyRedirectUri } from "@/lib/origin";
 import { saveOAuthState } from "@/lib/public-origin";
 import { shopifyAuthorizeUrl } from "@/lib/shopify";
+import { FERNORA_SHOPIFY_SHOP } from "@/lib/shopify-shop";
 import { topLevelRedirect } from "@/lib/top-redirect";
 
 export async function GET(request: Request) {
@@ -21,7 +22,7 @@ export async function GET(request: Request) {
     );
   }
   const requestedShop = normalizeShopDomain(new URL(request.url).searchParams.get("shop") || "");
-  const shop = requestedShop || creds.shopify.shop || "fernora.myshopify.com";
+  const shop = requestedShop || creds.shopify.shop || FERNORA_SHOPIFY_SHOP;
   if (requestedShop && requestedShop !== creds.shopify.shop) {
     await patchCredentials({ shopify: { ...creds.shopify, shop: requestedShop } });
   }

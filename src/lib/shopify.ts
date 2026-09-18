@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { getCredentials, normalizeShopDomain, patchCredentials } from "@/lib/credentials";
 import { fernoraCatalog, FERNORA_NAME, shopLane, type FernoraCountry } from "@/lib/shop";
+import { FERNORA_SHOPIFY_SHOP } from "@/lib/shopify-shop";
 import { absoluteAssetUrl } from "@/lib/origin";
 import { getShop, updateShop } from "@/lib/store";
 import type { ShopifyCatalogMap } from "@/lib/types";
@@ -63,7 +64,7 @@ export function verifyShopifyWebhook(rawBody: string, hmacHeader: string | null,
   }
 }
 
-export async function probeShopifyStore(shop = "fernora.myshopify.com") {
+export async function probeShopifyStore(shop = FERNORA_SHOPIFY_SHOP) {
   const host = normalizeShopDomain(shop) || shop;
   try {
     const response = await fetch(`https://${host}/`, {
@@ -217,7 +218,7 @@ export async function shopifyGraphql<T>(query: string, variables?: Record<string
 
 export async function pingShopify() {
   const creds = await getCredentials();
-  const storefrontStatus = await probeShopifyStore(creds.shopify?.shop || "fernora.myshopify.com");
+  const storefrontStatus = await probeShopifyStore(creds.shopify?.shop || FERNORA_SHOPIFY_SHOP);
   if (creds.shopify && creds.shopify.storefrontStatus !== storefrontStatus) {
     await patchCredentials({ shopify: { ...creds.shopify, storefrontStatus } });
   }

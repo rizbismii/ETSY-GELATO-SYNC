@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { StatusPill } from "@/components/status-pill";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { FERNORA_SHOPIFY_SHOP, FERNORA_SHOPIFY_STOREFRONT } from "@/lib/shopify-shop";
 import type { Connections } from "@/lib/types";
 
 type LiveStatus = {
@@ -87,7 +88,7 @@ export function ConnectionsClient() {
   const [shopifyKey, setShopifyKey] = useState("");
   const [shopifySecret, setShopifySecret] = useState("");
   const [shopifyToken, setShopifyToken] = useState("");
-  const [shopifyShop, setShopifyShop] = useState("fernora.myshopify.com");
+  const [shopifyShop, setShopifyShop] = useState(FERNORA_SHOPIFY_SHOP);
   const [busy, setBusy] = useState<string | null>(null);
   const dirty = useRef<Record<string, boolean>>({});
   const [show, setShow] = useState<Record<string, boolean>>({});
@@ -882,10 +883,10 @@ export function ConnectionsClient() {
             <p className="text-sm leading-6 text-muted-foreground">
               Shop domain is{" "}
               <code className="rounded bg-muted px-1 text-xs">
-                {data.shopify?.shop || "fernora.myshopify.com"}
+                {data.shopify?.shop || FERNORA_SHOPIFY_SHOP}
               </code>
               {data.shopify?.storefrontStatus === "live"
-                ? " · storefront is live."
+                ? ` · storefront is live at ${FERNORA_SHOPIFY_STOREFRONT}.`
                 : data.shopify?.storefrontStatus === "frozen"
                   ? " · storefront is frozen until a plan is paid."
                   : "."}{" "}
@@ -919,7 +920,7 @@ export function ConnectionsClient() {
                   → this app → <strong className="font-medium text-foreground">Home</strong> →{" "}
                   <strong className="font-medium text-foreground">Install app</strong> → choose{" "}
                   <code className="rounded bg-muted px-1 text-xs">
-                    {data.shopify?.shop || "fernora.myshopify.com"}
+                    {data.shopify?.shop || FERNORA_SHOPIFY_SHOP}
                   </code>{" "}
                   → Install. Use a full browser tab. If you see “admin.shopify.com refused to
                   connect”, Shopify was opened inside a frame — close that and install from Home
@@ -992,7 +993,7 @@ export function ConnectionsClient() {
                 id="shopify-shop"
                 value={shopifyShop}
                 onChange={(event) => setShopifyShop(event.target.value)}
-                placeholder="fernora.myshopify.com"
+                placeholder={FERNORA_SHOPIFY_SHOP}
               />
             </div>
             {secretField(

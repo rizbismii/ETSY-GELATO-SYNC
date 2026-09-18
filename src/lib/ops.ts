@@ -29,6 +29,7 @@ import {
   syncGelatoStore,
 } from "@/lib/gelato-store";
 import { rememberDeletedListing } from "@/lib/tombstones";
+import { FERNORA_SHOPIFY_SHOP } from "@/lib/shopify-shop";
 import { deleteShopifyProduct } from "@/lib/shopify";
 import {
   checkoutToOrder,
@@ -161,7 +162,7 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
           : "Shopify Fernora is not authorized",
       detail:
         connections.shopify.storefrontStatus === "frozen"
-          ? "fernora.myshopify.com exists but Shopify has paused the storefront (unpaid plan). Unfreeze it, then authorize the app. The Fernora website at /shop still sells AU/NZ and prints through Gelato."
+          ? `${connections.shopify.shop || FERNORA_SHOPIFY_SHOP} exists but Shopify has paused the storefront (unpaid plan). Unfreeze it, then authorize the app. The Fernora website at /shop still sells AU/NZ and prints through Gelato.`
           : "Authorize the Fernora Shopify shop so Pressroom can push the catalog and pull paid checkouts.",
       action: { label: "Connect Shopify", href: "/connections", kind: "connect" },
     });

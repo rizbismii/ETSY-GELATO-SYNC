@@ -1,6 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { DESK_CREDENTIALS, usableGelatoKey } from "@/lib/desk-credentials";
+import { FERNORA_SHOPIFY_SHOP } from "@/lib/shopify-shop";
 
 export type EtsyCredentials = {
   apiKey: string;
@@ -103,7 +104,7 @@ function mergeShopify(
   const clientSecret =
     pickSecret(patch?.clientSecret, current?.clientSecret, DESK_CREDENTIALS.shopify?.clientSecret) || "";
   const shop = normalizeShopDomain(
-    pickSecret(patch?.shop, current?.shop, DESK_CREDENTIALS.shopify?.shop) || "fernora.myshopify.com",
+    pickSecret(patch?.shop, current?.shop, DESK_CREDENTIALS.shopify?.shop) || FERNORA_SHOPIFY_SHOP,
   );
   if (!clientId && !clientSecret) {
     return shop ? { clientId: "", clientSecret: "", shop } : current;

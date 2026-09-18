@@ -33,9 +33,9 @@ The customer website is `/shop`. It sells the existing 20-piece catalog only, qu
 
 Paid Fernora orders print through Gelato. Until Shopify checkout is authorized, website checkouts sit as **pending** on the Orders desk. Those rows are unpaid — **Cancel test / unpaid** them. Do not click **Mark paid & print** unless money actually arrived; that submits a real Gelato print.
 
-### Shopify (fernora.myshopify.com)
+### Shopify (fernora.nz)
 
-The Shopify shop is configured on Connections (default domain **fernora.myshopify.com**; live shop may be **fernora-nzaus**). App client ID and secret are stored there.
+The Shopify shop is **gi6ey4-wc.myshopify.com** (storefront [fernora.nz](https://fernora.nz); also **fernora-nzaus.myshopify.com**). Do not use **fernora.myshopify.com** — that is a different, frozen shop. App client ID and secret are stored on Connections.
 
 Shopify cannot create a second store with that name from the app keys. To attach the Admin API:
 
@@ -81,7 +81,7 @@ ETSY_REDIRECT_URI=https://your-domain.com/api/etsy/callback
 ETSY_PUBLIC_ORIGIN=https://your-domain.com
 SHOPIFY_CLIENT_ID=
 SHOPIFY_CLIENT_SECRET=
-SHOPIFY_SHOP=fernora
+SHOPIFY_SHOP=gi6ey4-wc.myshopify.com
 SHOPIFY_REDIRECT_URI=https://your-domain.com/api/shopify/callback
 GELATO_API_KEY=
 ```
