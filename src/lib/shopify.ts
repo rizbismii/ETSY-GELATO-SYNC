@@ -278,7 +278,7 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
     }>(
       `query ($q: String!) {
         products(first: 1, query: $q) {
-          nodes { id variants(first: 20) { nodes { id sku } } }
+          nodes { id variants(first: 50) { nodes { id sku } } }
         }
       }`,
       { q: skuQuery },
@@ -349,7 +349,7 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
     }>(
       `mutation productSet($input: ProductSetInput!) {
         productSet(synchronous: true, input: $input) {
-          product { id handle variants(first: 20) { nodes { id sku } } }
+          product { id handle variants(first: 50) { nodes { id sku } } }
           userErrors { field message }
         }
       }`,
@@ -368,10 +368,15 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
     const defaultSku = product.variants?.find((row) => row.colorUid === "black" && row.sizeUid === "m")?.sku || product.id;
     const defaultVariant =
       node.variants.nodes.find((row) => row.sku === defaultSku) || node.variants.nodes[0];
+    const variants: Record<string, string> = {};
+    for (const row of node.variants.nodes) {
+      if (row.sku && row.id) variants[row.sku] = row.id;
+    }
     catalog[product.id] = {
       productId: node.id,
       variantId: defaultVariant?.id || found?.variants.nodes[0]?.id || "",
       handle: node.handle,
+      variants,
     };
   }
   await updateShop((state) => {
@@ -488,11 +493,22 @@ export async function restrictShopifyToAunz() {
   return notes;
 }
 
+function shopifyVariantGid(
+  catalog: ShopifyCatalogMap | undefined,
+  listingId: string,
+  sku?: string,
+) {
+  const mapped = catalog?.[listingId];
+  if (!mapped) return undefined;
+  if (sku && mapped.variants?.[sku]) return mapped.variants[sku];
+  return mapped.variantId || undefined;
+}
+
 export async function createShopifyDraftInvoice(input: {
   email: string;
   note: string;
   country: FernoraCountry;
-  lines: Array<{ listingId: string; quantity: number; title: string; price: number }>;
+  lines: Array<{ listingId: string; sku?: string; quantity: number; title: string; price: number }>;
   address: {
     firstName: string;
     lastName: string;
@@ -507,8 +523,8 @@ export async function createShopifyDraftInvoice(input: {
 }) {
   const shop = await getShop();
   const lineItems = input.lines.map((line) => {
-    const mapped = shop.shopifyCatalog?.[line.listingId];
-    if (mapped?.variantId) return { variantId: mapped.variantId, quantity: line.quantity };
+    const variantId = shopifyVariantGid(shop.shopifyCatalog, line.listingId, line.sku);
+    if (variantId) return { variantId, quantity: line.quantity };
     return {
       title: line.title,
       originalUnitPrice: line.price.toFixed(2),

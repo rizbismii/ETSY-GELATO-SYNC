@@ -2,7 +2,7 @@
 
 Operations desk for **FERNORATRENDS** on Etsy and the **Fernora** shop (Australia and New Zealand only), both fulfilled by Gelato. It connects the accounts, publishes the live catalog, maps listings to print products, sends paid receipts to production, and shows net profit after marketplace fees and print cost.
 
-There is no sample shop. The desk opens on the five live Fernora products in NZD.
+There is no sample shop. The desk opens on the **20 live Fernora products** in NZD.
 
 ## What it does
 
@@ -35,7 +35,7 @@ Paid Fernora orders print through Gelato. Until Shopify checkout is authorized, 
 
 ### Shopify (fernora.myshopify.com)
 
-The Shopify shop is configured on Connections (currently **fernora-nzaus**). App client ID and secret are stored there.
+The Shopify shop is configured on Connections (default domain **fernora.myshopify.com**; live shop may be **fernora-nzaus**). App client ID and secret are stored there.
 
 Shopify cannot create a second store with that name from the app keys. To attach the Admin API:
 
@@ -113,7 +113,7 @@ The catalog in this repo is the live Fernora sale: **20 listings**, with Etsy li
 | Be brave in the small hours · acrylic | home | 210.99 |
 | Dusk Hills · metallic | home | 153.99 |
 
-Publish options per product: **Save Etsy draft** or **Publish live**. Clothing listings offer Black, White and Navy in S, M and L. **Attach Gelato templates** puts the print file on every Gelato store variant (current and future publishes do this automatically). DTG products (hoodie, tee, sweatshirt, totes) use transparent ink that matches the catalog mockup — not a cream, black, or linen poster square. Mugs use a wrap that matches the listing photo. Rebuild with `npm run print-files`. **Delete** removes the product from Gelato, inactivates it on Etsy, deletes it from Shopify, and takes it out of Pressroom and `/shop`. Print files live at `/catalog/*.png` so Gelato can pull artwork from the public hostname.
+Publish options per product: **Save Etsy draft** or **Publish live**. Clothing listings offer Black, White and Navy in S, M and L. **Attach Gelato templates** puts the print file on every Gelato store variant (current and future publishes do this automatically). DTG products (hoodie, tee, sweatshirt, totes) use transparent ink that matches the catalog mockup — not a cream, black, or linen poster square. Mugs use a wrap that matches the listing photo. Rebuild with `npm run print-files`. Bulk-reattach from the live tunnel with `npm run attach-prints` after the desk is up. **Delete** removes the product from Gelato, inactivates it on Etsy, deletes it from Shopify, and takes it out of Pressroom and `/shop`. Print files live at `/catalog/*.png` so Gelato can pull artwork from the public hostname.
 
 ## Stack
 

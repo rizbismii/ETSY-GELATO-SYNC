@@ -153,10 +153,15 @@ export type DailyRevenue = {
   orders: number;
 };
 
-export type ShopifyCatalogMap = Record<
-  string,
-  { productId: string; variantId: string; handle?: string }
->;
+export type ShopifyCatalogEntry = {
+  productId: string;
+  variantId: string;
+  handle?: string;
+  /** Shopify variant GID keyed by Fernora SKU (`live_hoodie-black-m`). */
+  variants?: Record<string, string>;
+};
+
+export type ShopifyCatalogMap = Record<string, ShopifyCatalogEntry>;
 
 export type ShopState = {
   shopName: string;

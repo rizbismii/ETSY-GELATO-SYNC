@@ -161,3 +161,74 @@ export function resolveListingFulfillment(
     variant,
   };
 }
+
+const CLOTHING_SKU_PATTERN = /^(.*)-(black|white|navy)-(s|m|l)$/i;
+
+export function parseClothingSku(sku: string) {
+  const match = sku.trim().match(CLOTHING_SKU_PATTERN);
+  if (!match) return undefined;
+  return {
+    productId: match[1],
+    colorUid: match[2].toLowerCase(),
+    sizeUid: match[3].toLowerCase(),
+  };
+}
+
+export type CatalogProduct = Pick<Listing, "id" | "title" | "gelatoProductUid" | "printFileUrl" | "variants">;
+
+export type ResolvedCatalogLine = {
+  product: CatalogProduct;
+  listingId: string;
+  sku: string;
+  variant?: ClothingVariant;
+  gelatoProductUid?: string;
+  printFileUrl?: string;
+  variation?: string;
+};
+
+function lineFromProduct(product: CatalogProduct, variant?: ClothingVariant, sku?: string): ResolvedCatalogLine {
+  return {
+    product,
+    listingId: product.id,
+    sku: variant?.sku || sku || product.id,
+    variant,
+    gelatoProductUid: variant?.gelatoProductUid || product.gelatoProductUid,
+    printFileUrl: product.printFileUrl,
+    variation: variant ? variantLabel(variant) : undefined,
+  };
+}
+
+/** Map a Shopify/Etsy SKU (or clothing variant id) back to a catalog product + Gelato UID. */
+export function resolveCatalogLine(
+  products: CatalogProduct[],
+  sku?: string | null,
+  title?: string | null,
+): ResolvedCatalogLine | undefined {
+  const token = sku?.trim() || "";
+  if (token) {
+    const exact = products.find((row) => row.id === token);
+    if (exact) return lineFromProduct(exact, defaultClothingVariant(exact.variants), token);
+
+    const fromVariant = products.find((row) => row.variants?.some((rowVariant) => rowVariant.sku === token || rowVariant.id === token));
+    if (fromVariant) {
+      return lineFromProduct(fromVariant, findClothingVariant(fromVariant.variants, token), token);
+    }
+
+    const parsed = parseClothingSku(token);
+    if (parsed) {
+      const product = products.find((row) => row.id === parsed.productId);
+      if (product) {
+        const variantId = `${parsed.productId}-${parsed.colorUid}-${parsed.sizeUid}`;
+        return lineFromProduct(product, findClothingVariant(product.variants, variantId), token);
+      }
+    }
+  }
+
+  const heading = title?.trim() || "";
+  if (!heading) return undefined;
+  const byTitle = products.find(
+    (row) => row.title && heading.toLowerCase().includes(row.title.toLowerCase()),
+  );
+  if (!byTitle) return undefined;
+  return lineFromProduct(byTitle, matchClothingVariant(heading, byTitle.variants));
+}
