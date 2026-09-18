@@ -173,16 +173,7 @@ while true; do
     if public_probe "$origin"; then
       fails=0
     else
-      if (( SECONDS - born < 90 )); then
-        echo "Public DNS still settling for ${origin}…"
-      else
-        fails=$((fails + 1))
-        echo "Public tunnel probe failed (${fails}/6)."
-        if [[ "$fails" -ge 6 ]]; then
-          echo "Tunnel is not live. Opening a new hostname…"
-          break
-        fi
-      fi
+      echo "Public DNS probe missed ${origin}; keeping this hostname while Cloudflare is registered."
     fi
     sleep 15
   done
