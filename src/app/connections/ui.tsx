@@ -587,7 +587,7 @@ export function ConnectionsClient() {
             </a>
           ) : (
             <a className="underline" href="/ads">
-              not connected — disabled Facebook / same-email Managed Meta Account cannot issue a token
+              not connected — Dealstic email cannot issue a token (Facebook, Instagram, or managed)
             </a>
           )}
         </span>
@@ -667,7 +667,7 @@ export function ConnectionsClient() {
                 Meta ads
                 {data.connections.meta.authorized
                   ? " · ad account linked · low daily cap on Ads"
-                  : " · not connected · if Facebook disabled the login, or Managed Meta Account says it already exists, open Ads"}
+                  : " · not connected · same-email Instagram will not open Business Suite · open Ads"}
               </span>
             </li>
             <li className="flex flex-wrap items-center gap-2">

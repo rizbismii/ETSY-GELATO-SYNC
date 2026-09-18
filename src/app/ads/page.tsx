@@ -158,30 +158,26 @@ export default function AdsPage() {
           account integrity). That login cannot issue an ads token, and Meta will not take another
           review. Do not paste a token from it.
         </p>
-        <p className="mt-3 font-medium">If Managed Meta Account says account already exists</p>
+        <p className="mt-3 font-medium">Same-email Instagram or Managed Meta Account will not open Business Suite</p>
         <p className="mt-1 text-muted-foreground">
-          That email is already a Meta identity — Dealstic. Meta will not create a second managed
-          account on it. Signing in with the same email returns you to the disabled checkpoint. A
-          Managed Meta Account is an organisation-issued work login you activate from an invitation,
-          not a self-serve replacement for a disabled personal Facebook.
+          Instagram and Facebook share one Meta identity per email. Opening Instagram with the Dealstic
+          email does not create a new login — Business Suite still blocks it. A Managed Meta Account on
+          that email will say the account already exists. Signing in returns you to the disabled
+          checkpoint.
         </p>
         <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted-foreground">
           <li>
-            Skip <strong>Continue with Facebook</strong> and skip creating a Managed Meta Account with
-            the Dealstic email.
+            Stop retrying Dealstic, same-email Instagram, and Managed Meta Account on that email.
+            Those are the same disabled identity.
           </li>
           <li>
-            Use <strong>Continue with Instagram</strong> only if that Instagram is a different login
-            that Meta still allows — not the same Dealstic Facebook.
+            Meta ads need a person who already has a live Business Suite (not created to replace
+            Dealstic). That person generates a system-user token with <code>ads_management</code> and{" "}
+            <code>ads_read</code>, plus the ad account ID, Pixel ID, and Page ID.
           </li>
           <li>
-            Or have a partner who already has a live Business Suite generate a system-user token with{" "}
-            <code>ads_management</code> and <code>ads_read</code>, plus the ad account ID, Pixel ID, and
-            Page ID.
-          </li>
-          <li>
-            Paste those four values below and save. If Dealstic is the only Meta identity, campaigns
-            stay off — Pressroom cannot override Meta.
+            Paste those four values below and save. If nobody with a live Business Suite can do that,
+            campaigns stay off — Pressroom cannot override Meta. fernora.nz still sells.
           </li>
         </ol>
       </div>
@@ -196,10 +192,10 @@ export default function AdsPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-xs leading-5 text-muted-foreground">
-              The login must be a live Business Suite identity that is not Dealstic. A disabled
-              Facebook profile, or a Managed Meta Account on that same email, cannot connect. From a
-              live account copy the ad account ID, a system-user or admin token with{" "}
-              <code>ads_management</code> and <code>ads_read</code>, the Pixel, and the Page ID.{" "}
+              The login must be a live Business Suite identity that is not Dealstic. Same-email
+              Instagram and a Managed Meta Account on that email cannot connect. From a live account
+              copy the ad account ID, a system-user or admin token with <code>ads_management</code> and{" "}
+              <code>ads_read</code>, the Pixel, and the Page ID.{" "}
               <a className="underline" href="https://business.facebook.com" target="_blank" rel="noreferrer">
                 business.facebook.com
               </a>
