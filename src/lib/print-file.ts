@@ -33,3 +33,26 @@ export function printTreatment(category: string, listingId?: string) {
   }
   return "full-bleed";
 }
+
+export function printFileName(printFileUrl?: string, title?: string) {
+  const fromUrl = printFileUrl?.split("/").pop()?.split("?")[0];
+  if (fromUrl) return fromUrl;
+  const slug = (title || "print-template")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return `${slug || "print-template"}.png`;
+}
+
+export function printTemplateLabel(category: string, listingId?: string) {
+  const surface = printSurface(category);
+  const treatment = printTreatment(category, listingId);
+  if (surface === "dtg") return `DTG RGBA · ${treatment} (transparent ground, matches mockup)`;
+  if (surface === "wrap") return `Mug wrap · ${treatment}`;
+  return "Full-bleed artwork · same crop as the listing mockup";
+}
+
+/** Catalog mockups are lifestyle photos; print files must stay uncropped. */
+export function artFit(kind: "mockup" | "print" = "mockup") {
+  return kind === "print" ? "contain" : "contain";
+}

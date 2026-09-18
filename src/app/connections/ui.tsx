@@ -425,8 +425,8 @@ export function ConnectionsClient() {
         <h1 className="font-heading text-4xl tracking-tight">Connections</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
           Pressroom talks to Etsy Open API v3, Shopify Admin API, and Gelato Order API v4.
-          FERNORATRENDS stays on Etsy. The Fernora website at /shop sells the same 20 products
-          to Australia and New Zealand only, fulfilled by Gelato.
+          FERNORATRENDS stays on Etsy. The Fernora website at /shop (and fernora.nz) sells the same 20 products
+          to New Zealand, Australia, and other countries Gelato delivers to.
         </p>
       </div>
 
@@ -475,7 +475,7 @@ export function ConnectionsClient() {
                   {copied === "desk" ? "Copied" : "Copy desk"}
                 </Button>
               </span>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Fernora shop (AU/NZ)</p>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Fernora shop (Gelato destinations)</p>
               <span className="flex flex-col gap-2 sm:flex-row">
                 <code className="block flex-1 break-all rounded bg-muted px-2 py-1 text-xs text-foreground">
                   {shopUrl}
@@ -586,7 +586,7 @@ export function ConnectionsClient() {
           <p className="text-muted-foreground">
             {live?.readyToSell
               ? "Gelato can print. Paid Etsy and Fernora/Shopify orders go to production."
-              : "Gelato can print. Connect Etsy or Shopify, then use the Fernora shop at /shop for AU/NZ."}
+              : "Gelato can print. Connect Etsy or Shopify, then use the Fernora shop at /shop for Gelato destinations."}
           </p>
           <ul className="space-y-2">
             <li className="flex flex-wrap items-center gap-2">
@@ -649,7 +649,7 @@ export function ConnectionsClient() {
             <li className="flex flex-wrap items-center gap-2">
               <StatusPill value="live" />
               <span>
-                Fernora website · AU/NZ only ·{" "}
+                Fernora website · Gelato destinations ·{" "}
                 <a className="underline" href="/shop">
                   Open shop
                 </a>
@@ -894,7 +894,7 @@ export function ConnectionsClient() {
               <a className="underline" href="/shop">
                 /shop
               </a>{" "}
-              sells the same catalog now, ships AU/NZ only, and sends paid orders to Gelato.
+              sells the same catalog now, ships to Gelato destinations, and sends paid orders to Gelato.
             </p>
             <div
               id="shopify-admin-token"
@@ -1042,7 +1042,7 @@ export function ConnectionsClient() {
                 disabled={!data.connections.shopify.authorized || busy === "shopify-sync"}
               >
                 {busy === "shopify-sync" ? <Loader2 className="animate-spin" /> : null}
-                Publish catalog · AU/NZ
+                Publish catalog · Gelato shipping
               </Button>
             </div>
           </CardContent>

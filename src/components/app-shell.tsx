@@ -76,7 +76,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Link>
         <Nav />
         <p className="mt-auto px-2 text-xs leading-5 text-sidebar-foreground/50">
-          Etsy and the Fernora shop print through Gelato. AU/NZ storefront lives at /shop.
+          Etsy and the Fernora shop print through Gelato. Storefront: fernora.nz and /shop.
         </p>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">

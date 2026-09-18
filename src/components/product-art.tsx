@@ -6,21 +6,35 @@ export function ProductArt({
   category = "",
   imageUrl,
   className,
+  fit = "contain",
+  kind = "mockup",
 }: {
   id: string;
   title: string;
   category?: string;
   imageUrl?: string;
   className?: string;
+  fit?: "cover" | "contain";
+  kind?: "mockup" | "print";
 }) {
   if (imageUrl) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={imageUrl}
-        alt={title}
-        className={cn("object-cover", className)}
-      />
+      <div
+        className={cn(
+          "overflow-hidden",
+          kind === "print"
+            ? "bg-[repeating-conic-gradient(#e8e0d0_0%_25%,#f6f1e6_0%_50%)] bg-[length:16px_16px]"
+            : "bg-[oklch(0.94_0.016_86)]",
+          className,
+        )}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={imageUrl}
+          alt={title}
+          className={cn("size-full", fit === "cover" ? "object-cover" : "object-contain object-center")}
+        />
+      </div>
     );
   }
   const palettes = [

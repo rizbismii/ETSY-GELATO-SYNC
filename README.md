@@ -1,13 +1,13 @@
 # Pressroom
 
-Operations desk for **FERNORATRENDS** on Etsy and the **Fernora** shop (Australia and New Zealand only), both fulfilled by Gelato. It connects the accounts, publishes the live catalog, maps listings to print products, sends paid receipts to production, and shows net profit after marketplace fees and print cost.
+Operations desk for **FERNORATRENDS** on Etsy and the **Fernora** shop (New Zealand, Australia, and other countries Gelato delivers to), both fulfilled by Gelato. It connects the accounts, publishes the live catalog, maps listings to print products, sends paid receipts to production, and shows net profit after marketplace fees and print cost.
 
 There is no sample shop. The desk opens on the **20 live Fernora products** in NZD.
 
 ## What it does
 
 - **Connect Etsy** with Open API v3 (OAuth 2.0 + PKCE), **Shopify** with a Dev Dashboard app (client ID + secret), and **Gelato** with an API key (`X-API-KEY`).
-- **Fernora website** at `/shop` — the 20 live products, AU/NZ shipping only, Gelato fulfillment.
+- **Fernora website** at `/shop` (canonical [fernora.nz](https://fernora.nz)) — the 20 live products, Gelato destination shipping, Shopify Payments, customer profiles, and legal pages.
 - **Catalog** with AI artwork, Gelato SKUs, destination shipping, and **Save Etsy draft** / **Publish live**.
 - **Map listings** to Gelato product UIDs and print files so orders are not blocked.
 - **Fulfill** paid Etsy receipts as Gelato v4 orders.
@@ -27,11 +27,13 @@ npm run desk
 
 Open the printed trycloudflare URL for Pressroom, or `/shop` on that host for the Fernora storefront. Locally you can also use [http://127.0.0.1:43127](http://127.0.0.1:43127). `npm run desk` keeps the public tunnel alive and opens a new hostname if Cloudflare drops the old one.
 
-## Fernora shop (AU / NZ)
+## Fernora shop (Gelato destinations)
 
-The customer website is `/shop`. It sells the existing 20-piece catalog only, quotes Gelato shipping for New Zealand or Australia, and will not accept any other country.
+The customer website is `/shop`, and **fernora.nz** serves that shop at `/`. It sells the existing 20-piece catalog, quotes Gelato shipping for New Zealand, Australia, the United States, the United Kingdom, the European Union, and other Gelato print countries, and will not accept a country Gelato does not deliver to.
 
-Paid Fernora orders print through Gelato. Until Shopify checkout is authorized, website checkouts sit as **pending** on the Orders desk. Those rows are unpaid — **Cancel test / unpaid** them. Do not click **Mark paid & print** unless money actually arrived; that submits a real Gelato print.
+Paid Fernora orders print through Gelato. Checkout creates a **Shopify invoice** (Shopify Payments: cards, Shop Pay, Apple Pay where available). Until Shopify checkout is authorized, website checkouts sit as **pending** on the Orders desk. Those rows are unpaid — **Cancel test / unpaid** them. Do not click **Mark paid & print** unless money actually arrived; that submits a real Gelato print.
+
+Shopify-required pages live at `/shop/policies/returns`, `/privacy`, `/terms`, `/shipping`, `/payments`, plus `/shop/account` customer profiles and `/shop/contact`. Publish catalog also pushes those policies and Gelato shipping zones into the Shopify shop.
 
 ### Shopify (fernora.nz)
 
@@ -41,9 +43,9 @@ Shopify cannot create a second store with that name from the app keys. To attach
 
 1. Fastest: Dev Dashboard → app → **Home** → **Install app** on this shop. Then on **Connections** click **Get Admin token**. Shopify no longer shows a copyable Admin API token.
 2. Or OAuth: click the Active version (**Fernorav1**) → **Create version** → **URLs**. **App URL** must be exactly the live desk origin. **Allowed redirection URL** is `https://your-public-origin/api/shopify/callback`. Release, then **Authorize Shopify**.
-3. Click **Publish catalog · AU/NZ**.
+3. Click **Publish catalog · Gelato shipping**.
 
-That pushes the 20 products, limits shipping zones to Australia and New Zealand, and registers an orders/paid webhook so Gelato can print automatically.
+That pushes the 20 products, sets shipping zones to Gelato destinations, writes Shopify legal policies, and registers an orders/paid webhook so Gelato can print automatically.
 
 ## Connect your live shops
 
