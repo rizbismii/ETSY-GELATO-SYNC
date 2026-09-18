@@ -578,6 +578,19 @@ export function ConnectionsClient() {
               ? "app keys saved · paste matching App URL + Redirect URL, then authorize"
               : "not connected"}
         </span>
+        <StatusPill value={data.connections.meta.authorized ? "live" : "demo"} />
+        <span className="text-sm text-muted-foreground">
+          Meta ads{" "}
+          {data.connections.meta.authorized ? (
+            <a className="underline" href="/ads">
+              campaign desk
+            </a>
+          ) : (
+            <a className="underline" href="/ads">
+              not connected
+            </a>
+          )}
+        </span>
       </div>
 
       <Card>
@@ -646,6 +659,15 @@ export function ConnectionsClient() {
                     : live?.shopify && !live.shopify.ok
                       ? ` · ${live.shopify.error}`
                       : " · not authorized"}
+              </span>
+            </li>
+            <li className="flex flex-wrap items-center gap-2">
+              <StatusPill value={data.connections.meta.authorized ? "live" : "warning"} />
+              <span>
+                Meta ads
+                {data.connections.meta.authorized
+                  ? " · ad account linked · low daily cap on Ads"
+                  : " · not connected · open Ads"}
               </span>
             </li>
             <li className="flex flex-wrap items-center gap-2">

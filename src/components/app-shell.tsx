@@ -11,6 +11,7 @@ import {
   Plug,
   Menu,
   Store,
+  Megaphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +26,7 @@ const links = [
   { href: "/", label: "Desk", icon: LayoutDashboard },
   { href: "/orders", label: "Orders", icon: ShoppingBag },
   { href: "/listings", label: "Catalog", icon: Package },
+  { href: "/ads", label: "Ads", icon: Megaphone },
   { href: "/revenue", label: "Revenue", icon: Wallet },
   { href: "/connections", label: "Connections", icon: Plug },
   { href: "/shop", label: "Fernora shop", icon: Store },

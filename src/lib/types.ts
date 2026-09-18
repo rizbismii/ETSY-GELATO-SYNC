@@ -25,10 +25,20 @@ export type ShopifyConnection = {
   error?: string;
 };
 
+export type MetaConnection = {
+  configured: boolean;
+  authorized: boolean;
+  mode: ConnectionMode;
+  adAccountId?: string;
+  pixelId?: string;
+  error?: string;
+};
+
 export type Connections = {
   etsy: EtsyConnection;
   gelato: GelatoConnection;
   shopify: ShopifyConnection;
+  meta: MetaConnection;
 };
 
 export type ListingState = "active" | "inactive" | "expired" | "sold_out";
@@ -163,6 +173,20 @@ export type ShopifyCatalogEntry = {
 
 export type ShopifyCatalogMap = Record<string, ShopifyCatalogEntry>;
 
+export type MetaAdsCampaign = {
+  campaignId?: string;
+  adSetId?: string;
+  adId?: string;
+  creativeId?: string;
+  dailyBudget: number;
+  currency?: string;
+  landingUrl: string;
+  status: "draft" | "paused" | "active";
+  pixelInstalled?: boolean;
+  lastError?: string;
+  updatedAt?: string;
+};
+
 export type ShopState = {
   shopName: string;
   currency: string;
@@ -172,6 +196,7 @@ export type ShopState = {
   shopifyCatalog?: ShopifyCatalogMap;
   shopifySyncedAt?: string;
   deletedListingIds?: string[];
+  metaAds?: MetaAdsCampaign;
 };
 
 export type OpsIssue = {

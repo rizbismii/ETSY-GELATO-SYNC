@@ -33,6 +33,7 @@ import { FERNORA_SHOPIFY_SHOP } from "@/lib/shopify-shop";
 import { createShopifyDraftInvoice, deleteShopifyProduct } from "@/lib/shopify";
 import { isGelatoCountry } from "@/lib/gelato-countries";
 import { checkoutToOrder, quoteFernoraCart, type CartLine } from "@/lib/shop";
+import { sendMetaPurchase } from "@/lib/meta-ads";
 
 export async function connectionStatus(): Promise<Connections> {
   const creds = await getCredentials();
@@ -55,6 +56,13 @@ export async function connectionStatus(): Promise<Connections> {
       mode: creds.shopify?.accessToken ? "live" : "demo",
       shop: creds.shopify?.shop,
       storefrontStatus: creds.shopify?.storefrontStatus,
+    },
+    meta: {
+      configured: Boolean(creds.meta?.accessToken || creds.meta?.pixelId),
+      authorized: Boolean(creds.meta?.accessToken && creds.meta?.adAccountId),
+      mode: creds.meta?.accessToken ? "live" : "demo",
+      adAccountId: creds.meta?.adAccountId,
+      pixelId: creds.meta?.pixelId,
     },
   };
 }
@@ -161,6 +169,15 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
       action: { label: "Connect Shopify", href: "/connections", kind: "connect" },
     });
   }
+  if (!connections.meta.authorized) {
+    issues.push({
+      id: "meta-ads",
+      severity: "info",
+      title: "Meta ads are not running",
+      detail: "Pressroom can send a low daily-budget campaign to fernora.nz. Leave Etsy Offsite Ads off so spend stays on that cap.",
+      action: { label: "Open Ads", href: "/ads", kind: "connect" },
+    });
+  }
   const pending = shop.orders.filter((o) => o.status === "pending");
   if (pending.length) {
     issues.push({
@@ -255,6 +272,7 @@ export function opsScore(shop: ShopState, connections: Connections) {
   else score += 8;
   if (connections.shopify.authorized) score += 8;
   else score += 4;
+  if (connections.meta.authorized) score += 3;
   const active = shop.listings.filter((l) => l.state === "active");
   const mapped = active.filter((l) => l.gelatoProductUid && l.printFileUrl);
   score += active.length ? Math.round((mapped.length / active.length) * 30) : 30;
@@ -1047,7 +1065,14 @@ export async function ingestShopifyPaidOrder(payload: {
   await updateShop((state) => {
     state.orders.unshift(order);
   });
-  return markOrderPaid(id, true);
+  const paid = await markOrderPaid(id, true);
+  void sendMetaPurchase({
+    eventId: shopifyOrderId || id,
+    email: payload.email,
+    value: order.subtotal + order.shippingPaid,
+    currency: order.currency,
+  }).catch(() => undefined);
+  return paid;
 }
 
 export { GELATO_CATALOG };
