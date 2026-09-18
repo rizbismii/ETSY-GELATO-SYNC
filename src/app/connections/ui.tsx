@@ -110,7 +110,6 @@ export function ConnectionsClient() {
   const [shopifyAuthOpen, setShopifyAuthOpen] = useState(false);
   const callbackUrl = data?.callbackUrl || "";
   const websiteUrl = data?.websiteUrl || "";
-  const shopUrl = data?.shopUrl || (websiteUrl ? `${websiteUrl.replace(/\/$/, "")}/shop` : "/shop");
   const shopifyCallbackUrl = data?.shopifyCallbackUrl || "";
   const shopifyAppUrl = data?.shopifyAppUrl || websiteUrl;
   const deskUrl = websiteUrl ? `${websiteUrl.replace(/\/$/, "")}/connections` : "";
@@ -425,8 +424,11 @@ export function ConnectionsClient() {
         <h1 className="font-heading text-4xl tracking-tight">Connections</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
           Pressroom talks to Etsy Open API v3, Shopify Admin API, and Gelato Order API v4.
-          FERNORATRENDS stays on Etsy. The Fernora website at /shop (and fernora.nz) sells the same 20 products
-          to New Zealand, Australia, and other countries Gelato delivers to.
+          FERNORATRENDS stays on Etsy. The customer website is the Shopify Online Store at{" "}
+          <a className="underline" href="https://fernora.nz">
+            fernora.nz
+          </a>{" "}
+          (Horizon theme, native checkout, markets, and Gelato shipping). /shop on this desk is the catalog preview.
         </p>
       </div>
 
@@ -475,16 +477,16 @@ export function ConnectionsClient() {
                   {copied === "desk" ? "Copied" : "Copy desk"}
                 </Button>
               </span>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Fernora shop (Gelato destinations)</p>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Fernora shop (Shopify · fernora.nz)</p>
               <span className="flex flex-col gap-2 sm:flex-row">
                 <code className="block flex-1 break-all rounded bg-muted px-2 py-1 text-xs text-foreground">
-                  {shopUrl}
+                  https://fernora.nz
                 </code>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={async () => {
-                    await navigator.clipboard.writeText(shopUrl);
+                    await navigator.clipboard.writeText("https://fernora.nz");
                     setCopied("shop");
                     toast.success("Fernora shop URL copied");
                   }}
@@ -586,7 +588,7 @@ export function ConnectionsClient() {
           <p className="text-muted-foreground">
             {live?.readyToSell
               ? "Gelato can print. Paid Etsy and Fernora/Shopify orders go to production."
-              : "Gelato can print. Connect Etsy or Shopify, then use the Fernora shop at /shop for Gelato destinations."}
+              : "Gelato can print. Connect Etsy or Shopify. Customers buy on fernora.nz (Shopify Online Store)."}
           </p>
           <ul className="space-y-2">
             <li className="flex flex-wrap items-center gap-2">
@@ -649,9 +651,9 @@ export function ConnectionsClient() {
             <li className="flex flex-wrap items-center gap-2">
               <StatusPill value="live" />
               <span>
-                Fernora website · Gelato destinations ·{" "}
-                <a className="underline" href="/shop">
-                  Open shop
+                Fernora website · Shopify Online Store · Gelato destinations ·{" "}
+                <a className="underline" href="https://fernora.nz" target="_blank" rel="noreferrer">
+                  Open fernora.nz
                 </a>
               </span>
             </li>
@@ -890,11 +892,15 @@ export function ConnectionsClient() {
                 : data.shopify?.storefrontStatus === "frozen"
                   ? " · storefront is frozen until a plan is paid."
                   : "."}{" "}
-              The Fernora website at{" "}
+              Customers buy on the Shopify Online Store (
+              <a className="underline" href="https://fernora.nz" target="_blank" rel="noreferrer">
+                fernora.nz
+              </a>
+              ): native checkout, Shop Pay, accounts, markets, and Gelato shipping.{" "}
               <a className="underline" href="/shop">
                 /shop
               </a>{" "}
-              sells the same catalog now, ships to Gelato destinations, and sends paid orders to Gelato.
+              on this desk is the catalog preview. Publish catalog also pushes products onto the Online Store channel so Horizon stops showing placeholder tees.
             </p>
             <div
               id="shopify-admin-token"

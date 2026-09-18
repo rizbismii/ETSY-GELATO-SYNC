@@ -1,4 +1,5 @@
 import { exchangeShopifyCode, pingShopify, registerShopifyWebhooks, configureShopifyGelatoShipping, syncFernoraCatalogToShopify, syncShopifyPolicies, verifyShopifyHmac } from "@/lib/shopify";
+import { prepareShopifyCustomerStore } from "@/lib/shopify-storefront";
 import { publicOrigin, requestOrigin } from "@/lib/origin";
 import { takeOAuthState } from "@/lib/public-origin";
 import { pushTunnel } from "@/lib/tunnel";
@@ -53,6 +54,7 @@ export async function GET(request: Request) {
     try {
       await syncFernoraCatalogToShopify(request);
       await configureShopifyGelatoShipping();
+      await prepareShopifyCustomerStore(origin);
       await syncShopifyPolicies();
       await registerShopifyWebhooks(origin);
     } catch {

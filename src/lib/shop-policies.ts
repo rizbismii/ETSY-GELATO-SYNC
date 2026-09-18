@@ -62,12 +62,12 @@ export const POLICY_COPY = {
   },
   payments: {
     title: "Payments",
-    summary: "Pay securely on the Shopify invoice. Gelato prints after Shopify marks the order paid.",
+    summary: "Pay securely at Shopify checkout on fernora.nz. Gelato prints after Shopify marks the order paid.",
     body: [
-      "Checkout on fernora.nz creates a Shopify draft invoice for the live Fernora store (fernora.nz / gi6ey4-wc.myshopify.com). You pay there with Shopify Payments: credit and debit cards, and Shop Pay, Apple Pay, or Google Pay where Shopify offers them for your country.",
+      "Checkout on fernora.nz is the Shopify Online Store (gi6ey4-wc.myshopify.com). You pay there with Shopify Payments: credit and debit cards, and Shop Pay, Apple Pay, or Google Pay where Shopify offers them for your country.",
       "Prices are New Zealand dollars (NZD). Your bank may convert at its own rate. We do not add a Fernora surcharge on top of Shopify’s processing.",
-      "Gelato does not start the print until Shopify reports the invoice paid. Unpaid drafts stay pending in Pressroom and can be cancelled. Do not send bank transfer outside Shopify unless we confirm it in writing.",
-      "Failed or expired invoices can be reopened from your order email. For payment issues, contact hello@fernora.nz with the order reference.",
+      "Gelato does not start the print until Shopify reports the order paid. Unpaid checkouts stay pending in Pressroom and can be cancelled. Do not send bank transfer outside Shopify unless we confirm it in writing.",
+      "Failed or expired checkouts can be retried from your order email. For payment issues, contact hello@fernora.nz with the order reference.",
     ],
   },
   contact: {

@@ -6,6 +6,7 @@ import {
   syncFernoraCatalogToShopify,
   syncShopifyPolicies,
 } from "@/lib/shopify";
+import { prepareShopifyCustomerStore } from "@/lib/shopify-storefront";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,9 @@ export async function POST(request: Request) {
     const origin = await publicOrigin(request);
     const catalog = await syncFernoraCatalogToShopify(request);
     const shipping = await configureShopifyGelatoShipping();
+    const storefront = await prepareShopifyCustomerStore(origin).catch((error: Error) => [
+      `Storefront: ${error.message}`,
+    ]);
     const policies = await syncShopifyPolicies().catch((error: Error) => [`Policies: ${error.message}`]);
     let webhook: { created: boolean; address: string } | undefined;
     try {
@@ -25,7 +29,7 @@ export async function POST(request: Request) {
     return Response.json({
       ok: true,
       ping,
-      notes: [...catalog.notes, ...shipping, ...policies],
+      notes: [...catalog.notes, ...shipping, ...storefront, ...policies],
       products: Object.keys(catalog.catalog).length,
       webhook,
     });

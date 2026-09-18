@@ -7,7 +7,7 @@ There is no sample shop. The desk opens on the **20 live Fernora products** in N
 ## What it does
 
 - **Connect Etsy** with Open API v3 (OAuth 2.0 + PKCE), **Shopify** with a Dev Dashboard app (client ID + secret), and **Gelato** with an API key (`X-API-KEY`).
-- **Fernora website** at `/shop` (canonical [fernora.nz](https://fernora.nz)) — the 20 live products, Gelato destination shipping, Shopify Payments, customer profiles, and legal pages.
+- **Fernora website** at [fernora.nz](https://fernora.nz) is the **Shopify Online Store** (Horizon theme): native checkout, Shopify Payments, customer accounts, markets, and Gelato destination shipping. Pressroom `/shop` is the operations catalog preview — not the customer storefront.
 - **Catalog** with AI artwork, Gelato SKUs, destination shipping, and **Save Etsy draft** / **Publish live**.
 - **Map listings** to Gelato product UIDs and print files so orders are not blocked.
 - **Fulfill** paid Etsy receipts as Gelato v4 orders.
@@ -29,15 +29,19 @@ Open the printed trycloudflare URL for Pressroom, or `/shop` on that host for th
 
 ## Fernora shop (Gelato destinations)
 
-The customer website is `/shop`, and **fernora.nz** serves that shop at `/`. It sells the existing 20-piece catalog, quotes Gelato shipping for New Zealand, Australia, the United States, the United Kingdom, the European Union, and other Gelato print countries, and will not accept a country Gelato does not deliver to.
+The customer website is the **Shopify Online Store** on [fernora.nz](https://fernora.nz) (Horizon theme). It sells the existing 20-piece catalog, quotes Gelato shipping for New Zealand, Australia, the United States, the United Kingdom, the European Union, and other Gelato print countries, and will not accept a country Gelato does not deliver to.
 
-Paid Fernora orders print through Gelato. Checkout creates a **Shopify invoice** (Shopify Payments: cards, Shop Pay, Apple Pay where available). Until Shopify checkout is authorized, website checkouts sit as **pending** on the Orders desk. Those rows are unpaid — **Cancel test / unpaid** them. Do not click **Mark paid & print** unless money actually arrived; that submits a real Gelato print.
+Use Shopify’s theme — not a custom Next.js shop — for the public site. Horizon (already live) plus native checkout, Shop Pay, customer accounts, markets, and shipping is what customers need. Pressroom `/shop` stays as a catalog preview for operators. Ritual is installed unpublished if you want a more editorial look later; do not rebuild checkout in Next.
 
-Shopify-required pages live at `/shop/policies/returns`, `/privacy`, `/terms`, `/shipping`, `/payments`, plus `/shop/account` customer profiles and `/shop/contact`. Publish catalog also pushes those policies and Gelato shipping zones into the Shopify shop.
+Paid Fernora orders print through Gelato. Customers pay on Shopify checkout (Shopify Payments: cards, Shop Pay, Apple Pay where available). Pressroom still receives paid-order webhooks so Gelato can print.
+
+Shopify-required pages are the Online Store policies (returns, privacy, terms, shipping, payments) plus customer accounts. Publish catalog also pushes those policies, Gelato shipping zones (and per-product Gelato rate profiles), Gelato markets, and the catalog onto the Online Store sales channel.
 
 ### Shopify (fernora.nz)
 
 The Shopify shop is **gi6ey4-wc.myshopify.com** (storefront [fernora.nz](https://fernora.nz); also **fernora-nzaus.myshopify.com**). Do not use **fernora.myshopify.com** — that is a different, frozen shop. App client ID and secret are stored on Connections.
+
+The admin shop name may still say **My Store 3** — Shopify does not let the API rename it. Change it in **Shopify Admin → Settings → General → Store name** to **Fernora**.
 
 Shopify cannot create a second store with that name from the app keys. To attach the Admin API:
 
@@ -45,7 +49,7 @@ Shopify cannot create a second store with that name from the app keys. To attach
 2. Or OAuth: click the Active version (**Fernorav1**) → **Create version** → **URLs**. **App URL** must be exactly the live desk origin. **Allowed redirection URL** is `https://your-public-origin/api/shopify/callback`. Release, then **Authorize Shopify**.
 3. Click **Publish catalog · Gelato shipping**.
 
-That pushes the 20 products, sets shipping zones to Gelato destinations, writes Shopify legal policies, and registers an orders/paid webhook so Gelato can print automatically.
+That publishes the 20 products to the **Online Store** channel (Horizon placeholders disappear once products are on that channel), creates Gelato markets (NZ, AU, US/Americas, UK/Ireland, Europe), writes Shopify legal policies, sets shipping zones and per-product Gelato rate profiles, registers a Gelato carrier callback for mixed-cart destination rates, brands the Horizon homepage, and registers an orders/paid webhook so Gelato can print automatically.
 
 ## Connect your live shops
 

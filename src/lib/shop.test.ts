@@ -7,6 +7,12 @@ import {
   shipLaneForCountry,
 } from "./gelato-countries.ts";
 import { printFileName, printSurface, printTreatment } from "./print-file.ts";
+import {
+  gelatoCarrierRateResponse,
+  shippingToCarrierCents,
+  carrierDestinationCountry,
+  carrierLineItems,
+} from "./shopify-carrier.ts";
 
 test("Gelato destinations include AU, NZ, and other print countries", () => {
   assert.equal(isGelatoCountry("NZ"), true);
@@ -41,4 +47,22 @@ test("print templates keep a downloadable filename and surface for current produ
   assert.equal(printTreatment("poster"), "full-bleed");
   assert.ok(gelatoCodesForLane("EU").includes("DE"));
   assert.ok(gelatoCodesForLane("NZ").includes("NZ"));
+});
+
+test("Shopify carrier callback quotes Gelato destination rates in cents", () => {
+  assert.equal(shippingToCarrierCents(10.09), "1009");
+  assert.equal(carrierDestinationCountry({ rate: { destination: { country: "au" } } }), "AU");
+  assert.deepEqual(carrierLineItems({ rate: { items: [{ sku: "live_poster", quantity: 2 }] } }), [
+    { sku: "live_poster", title: undefined, quantity: 2 },
+  ]);
+  const payload = gelatoCarrierRateResponse({
+    serviceName: "Gelato Australia",
+    lane: "AU",
+    country: "AU",
+    currency: "NZD",
+    days: "3–10 days",
+    shipping: 12.76,
+  });
+  assert.equal(payload.rates[0].total_price, "1276");
+  assert.equal(payload.rates[0].service_code, "gelato-AU");
 });
