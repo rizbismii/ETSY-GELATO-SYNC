@@ -110,6 +110,7 @@ test("customer-facing shop copy does not name Gelato as the supplier", () => {
   const shopifySource = readFileSync(new URL("./shopify.ts", import.meta.url), "utf8");
   assert.match(shopifySource, /title: "Standard delivery"/);
   assert.match(shopifySource, /name: "Standard delivery"/);
+  assert.doesNotMatch(shopifySource, /escapeHtml\(GELATO_SHIP_BLURB\)/);
   const carrierSource = readFileSync(new URL("./shopify-storefront.ts", import.meta.url), "utf8");
   assert.match(carrierSource, /FERNORA_CARRIER_NAME = "Fernora"/);
   const pages = [

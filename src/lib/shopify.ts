@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { getCredentials, normalizeShopDomain, patchCredentials } from "@/lib/credentials";
 import { fernoraCatalog, FERNORA_NAME, gelatoShipFamilies, shopLane } from "@/lib/shop";
 import { FERNORA_SHOPIFY_SHOP, FERNORA_STOREFRONT_ORIGIN } from "@/lib/shopify-shop";
-import { gelatoCodesForLane, GELATO_SHIP_BLURB } from "@/lib/gelato-countries";
+import { gelatoCodesForLane } from "@/lib/gelato-countries";
 import { policyHtml } from "@/lib/shop-policies";
 import { absoluteAssetUrl } from "@/lib/origin";
 import { getShop, updateShop } from "@/lib/store";
@@ -445,7 +445,6 @@ function shopifyProductHtml(product: ReturnType<typeof fernoraCatalog>[number]) 
     .join("");
   return [
     `<p>${escapeHtml(product.description)}</p>`,
-    `<p>${escapeHtml(GELATO_SHIP_BLURB)}</p>`,
     `<table><thead><tr><th>Ships to</th><th>Ship</th><th>Transit</th></tr></thead><tbody>${lanes}</tbody></table>`,
     `<p>Made to order. Returns: unused items that arrive damaged, defective, or incorrect within 14 days — <a href="${FERNORA_STOREFRONT_ORIGIN}/policies/refund-policy">returns policy</a>.</p>`,
     `<p>Pay at Shopify checkout on fernora.nz (cards, Shop Pay, Apple Pay where available). Customer accounts: <a href="${FERNORA_STOREFRONT_ORIGIN}/account">fernora.nz/account</a>.</p>`,
