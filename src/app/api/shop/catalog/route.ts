@@ -1,4 +1,5 @@
-import { fernoraCatalog, quoteFernoraCart, isFernoraCountry } from "@/lib/shop";
+import { fernoraCatalog, quoteFernoraCart, isFernoraCountry, shopLane } from "@/lib/shop";
+import { GELATO_DESTINATIONS, gelatoCountriesByGroup } from "@/lib/gelato-countries";
 import { getDeletedListingIds } from "@/lib/tombstones";
 
 export const dynamic = "force-dynamic";
@@ -9,24 +10,38 @@ export async function GET(request: Request) {
   const catalog = fernoraCatalog()
     .filter((product) => !deleted.has(product.id))
     .map((product) => {
-    const lane = isFernoraCountry(country)
-      ? product.lanes.find((row) => row.country === country || row.region === country)
-      : undefined;
-    return {
-      id: product.id,
-      title: product.title,
-      description: product.description,
-      price: product.price,
-      currency: product.currency,
-      imageUrl: product.imageUrl,
-      category: product.category,
-      collection: product.collection,
-      quote: product.quote,
-      shipping: lane?.shipping ?? null,
-      days: lane?.days ?? null,
-    };
+      const lane = isFernoraCountry(country) ? shopLane(product, country) : undefined;
+      return {
+        id: product.id,
+        title: product.title,
+        description: product.description,
+        price: product.price,
+        currency: product.currency,
+        imageUrl: product.imageUrl,
+        printFileUrl: product.printFileUrl,
+        category: product.category,
+        collection: product.collection,
+        quote: product.quote,
+        shipping: lane?.shipping ?? null,
+        days: lane?.days ?? null,
+        lanes: product.lanes.map((row) => ({
+          region: row.region,
+          label: row.label,
+          shipping: row.shipping,
+          days: row.days,
+        })),
+      };
+    });
+  return Response.json({
+    catalog,
+    countries: GELATO_DESTINATIONS.map((row) => ({
+      code: row.code,
+      name: row.name,
+      lane: row.lane,
+      group: row.group,
+    })),
+    groups: gelatoCountriesByGroup(),
   });
-  return Response.json({ catalog, countries: ["NZ", "AU"] });
 }
 
 export async function POST(request: Request) {
@@ -36,9 +51,9 @@ export async function POST(request: Request) {
   };
   try {
     if (!isFernoraCountry(body.country || "")) {
-      return Response.json({ error: "Ships to Australia and New Zealand only" }, { status: 400 });
+      return Response.json({ error: "Ships only to countries Gelato delivers to" }, { status: 400 });
     }
-    const quote = quoteFernoraCart(body.lines || [], body.country as "AU" | "NZ");
+    const quote = quoteFernoraCart(body.lines || [], body.country!);
     return Response.json({
       quote: {
         subtotal: quote.subtotal,
@@ -46,6 +61,8 @@ export async function POST(request: Request) {
         total: quote.total,
         currency: quote.currency,
         country: quote.country,
+        countryName: quote.countryName,
+        lane: quote.lane,
         days: quote.days,
         items: quote.items.map((item) => ({
           id: item.product.id,

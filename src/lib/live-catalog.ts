@@ -1,4 +1,5 @@
 import { clothingVariants, defaultClothingVariant, resolveCatalogLine } from "@/lib/clothing";
+import { GELATO_SHIP_BLURB } from "@/lib/gelato-countries";
 import { OFFSITE_ADS_RATE, TARGET_AFTER_ADS_MARGIN, recommendedPrice } from "@/lib/money";
 import type { Listing } from "@/lib/types";
 
@@ -23,8 +24,7 @@ export const SHIP_COUNTRIES = [
   { region: "EU", label: "European Union" },
 ] as const;
 
-export const SHIP_BLURB =
-  "Ships to New Zealand, Australia, the United States, the United Kingdom, the European Union and more. Printed near the buyer by Gelato. Checkout shipping is the destination rate — Wellington 6012 is the shop address, not the parcel origin.";
+export const SHIP_BLURB = GELATO_SHIP_BLURB;
 
 export type ShipLane = {
   region: string;

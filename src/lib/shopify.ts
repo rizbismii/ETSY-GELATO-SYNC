@@ -1,6 +1,13 @@
 import crypto from "node:crypto";
 import { getCredentials, normalizeShopDomain, patchCredentials } from "@/lib/credentials";
-import { fernoraCatalog, FERNORA_NAME, shopLane, type FernoraCountry } from "@/lib/shop";
+import { fernoraCatalog, FERNORA_NAME, gelatoShipFamilies, shopLane } from "@/lib/shop";
+import { FERNORA_SHOPIFY_SHOP, FERNORA_STOREFRONT_ORIGIN } from "@/lib/shopify-shop";
+import {
+  gelatoCodesForLane,
+  gelatoCountryName,
+  GELATO_SHIP_BLURB,
+} from "@/lib/gelato-countries";
+import { policyHtml } from "@/lib/shop-policies";
 import { absoluteAssetUrl } from "@/lib/origin";
 import { getShop, updateShop } from "@/lib/store";
 import type { ShopifyCatalogMap } from "@/lib/types";
@@ -24,6 +31,10 @@ export const SHOPIFY_SCOPES = [
   "write_markets",
   "read_files",
   "write_files",
+  "read_publications",
+  "write_publications",
+  "read_themes",
+  "write_themes",
 ].join(",");
 
 export function shopifyAuthorizeUrl(shop: string, clientId: string, redirectUri: string, state: string) {
@@ -63,7 +74,7 @@ export function verifyShopifyWebhook(rawBody: string, hmacHeader: string | null,
   }
 }
 
-export async function probeShopifyStore(shop = "fernora.myshopify.com") {
+export async function probeShopifyStore(shop = FERNORA_SHOPIFY_SHOP) {
   const host = normalizeShopDomain(shop) || shop;
   try {
     const response = await fetch(`https://${host}/`, {
@@ -217,7 +228,7 @@ export async function shopifyGraphql<T>(query: string, variables?: Record<string
 
 export async function pingShopify() {
   const creds = await getCredentials();
-  const storefrontStatus = await probeShopifyStore(creds.shopify?.shop || "fernora.myshopify.com");
+  const storefrontStatus = await probeShopifyStore(creds.shopify?.shop || FERNORA_SHOPIFY_SHOP);
   if (creds.shopify && creds.shopify.storefrontStatus !== storefrontStatus) {
     await patchCredentials({ shopify: { ...creds.shopify, storefrontStatus } });
   }
@@ -319,7 +330,7 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
         };
     const input: Record<string, unknown> = {
       title: product.title,
-      descriptionHtml: `<p>${escapeHtml(product.description)}</p>`,
+      descriptionHtml: shopifyProductHtml(product),
       vendor: FERNORA_NAME,
       productType: product.category,
       status: "ACTIVE",
@@ -334,6 +345,16 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
           type: "single_line_text_field",
           value: product.gelatoProductUid || "",
         },
+        ...(product.printFileUrl
+          ? [
+              {
+                namespace: "fernora",
+                key: "print_file",
+                type: "single_line_text_field",
+                value: await absoluteAssetUrl(product.printFileUrl, request),
+              },
+            ]
+          : []),
       ],
     };
     if (found?.id) input.id = found.id;
@@ -378,6 +399,11 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
       handle: node.handle,
       variants,
     };
+    try {
+      await publishableToOnlineStore(node.id);
+    } catch (error) {
+      notes.push(`${product.title}: published to Admin but not Online Store (${(error as Error).message})`);
+    }
   }
   await updateShop((state) => {
     state.shopifyCatalog = { ...(state.shopifyCatalog || {}), ...catalog };
@@ -387,13 +413,85 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
   return { catalog, notes };
 }
 
+export async function onlineStorePublicationId() {
+  const data = await shopifyGraphql<{ publications: { nodes: Array<{ id: string; name: string }> } }>(
+    `{ publications(first: 20) { nodes { id name } } }`,
+  );
+  const found =
+    data.publications.nodes.find((row) => row.name === "Online Store") || data.publications.nodes[0];
+  if (!found) throw new Error("Shopify has no Online Store publication");
+  return found.id;
+}
+
+export async function publishableToOnlineStore(id: string, publicationId?: string) {
+  const pub = publicationId || (await onlineStorePublicationId());
+  const data = await shopifyGraphql<{
+    publishablePublish: { userErrors: Array<{ message: string }> };
+  }>(
+    `mutation ($id: ID!, $input: [PublicationInput!]!) {
+      publishablePublish(id: $id, input: $input) {
+        userErrors { field message }
+      }
+    }`,
+    { id, input: [{ publicationId: pub }] },
+  );
+  if (data.publishablePublish.userErrors.length) {
+    throw new Error(data.publishablePublish.userErrors.map((row) => row.message).join("; "));
+  }
+}
+
+function shopifyProductHtml(product: ReturnType<typeof fernoraCatalog>[number]) {
+  const lanes = product.lanes
+    .map(
+      (lane) =>
+        `<tr><td>${escapeHtml(lane.label)}</td><td>NZ$${lane.shipping.toFixed(2)}</td><td>${escapeHtml(lane.days)}</td></tr>`,
+    )
+    .join("");
+  return [
+    `<p>${escapeHtml(product.description)}</p>`,
+    `<p>${escapeHtml(GELATO_SHIP_BLURB)}</p>`,
+    `<table><thead><tr><th>Ships to</th><th>Ship</th><th>Transit</th></tr></thead><tbody>${lanes}</tbody></table>`,
+    `<p>Made to order. Returns: unused items that arrive damaged, defective, or incorrect within 14 days — <a href="${FERNORA_STOREFRONT_ORIGIN}/policies/refund-policy">returns policy</a>.</p>`,
+    `<p>Pay at Shopify checkout on fernora.nz (cards, Shop Pay, Apple Pay where available). Customer accounts: <a href="${FERNORA_STOREFRONT_ORIGIN}/account">fernora.nz/account</a>.</p>`,
+  ].join("");
+}
+
 export async function restrictShopifyToAunz() {
+  return configureShopifyGelatoShipping();
+}
+
+function gelatoZoneDefs(rates?: Record<string, number>) {
+  return [
+    { name: "New Zealand", lane: "NZ" as const, codes: gelatoCodesForLane("NZ"), price: rates?.NZ ?? 10.09 },
+    { name: "Australia", lane: "AU" as const, codes: gelatoCodesForLane("AU"), price: rates?.AU ?? 12.76 },
+    { name: "United States & Americas", lane: "US" as const, codes: gelatoCodesForLane("US"), price: rates?.US ?? 8.08 },
+    { name: "United Kingdom & Ireland", lane: "GB" as const, codes: gelatoCodesForLane("GB"), price: rates?.GB ?? 10.47 },
+    { name: "European Union", lane: "EU" as const, codes: gelatoCodesForLane("EU"), price: rates?.EU ?? 11.57 },
+  ];
+}
+
+function gelatoZonesToCreate(rates?: Record<string, number>) {
+  return gelatoZoneDefs(rates).map((zone) => ({
+    name: zone.name,
+    countries: zone.codes.map((code) => ({ code, includeAllProvinces: true })),
+    methodDefinitionsToCreate: [
+      {
+        name: `Gelato ${zone.name}`,
+        active: true,
+        rateDefinition: { price: { amount: zone.price.toFixed(2), currencyCode: "NZD" } },
+      },
+    ],
+  }));
+}
+
+export async function configureShopifyGelatoShipping() {
   const notes: string[] = [];
   const data = await shopifyGraphql<{
     deliveryProfiles: {
       nodes: Array<{
         id: string;
         name: string;
+        default?: boolean | null;
         profileLocationGroups: Array<{
           locationGroup: { id: string };
           locationGroupZones: {
@@ -409,15 +507,30 @@ export async function restrictShopifyToAunz() {
       }>;
     };
     locations: { nodes: Array<{ id: string; name: string }> };
+    products: {
+      nodes: Array<{
+        id: string;
+        metafield?: { value?: string | null } | null;
+        variants: { nodes: Array<{ id: string; sku?: string | null }> };
+      }>;
+    };
   }>(`{
     locations(first: 5) { nodes { id name } }
-    deliveryProfiles(first: 8) {
+    products(first: 50, query: "vendor:${FERNORA_NAME}") {
+      nodes {
+        id
+        metafield(namespace: "fernora", key: "product_id") { value }
+        variants(first: 50) { nodes { id sku } }
+      }
+    }
+    deliveryProfiles(first: 25) {
       nodes {
         id
         name
+        default
         profileLocationGroups {
           locationGroup { id }
-          locationGroupZones(first: 20) {
+          locationGroupZones(first: 40) {
             nodes {
               zone {
                 id
@@ -430,7 +543,7 @@ export async function restrictShopifyToAunz() {
       }
     }
   }`);
-  const profile = data.deliveryProfiles.nodes[0];
+  const profile = data.deliveryProfiles.nodes.find((row) => row.default) || data.deliveryProfiles.nodes[0];
   const location = data.locations.nodes[0];
   if (!profile || !location) {
     notes.push("Shopify has no delivery profile or location to restrict yet.");
@@ -438,38 +551,20 @@ export async function restrictShopifyToAunz() {
   }
   const group = profile.profileLocationGroups[0];
   const existingZones = group?.locationGroupZones.nodes || [];
+  const gelatoZones = gelatoZoneDefs();
   const extraZoneIds = existingZones
-    .filter((row) => {
-      const codes = row.zone.countries.map((country) => country.code.countryCode);
-      const onlyAunz = codes.length > 0 && codes.every((code) => code === "AU" || code === "NZ");
-      return !onlyAunz;
-    })
+    .filter((row) => !gelatoZones.some((zone) => zone.name === row.zone.name))
     .map((row) => row.zone.id);
-  const already = existingZones.some((row) => {
-    const codes = row.zone.countries.map((country) => country.code.countryCode);
-    return codes.includes("AU") && codes.includes("NZ");
-  });
+  const missingZones = gelatoZones.filter((zone) => !existingZones.some((row) => row.zone.name === zone.name));
   const profileInput: Record<string, unknown> = {
-    name: "Fernora AU & NZ",
+    name: "Fernora · Gelato destinations",
     zonesToDelete: extraZoneIds,
   };
-  if (group && !already) {
+  if (group && missingZones.length) {
     profileInput.locationGroupsToUpdate = [
       {
         id: group.locationGroup.id,
-        zonesToCreate: [
-          {
-            name: "Australia & New Zealand",
-            countries: [{ code: "AU" }, { code: "NZ" }],
-            methodDefinitionsToCreate: [
-              {
-                name: "Gelato in-region",
-                active: true,
-                rateDefinition: { price: { amount: 12.0, currencyCode: "NZD" } },
-              },
-            ],
-          },
-        ],
+        zonesToCreate: gelatoZonesToCreate().filter((zone) => missingZones.some((row) => row.name === zone.name)),
       },
     ];
   }
@@ -488,7 +583,150 @@ export async function restrictShopifyToAunz() {
       "Shipping zones: " + updated.deliveryProfileUpdate.userErrors.map((row) => row.message).join("; "),
     );
   } else {
-    notes.push("Shopify shipping is limited to Australia and New Zealand.");
+    notes.push("Shopify shipping zones match Gelato destinations (NZ, AU, US, UK, EU and other print countries).");
+  }
+  notes.push(...(await configureGelatoProductShippingProfiles(data.products.nodes, data.deliveryProfiles.nodes, location.id)));
+  return notes;
+}
+
+async function configureGelatoProductShippingProfiles(
+  products: Array<{
+    id: string;
+    metafield?: { value?: string | null } | null;
+    variants: { nodes: Array<{ id: string; sku?: string | null }> };
+  }>,
+  profiles: Array<{ id: string; name: string; default?: boolean | null }>,
+  locationId: string,
+) {
+  const notes: string[] = [];
+  const bySku = new Map<string, string>();
+  const byFernoraId = new Map<string, string[]>();
+  for (const product of products) {
+    const variantIds = product.variants.nodes.map((row) => row.id);
+    for (const row of product.variants.nodes) {
+      if (row.sku) bySku.set(row.sku, row.id);
+    }
+    if (product.metafield?.value) byFernoraId.set(product.metafield.value, variantIds);
+  }
+  const existingByName = new Map(profiles.map((row) => [row.name, row.id]));
+  for (const family of gelatoShipFamilies()) {
+    const variantIds = family.productIds.flatMap((productId) => {
+      const fromMeta = byFernoraId.get(productId);
+      if (fromMeta?.length) return fromMeta;
+      const product = fernoraCatalog().find((row) => row.id === productId);
+      if (!product) return [];
+      if (product.variants?.length) {
+        return product.variants.map((variant) => bySku.get(variant.sku)).filter((id): id is string => Boolean(id));
+      }
+      const id = bySku.get(product.id);
+      return id ? [id] : [];
+    });
+    if (!variantIds.length) continue;
+    const name = `Gelato · ${family.name}`;
+    const existingId = existingByName.get(name);
+    if (existingId) {
+      const updated = await shopifyGraphql<{
+        deliveryProfileUpdate: { userErrors: Array<{ message: string }> };
+      }>(
+        `mutation ($id: ID!, $profile: DeliveryProfileInput!) {
+          deliveryProfileUpdate(id: $id, profile: $profile) { userErrors { field message } }
+        }`,
+        { id: existingId, profile: { variantsToAssociate: variantIds } },
+      );
+      if (updated.deliveryProfileUpdate.userErrors.length) {
+        notes.push(`${name}: ${updated.deliveryProfileUpdate.userErrors.map((row) => row.message).join("; ")}`);
+      }
+      continue;
+    }
+    const created = await shopifyGraphql<{
+      deliveryProfileCreate: { userErrors: Array<{ message: string }>; profile?: { id: string } };
+    }>(
+      `mutation ($profile: DeliveryProfileInput!) {
+        deliveryProfileCreate(profile: $profile) {
+          profile { id name }
+          userErrors { field message }
+        }
+      }`,
+      {
+        profile: {
+          name,
+          variantsToAssociate: variantIds,
+          locationGroupsToCreate: [
+            {
+              locationsToAdd: [locationId],
+              zonesToCreate: gelatoZonesToCreate(family.rates),
+            },
+          ],
+        },
+      },
+    );
+    if (created.deliveryProfileCreate.userErrors.length) {
+      notes.push(`${name}: ${created.deliveryProfileCreate.userErrors.map((row) => row.message).join("; ")}`);
+    } else {
+      notes.push(`Shipping profile ${name} uses Gelato destination rates.`);
+    }
+  }
+  return notes;
+}
+
+export async function syncShopifyPolicies() {
+  const notes: string[] = [];
+  try {
+    const disabled = await shopifyGraphql<{
+      privacyFeaturesDisable: {
+        featuresDisabled?: string[] | null;
+        userErrors: Array<{ message: string }>;
+      };
+    }>(
+      `mutation {
+        privacyFeaturesDisable(featuresToDisable: [PRIVACY_POLICY]) {
+          featuresDisabled
+          userErrors { field message }
+        }
+      }`,
+    );
+    if (disabled.privacyFeaturesDisable.userErrors.length) {
+      notes.push(
+        `privacy auto-manage: ${disabled.privacyFeaturesDisable.userErrors.map((row) => row.message).join("; ")}`,
+      );
+    } else {
+      notes.push("Shopify automatic privacy policy disabled so Gelato-aligned copy can publish.");
+    }
+  } catch (error) {
+    notes.push(`privacy auto-manage: ${(error as Error).message}`);
+  }
+  const policies: Array<{ type: string; body: string; label: string }> = [
+    { type: "REFUND_POLICY", body: policyHtml("returns"), label: "returns" },
+    { type: "PRIVACY_POLICY", body: policyHtml("privacy"), label: "privacy" },
+    { type: "TERMS_OF_SERVICE", body: policyHtml("terms"), label: "terms" },
+    { type: "SHIPPING_POLICY", body: policyHtml("shipping"), label: "shipping" },
+    { type: "LEGAL_NOTICE", body: policyHtml("payments"), label: "payments" },
+  ];
+  for (const policy of policies) {
+    try {
+      const updated = await shopifyGraphql<{
+        shopPolicyUpdate: { userErrors: Array<{ message: string }> };
+      }>(
+        `mutation ($shopPolicy: ShopPolicyInput!) {
+          shopPolicyUpdate(shopPolicy: $shopPolicy) {
+            userErrors { field message }
+          }
+        }`,
+        { shopPolicy: { type: policy.type, body: policy.body } },
+      );
+      if (updated.shopPolicyUpdate.userErrors.length) {
+        notes.push(
+          `${policy.label}: ${updated.shopPolicyUpdate.userErrors.map((row) => row.message).join("; ")}`,
+        );
+      }
+    } catch (error) {
+      notes.push(`${policy.label}: ${(error as Error).message}`);
+    }
+  }
+  if (!notes.some((row) => row.includes("auto-manage") || row.includes(":"))) {
+    notes.push("Shopify legal policies (returns, privacy, terms, shipping, payments) updated.");
+  } else {
+    notes.unshift("Shopify policies:");
   }
   return notes;
 }
@@ -507,7 +745,7 @@ function shopifyVariantGid(
 export async function createShopifyDraftInvoice(input: {
   email: string;
   note: string;
-  country: FernoraCountry;
+  country: string;
   lines: Array<{ listingId: string; sku?: string; quantity: number; title: string; price: number }>;
   address: {
     firstName: string;
@@ -557,7 +795,7 @@ export async function createShopifyDraftInvoice(input: {
         billingAddress: input.address,
         lineItems,
         shippingLine: {
-          title: input.country === "NZ" ? "Gelato New Zealand" : "Gelato Australia",
+          title: `Gelato ${gelatoCountryName(input.country) || input.country}`,
           price: shipping.toFixed(2),
         },
       },

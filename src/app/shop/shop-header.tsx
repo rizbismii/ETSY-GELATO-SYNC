@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, UserRound } from "lucide-react";
 import { useCart } from "./cart-provider";
 
 export function ShopHeader() {
@@ -12,12 +12,18 @@ export function ShopHeader() {
         <Link href="/shop" className="leading-none">
           <p className="font-heading text-3xl tracking-tight">Fernora</p>
           <p className="mt-1 text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-            AU & NZ · Gelato print
+            NZ · AU · Gelato destinations
           </p>
         </Link>
         <nav className="flex items-center gap-5 text-sm">
           <Link href="/shop" className="hidden text-muted-foreground hover:text-foreground sm:inline">
             Shop
+          </Link>
+          <Link href="/shop/policies/shipping" className="hidden text-muted-foreground hover:text-foreground md:inline">
+            Shipping
+          </Link>
+          <Link href="/shop/account" className="text-muted-foreground hover:text-foreground" aria-label="Account">
+            <UserRound className="size-5" />
           </Link>
           <Link href="/shop/checkout" className="relative text-foreground">
             <ShoppingBag className="size-5" />

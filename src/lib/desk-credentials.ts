@@ -1,3 +1,5 @@
+import { FERNORA_SHOPIFY_SHOP } from "@/lib/shopify-shop";
+
 /**
  * Fernora desk app keys. These are the shop’s own API credentials so a fresh
  * clone, a recycled Cloudflare hostname, or a missing data/credentials.json
@@ -13,7 +15,7 @@ export const DESK_CREDENTIALS = {
   shopify: {
     clientId: "",
     clientSecret: "",
-    shop: "fernora.myshopify.com",
+    shop: FERNORA_SHOPIFY_SHOP,
   },
 };
 

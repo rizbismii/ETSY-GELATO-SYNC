@@ -9,11 +9,15 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatMoney } from "@/lib/money";
-import { cartLineKey, fernoraProduct, type FernoraCountry } from "@/lib/shop";
+import { cartLineKey, fernoraProduct } from "@/lib/shop";
+import { gelatoCountryName } from "@/lib/gelato-countries";
+import { POLICY_PATHS } from "@/lib/shop-policies";
 import { api } from "@/lib/api";
 import { useCart } from "../cart-provider";
 import { ProductArt } from "@/components/product-art";
 import { cacheShopOrder } from "../order/[id]/ui";
+import { CountrySelect } from "../country-select";
+import { readProfile, rememberOrder, writeProfile, type CustomerProfile } from "../account-store";
 import type { Order } from "@/lib/types";
 
 type Quote = {
@@ -22,6 +26,7 @@ type Quote = {
   total: number;
   currency: string;
   days?: string;
+  countryName?: string;
   items: Array<{
     id: string;
     title: string;
@@ -36,10 +41,10 @@ type Quote = {
 export default function CheckoutPage() {
   const { lines, setQuantity, remove, clear } = useCart();
   const router = useRouter();
-  const [country, setCountry] = useState<FernoraCountry>("NZ");
+  const [country, setCountry] = useState("NZ");
   const [quote, setQuote] = useState<Quote | null>(null);
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<CustomerProfile>({
     firstName: "",
     lastName: "",
     email: "",
@@ -49,7 +54,14 @@ export default function CheckoutPage() {
     city: "",
     state: "",
     postCode: "",
+    country: "NZ",
   });
+
+  useEffect(() => {
+    const saved = readProfile();
+    setForm(saved);
+    setCountry(saved.country || "NZ");
+  }, []);
 
   const localLines = useMemo(
     () =>
@@ -76,11 +88,16 @@ export default function CheckoutPage() {
     event.preventDefault();
     setBusy(true);
     try {
+      const profile = { ...form, country };
+      writeProfile(profile);
       const result = await api<{ orderId: string; invoiceUrl?: string; order?: Order }>("/api/shop/checkout", {
         method: "POST",
-        body: JSON.stringify({ ...form, country, lines }),
+        body: JSON.stringify({ ...profile, country, lines }),
       });
-      if (result.order) cacheShopOrder(result.order);
+      if (result.order) {
+        cacheShopOrder(result.order);
+        rememberOrder(result.order);
+      }
       clear();
       if (result.invoiceUrl) {
         window.location.href = result.invoiceUrl;
@@ -98,7 +115,9 @@ export default function CheckoutPage() {
     return (
       <div className="mx-auto max-w-lg py-16 text-center">
         <h1 className="font-heading text-4xl">Your bag is empty</h1>
-        <p className="mt-3 text-sm text-muted-foreground">The catalog ships to Australia and New Zealand only.</p>
+        <p className="mt-3 text-sm text-muted-foreground">
+          The catalog ships to New Zealand, Australia, and other countries Gelato delivers to.
+        </p>
         <Link href="/shop" className={`${buttonVariants()} mt-6`}>
           Back to the shop
         </Link>
@@ -111,21 +130,16 @@ export default function CheckoutPage() {
       <form className="space-y-4" onSubmit={(event) => void placeOrder(event)}>
         <h1 className="font-heading text-4xl">Checkout</h1>
         <p className="text-sm text-muted-foreground">
-          Australia and New Zealand only. Gelato prints in-region after payment is confirmed.
+          Country matches Gelato delivery. After you place the order, pay the Shopify invoice
+          (cards, Shop Pay, Apple Pay where available). Gelato prints only after payment.
         </p>
-        <div className="flex gap-2">
-          {(["NZ", "AU"] as const).map((code) => (
-            <Button
-              key={code}
-              type="button"
-              size="sm"
-              variant={country === code ? "default" : "outline"}
-              onClick={() => setCountry(code)}
-            >
-              {code === "NZ" ? "New Zealand" : "Australia"}
-            </Button>
-          ))}
-        </div>
+        <CountrySelect
+          value={country}
+          onChange={(value) => {
+            setCountry(value);
+            setForm((current) => ({ ...current, country: value }));
+          }}
+        />
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="First name" value={form.firstName} onChange={(value) => setForm({ ...form, firstName: value })} />
           <Field label="Last name" value={form.lastName} onChange={(value) => setForm({ ...form, lastName: value })} />
@@ -141,18 +155,36 @@ export default function CheckoutPage() {
         <div className="grid gap-3 sm:grid-cols-3">
           <Field label="City" value={form.city} onChange={(value) => setForm({ ...form, city: value })} />
           <Field
-            label={country === "AU" ? "State" : "Region"}
+            label={country === "AU" || country === "US" ? "State" : "Region"}
             value={form.state}
             onChange={(value) => setForm({ ...form, state: value })}
           />
           <Field label="Postcode" value={form.postCode} onChange={(value) => setForm({ ...form, postCode: value })} />
         </div>
+        <p className="text-xs leading-6 text-muted-foreground">
+          Saved to your{" "}
+          <Link className="underline" href="/shop/account">
+            customer profile
+          </Link>{" "}
+          on this device.{" "}
+          <Link className="underline" href={POLICY_PATHS.returns}>
+            Returns
+          </Link>
+          {" · "}
+          <Link className="underline" href={POLICY_PATHS.privacy}>
+            Privacy
+          </Link>
+          {" · "}
+          <Link className="underline" href={POLICY_PATHS.payments}>
+            Payments
+          </Link>
+        </p>
         <Button type="submit" disabled={busy} className="w-full sm:w-auto">
           {busy ? <Loader2 className="animate-spin" /> : null}
-          Place order
+          Place order &amp; pay with Shopify
         </Button>
       </form>
-      <aside className="h-fit space-y-4 rounded-2xl border border-border/70 bg-card p-5">
+      <aside className="h-fit space-y-4 rounded-[1.6rem] border border-border/70 bg-card p-5">
         <h2 className="font-heading text-2xl">Bag</h2>
         <ul className="space-y-4">
           {localLines.map((line) => (
@@ -162,6 +194,7 @@ export default function CheckoutPage() {
                   id={line.product!.id}
                   title={line.product!.title}
                   imageUrl={line.product!.imageUrl}
+                  fit="contain"
                   className="size-full"
                 />
               </div>
@@ -200,9 +233,15 @@ export default function CheckoutPage() {
               <dd>{formatMoney(quote.subtotal, quote.currency)}</dd>
             </div>
             <div className="flex justify-between">
-              <dt>Gelato shipping ({country})</dt>
+              <dt>Gelato shipping ({quote.countryName || gelatoCountryName(country)})</dt>
               <dd>{formatMoney(quote.shipping, quote.currency)}</dd>
             </div>
+            {quote.days ? (
+              <div className="flex justify-between text-muted-foreground">
+                <dt>Transit</dt>
+                <dd>{quote.days}</dd>
+              </div>
+            ) : null}
             <div className="flex justify-between font-medium">
               <dt>Total</dt>
               <dd>{formatMoney(quote.total, quote.currency)}</dd>
@@ -229,11 +268,13 @@ function Field({
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
-      <Input id={id} type={type} value={value} onChange={(event) => setFormValue(event.target.value, onChange)} required={!label.includes("optional")} />
+      <Input
+        id={id}
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        required={!label.includes("optional")}
+      />
     </div>
   );
-}
-
-function setFormValue(value: string, onChange: (value: string) => void) {
-  onChange(value);
 }

@@ -1,4 +1,5 @@
-import { exchangeShopifyCode, pingShopify, registerShopifyWebhooks, restrictShopifyToAunz, syncFernoraCatalogToShopify, verifyShopifyHmac } from "@/lib/shopify";
+import { exchangeShopifyCode, pingShopify, registerShopifyWebhooks, configureShopifyGelatoShipping, syncFernoraCatalogToShopify, syncShopifyPolicies, verifyShopifyHmac } from "@/lib/shopify";
+import { prepareShopifyCustomerStore } from "@/lib/shopify-storefront";
 import { publicOrigin, requestOrigin } from "@/lib/origin";
 import { takeOAuthState } from "@/lib/public-origin";
 import { pushTunnel } from "@/lib/tunnel";
@@ -52,7 +53,9 @@ export async function GET(request: Request) {
     await exchangeShopifyCode(shop || stored.shop || stored.verifier, code);
     try {
       await syncFernoraCatalogToShopify(request);
-      await restrictShopifyToAunz();
+      await configureShopifyGelatoShipping();
+      await prepareShopifyCustomerStore(origin);
+      await syncShopifyPolicies();
       await registerShopifyWebhooks(origin);
     } catch {
       /* store may still be frozen; authorization itself succeeded */

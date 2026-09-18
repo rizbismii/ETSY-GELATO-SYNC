@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Download } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +19,7 @@ import { ProductArt } from "@/components/product-art";
 import { api } from "@/lib/api";
 import { formatMoney, formatPercent } from "@/lib/money";
 import { ETSY_SHOP_URL, etsyListingUrl } from "@/lib/live-catalog";
+import { printFileName, printTemplateLabel, printSurface } from "@/lib/print-file";
 import type { Listing } from "@/lib/types";
 
 type Lane = {
@@ -264,7 +265,7 @@ export default function ListingsPage() {
           Buyers in{" "}
           {(data.ads?.countries ?? []).map((country) => country.label).join(", ") ||
             "New Zealand, Australia, United States, United Kingdom, European Union"}{" "}
-          see destination shipping at checkout (Gelato prints in-region). Advertising is{" "}
+          and other Gelato destinations see destination shipping at checkout (Gelato prints in-region). Advertising is{" "}
           <strong>Etsy Offsite Ads</strong>: {adsRate}% of that sale only if an ad brought the
           buyer. On-site CPC Etsy Ads stay off so there is no daily click budget eating profit.
         </p>
@@ -272,6 +273,30 @@ export default function ListingsPage() {
           Confirm Offsite Ads is on and Etsy Ads (CPC) is off in Shop Manager → Marketing. The Open
           API cannot flip those switches.
         </p>
+      </div>
+
+      <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm leading-6">
+        <p className="font-medium">Print file templates</p>
+        <p className="mt-1 text-muted-foreground">
+          Each product stores its Gelato print file in this catalog. Download the template for the
+          current mix, or keep the same <code className="rounded bg-muted px-1 text-xs">printFileUrl</code>{" "}
+          when you add future products — publish and Attach Gelato templates push that file.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {visible
+            .filter((row) => row.printFileUrl)
+            .map((row) => (
+              <a
+                key={row.id}
+                href={row.printFileUrl}
+                download={printFileName(row.printFileUrl, row.title)}
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+              >
+                <Download className="size-3.5" />
+                {printFileName(row.printFileUrl, row.title)}
+              </a>
+            ))}
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -306,14 +331,33 @@ export default function ListingsPage() {
             const status = listing.publishState || "ready";
             return (
               <Card key={listing.id}>
-                <CardContent className="grid gap-4 p-4 lg:grid-cols-[220px_1fr]">
+                <CardContent className="grid gap-4 p-4 lg:grid-cols-[200px_180px_1fr]">
                   <ProductArt
                     id={listing.id}
                     title={listing.title}
                     category={listing.category}
                     imageUrl={listing.imageUrl}
+                    fit="contain"
                     className="h-56 w-full rounded-lg lg:h-full min-h-52"
                   />
+                  {listing.printFileUrl ? (
+                    <div className="space-y-2">
+                      <ProductArt
+                        id={`${listing.id}-print`}
+                        title={`${listing.title} print file`}
+                        category={listing.category}
+                        imageUrl={listing.printFileUrl}
+                        kind="print"
+                        fit="contain"
+                        className="h-56 w-full rounded-lg lg:h-full min-h-52"
+                      />
+                      <p className="text-[11px] leading-4 text-muted-foreground">
+                        {printTemplateLabel(listing.category, listing.id)}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="self-center text-xs text-muted-foreground">No print file saved yet.</p>
+                  )}
                   <div className="min-w-0 space-y-4">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div>
@@ -327,6 +371,7 @@ export default function ListingsPage() {
                         ) : null}
                         <p className="mt-1 text-xs capitalize text-muted-foreground">
                           {listing.gelatoProductName} · {listing.category}
+                          {printSurface(listing.category) === "dtg" ? " · DTG ink (no paper square)" : ""}
                           {listing.etsyListingId ? ` · Etsy #${listing.etsyListingId}` : " · not on Etsy yet"}
                           {listing.gelatoVariantCount
                             ? ` · Gelato ${listing.gelatoConnectedCount ?? 0}/${listing.gelatoVariantCount} connected`
@@ -399,6 +444,16 @@ export default function ListingsPage() {
                       40% in every destination.
                     </p>
                     <div className="flex flex-wrap gap-2">
+                      {listing.printFileUrl ? (
+                        <a
+                          href={listing.printFileUrl}
+                          download={printFileName(listing.printFileUrl, listing.title)}
+                          className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                        >
+                          <Download className="size-3.5" />
+                          Download print template
+                        </a>
+                      ) : null}
                       <Button
                         variant="outline"
                         size="sm"

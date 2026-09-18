@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { StatusPill } from "@/components/status-pill";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { FERNORA_SHOPIFY_SHOP, FERNORA_SHOPIFY_STOREFRONT } from "@/lib/shopify-shop";
 import type { Connections } from "@/lib/types";
 
 type LiveStatus = {
@@ -87,7 +88,7 @@ export function ConnectionsClient() {
   const [shopifyKey, setShopifyKey] = useState("");
   const [shopifySecret, setShopifySecret] = useState("");
   const [shopifyToken, setShopifyToken] = useState("");
-  const [shopifyShop, setShopifyShop] = useState("fernora.myshopify.com");
+  const [shopifyShop, setShopifyShop] = useState(FERNORA_SHOPIFY_SHOP);
   const [busy, setBusy] = useState<string | null>(null);
   const dirty = useRef<Record<string, boolean>>({});
   const [show, setShow] = useState<Record<string, boolean>>({});
@@ -109,7 +110,6 @@ export function ConnectionsClient() {
   const [shopifyAuthOpen, setShopifyAuthOpen] = useState(false);
   const callbackUrl = data?.callbackUrl || "";
   const websiteUrl = data?.websiteUrl || "";
-  const shopUrl = data?.shopUrl || (websiteUrl ? `${websiteUrl.replace(/\/$/, "")}/shop` : "/shop");
   const shopifyCallbackUrl = data?.shopifyCallbackUrl || "";
   const shopifyAppUrl = data?.shopifyAppUrl || websiteUrl;
   const deskUrl = websiteUrl ? `${websiteUrl.replace(/\/$/, "")}/connections` : "";
@@ -424,8 +424,11 @@ export function ConnectionsClient() {
         <h1 className="font-heading text-4xl tracking-tight">Connections</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
           Pressroom talks to Etsy Open API v3, Shopify Admin API, and Gelato Order API v4.
-          FERNORATRENDS stays on Etsy. The Fernora website at /shop sells the same 20 products
-          to Australia and New Zealand only, fulfilled by Gelato.
+          FERNORATRENDS stays on Etsy. The customer website is the Shopify Online Store at{" "}
+          <a className="underline" href="https://fernora.nz">
+            fernora.nz
+          </a>{" "}
+          (Horizon theme, native checkout, markets, and Gelato shipping). /shop on this desk is the catalog preview.
         </p>
       </div>
 
@@ -474,16 +477,16 @@ export function ConnectionsClient() {
                   {copied === "desk" ? "Copied" : "Copy desk"}
                 </Button>
               </span>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Fernora shop (AU/NZ)</p>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Fernora shop (Shopify · fernora.nz)</p>
               <span className="flex flex-col gap-2 sm:flex-row">
                 <code className="block flex-1 break-all rounded bg-muted px-2 py-1 text-xs text-foreground">
-                  {shopUrl}
+                  https://fernora.nz
                 </code>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={async () => {
-                    await navigator.clipboard.writeText(shopUrl);
+                    await navigator.clipboard.writeText("https://fernora.nz");
                     setCopied("shop");
                     toast.success("Fernora shop URL copied");
                   }}
@@ -585,7 +588,7 @@ export function ConnectionsClient() {
           <p className="text-muted-foreground">
             {live?.readyToSell
               ? "Gelato can print. Paid Etsy and Fernora/Shopify orders go to production."
-              : "Gelato can print. Connect Etsy or Shopify, then use the Fernora shop at /shop for AU/NZ."}
+              : "Gelato can print. Connect Etsy or Shopify. Customers buy on fernora.nz (Shopify Online Store)."}
           </p>
           <ul className="space-y-2">
             <li className="flex flex-wrap items-center gap-2">
@@ -648,9 +651,9 @@ export function ConnectionsClient() {
             <li className="flex flex-wrap items-center gap-2">
               <StatusPill value="live" />
               <span>
-                Fernora website · AU/NZ only ·{" "}
-                <a className="underline" href="/shop">
-                  Open shop
+                Fernora website · Shopify Online Store · Gelato destinations ·{" "}
+                <a className="underline" href="https://fernora.nz" target="_blank" rel="noreferrer">
+                  Open fernora.nz
                 </a>
               </span>
             </li>
@@ -882,18 +885,22 @@ export function ConnectionsClient() {
             <p className="text-sm leading-6 text-muted-foreground">
               Shop domain is{" "}
               <code className="rounded bg-muted px-1 text-xs">
-                {data.shopify?.shop || "fernora.myshopify.com"}
+                {data.shopify?.shop || FERNORA_SHOPIFY_SHOP}
               </code>
               {data.shopify?.storefrontStatus === "live"
-                ? " · storefront is live."
+                ? ` · storefront is live at ${FERNORA_SHOPIFY_STOREFRONT}.`
                 : data.shopify?.storefrontStatus === "frozen"
                   ? " · storefront is frozen until a plan is paid."
                   : "."}{" "}
-              The Fernora website at{" "}
+              Customers buy on the Shopify Online Store (
+              <a className="underline" href="https://fernora.nz" target="_blank" rel="noreferrer">
+                fernora.nz
+              </a>
+              ): native checkout, Shop Pay, accounts, markets, and Gelato shipping.{" "}
               <a className="underline" href="/shop">
                 /shop
               </a>{" "}
-              sells the same catalog now, ships AU/NZ only, and sends paid orders to Gelato.
+              on this desk is the catalog preview. Publish catalog also pushes products onto the Online Store channel so Horizon stops showing placeholder tees.
             </p>
             <div
               id="shopify-admin-token"
@@ -919,7 +926,7 @@ export function ConnectionsClient() {
                   → this app → <strong className="font-medium text-foreground">Home</strong> →{" "}
                   <strong className="font-medium text-foreground">Install app</strong> → choose{" "}
                   <code className="rounded bg-muted px-1 text-xs">
-                    {data.shopify?.shop || "fernora.myshopify.com"}
+                    {data.shopify?.shop || FERNORA_SHOPIFY_SHOP}
                   </code>{" "}
                   → Install. Use a full browser tab. If you see “admin.shopify.com refused to
                   connect”, Shopify was opened inside a frame — close that and install from Home
@@ -992,7 +999,7 @@ export function ConnectionsClient() {
                 id="shopify-shop"
                 value={shopifyShop}
                 onChange={(event) => setShopifyShop(event.target.value)}
-                placeholder="fernora.myshopify.com"
+                placeholder={FERNORA_SHOPIFY_SHOP}
               />
             </div>
             {secretField(
@@ -1041,7 +1048,7 @@ export function ConnectionsClient() {
                 disabled={!data.connections.shopify.authorized || busy === "shopify-sync"}
               >
                 {busy === "shopify-sync" ? <Loader2 className="animate-spin" /> : null}
-                Publish catalog · AU/NZ
+                Publish catalog · Gelato shipping
               </Button>
             </div>
           </CardContent>

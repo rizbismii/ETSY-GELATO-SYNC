@@ -1,25 +1,38 @@
-import { LIVE_PRODUCTS, SHIP_BLURB, type LiveProduct } from "@/lib/live-catalog";
+import { LIVE_PRODUCTS, SHIP_BLURB, resolveLiveSku, type LiveProduct } from "@/lib/live-catalog";
 import { findClothingVariant, variantLabel } from "@/lib/clothing";
+import {
+  GELATO_COUNTRY_CODES,
+  GELATO_SHIP_BLURB,
+  gelatoCountryName,
+  gelatoDestination,
+  isGelatoCountry,
+  shipLaneForCountry,
+  type ShipLaneCode,
+} from "@/lib/gelato-countries";
 import type { Address, Order, OrderItem } from "@/lib/types";
 
 export const FERNORA_NAME = "Fernora";
 export const FERNORA_CURRENCY = "NZD";
-export const FERNORA_SHIP_COUNTRIES = ["NZ", "AU"] as const;
-export type FernoraCountry = (typeof FERNORA_SHIP_COUNTRIES)[number];
+/** ISO country codes Gelato delivers to (AU, NZ, and the rest of the catalog lanes). */
+export const FERNORA_SHIP_COUNTRIES = GELATO_COUNTRY_CODES;
+export type FernoraCountry = string;
+export type FernoraShipLane = ShipLaneCode;
 
-export const FERNORA_SHIP_BLURB =
-  "Ships to Australia and New Zealand only. Printed near you by Gelato. Wellington 6012 is the studio address, not the parcel origin.";
+export const FERNORA_SHIP_BLURB = GELATO_SHIP_BLURB;
 
-export function isFernoraCountry(value: string): value is FernoraCountry {
-  return value === "NZ" || value === "AU";
+export function isFernoraCountry(value: string): boolean {
+  return isGelatoCountry(value);
 }
 
 export function shopDescription(product: LiveProduct) {
-  return product.description.replace(SHIP_BLURB, "").trim() + " " + FERNORA_SHIP_BLURB;
+  const stripped = product.description.replace(SHIP_BLURB, "").trim();
+  return `${stripped} ${FERNORA_SHIP_BLURB}`.trim();
 }
 
-export function shopLane(product: LiveProduct, country: FernoraCountry) {
-  return product.lanes.find((lane) => lane.country === country || lane.region === country);
+export function shopLane(product: LiveProduct, country: string) {
+  const lane = shipLaneForCountry(country);
+  if (!lane) return undefined;
+  return product.lanes.find((row) => row.region === lane || row.country === country);
 }
 
 export function fernoraCatalog() {
@@ -39,7 +52,11 @@ export function cartLineKey(line: CartLine) {
   return line.variantId ? `${line.id}::${line.variantId}` : line.id;
 }
 
-export function quoteFernoraCart(lines: CartLine[], country: FernoraCountry) {
+export function quoteFernoraCart(lines: CartLine[], country: string) {
+  if (!isFernoraCountry(country)) {
+    throw new Error("Fernora only ships to countries Gelato delivers to");
+  }
+  const dest = gelatoDestination(country);
   const items: Array<{
     product: LiveProduct;
     quantity: number;
@@ -55,7 +72,7 @@ export function quoteFernoraCart(lines: CartLine[], country: FernoraCountry) {
     const product = fernoraProduct(line.id);
     if (!product || line.quantity < 1) continue;
     const lane = shopLane(product, country);
-    if (!lane) throw new Error(`${product.title} cannot ship to ${country}`);
+    if (!lane) throw new Error(`${product.title} cannot ship to ${gelatoCountryName(country)}`);
     const variant = findClothingVariant(product.variants, line.variantId);
     items.push({
       product,
@@ -81,7 +98,68 @@ export function quoteFernoraCart(lines: CartLine[], country: FernoraCountry) {
     total: subtotal + shipping,
     currency: FERNORA_CURRENCY,
     country,
+    countryName: dest?.name || country,
+    lane: dest?.lane,
     days: items.map((item) => item.days).sort()[0],
+  };
+}
+
+export function gelatoShipFamilies() {
+  const groups = new Map<
+    string,
+    { name: string; rates: Record<string, number>; productIds: string[] }
+  >();
+  for (const product of fernoraCatalog()) {
+    const rates: Record<string, number> = {};
+    for (const lane of product.lanes) rates[lane.region] = lane.shipping;
+    const key = ["NZ", "AU", "US", "GB", "EU"].map((region) => `${region}:${rates[region] ?? 0}`).join("|");
+    const existing = groups.get(key);
+    if (existing) {
+      existing.productIds.push(product.id);
+      continue;
+    }
+    groups.set(key, {
+      name: `${product.category} NZ$${Number(rates.NZ || 0).toFixed(2)}`,
+      rates,
+      productIds: [product.id],
+    });
+  }
+  return [...groups.values()];
+}
+
+export function quoteGelatoShipment(
+  lines: Array<{ sku?: string; title?: string; quantity: number }>,
+  country: string,
+) {
+  if (!isFernoraCountry(country)) {
+    throw new Error("Fernora only ships to countries Gelato delivers to");
+  }
+  const dest = gelatoDestination(country);
+  const items: Array<{ title: string; quantity: number; shipping: number; days: string }> = [];
+  for (const line of lines) {
+    const resolved = resolveLiveSku(line.sku, line.title);
+    const product = resolved ? fernoraProduct(resolved.listingId) : undefined;
+    if (!product || line.quantity < 1) continue;
+    const lane = shopLane(product, country);
+    if (!lane) throw new Error(`${product.title} cannot ship to ${gelatoCountryName(country)}`);
+    items.push({
+      title: resolved?.variation ? `${product.title} · ${resolved.variation}` : product.title,
+      quantity: Math.min(99, Math.floor(line.quantity)),
+      shipping: lane.shipping,
+      days: lane.days,
+    });
+  }
+  if (!items.length) throw new Error("No shippable Fernora items");
+  const shipping = items.reduce((sum, item) => sum + item.shipping * item.quantity, 0);
+  return {
+    items,
+    shipping,
+    currency: FERNORA_CURRENCY,
+    country,
+    countryName: dest?.name || country,
+    lane: dest?.lane,
+    days: items.map((item) => item.days).sort()[0],
+    serviceName: `Gelato ${dest?.name || country}`,
   };
 }
 

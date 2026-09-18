@@ -29,15 +29,10 @@ import {
   syncGelatoStore,
 } from "@/lib/gelato-store";
 import { rememberDeletedListing } from "@/lib/tombstones";
-import { deleteShopifyProduct } from "@/lib/shopify";
-import {
-  checkoutToOrder,
-  isFernoraCountry,
-  quoteFernoraCart,
-  type CartLine,
-  type FernoraCountry,
-} from "@/lib/shop";
-import { createShopifyDraftInvoice } from "@/lib/shopify";
+import { FERNORA_SHOPIFY_SHOP } from "@/lib/shopify-shop";
+import { createShopifyDraftInvoice, deleteShopifyProduct } from "@/lib/shopify";
+import { isGelatoCountry } from "@/lib/gelato-countries";
+import { checkoutToOrder, quoteFernoraCart, type CartLine } from "@/lib/shop";
 
 export async function connectionStatus(): Promise<Connections> {
   const creds = await getCredentials();
@@ -161,7 +156,7 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
           : "Shopify Fernora is not authorized",
       detail:
         connections.shopify.storefrontStatus === "frozen"
-          ? "fernora.myshopify.com exists but Shopify has paused the storefront (unpaid plan). Unfreeze it, then authorize the app. The Fernora website at /shop still sells AU/NZ and prints through Gelato."
+          ? `${connections.shopify.shop || FERNORA_SHOPIFY_SHOP} exists but Shopify has paused the storefront (unpaid plan). Unfreeze it, then authorize the app. The Fernora website at /shop still sells Gelato destinations (AU, NZ, and other print countries) and prints through Gelato.`
           : "Authorize the Fernora Shopify shop so Pressroom can push the catalog and pull paid checkouts.",
       action: { label: "Connect Shopify", href: "/connections", kind: "connect" },
     });
@@ -885,10 +880,10 @@ export async function placeFernoraOrder(input: {
   country: string;
   address: Address;
 }) {
-  if (!isFernoraCountry(input.country)) {
-    throw new Error("Fernora only ships to Australia and New Zealand");
+  if (!isGelatoCountry(input.country)) {
+    throw new Error("Fernora only ships to countries Gelato delivers to");
   }
-  const country = input.country as FernoraCountry;
+  const country = input.country;
   const quote = quoteFernoraCart(input.lines, country);
   const draft = checkoutToOrder({ quote, address: input.address });
   const id = `ord_frn_${Date.now().toString(36)}`;
@@ -899,7 +894,7 @@ export async function placeFernoraOrder(input: {
     try {
       const invoice = await createShopifyDraftInvoice({
         email: input.address.email || "",
-        note: "Fernora AU/NZ · Gelato print-on-demand",
+        note: "Fernora · Gelato print-on-demand",
         country,
         lines: quote.items.map((item) => ({
           listingId: item.product.id,
@@ -1000,8 +995,8 @@ export async function ingestShopifyPaidOrder(payload: {
   }
   const addressSource = payload.shipping_address || payload.billing_address || {};
   const country = String(addressSource.country_code || addressSource.country || "").toUpperCase();
-  if (country && country !== "AU" && country !== "NZ" && country !== "AUS" && country !== "NZL") {
-    throw new Error("Fernora Shopify orders only ship to Australia and New Zealand");
+  if (country && !isGelatoCountry(country)) {
+    throw new Error("Fernora Shopify orders only ship to countries Gelato delivers to");
   }
   const lines = (payload.line_items || [])
     .map((item, index) => {
