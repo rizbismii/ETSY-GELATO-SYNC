@@ -149,7 +149,7 @@ export default function AdsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Meta account</CardTitle>
-            <StatusPill value={data.connections.meta.authorized ? "live" : "demo"} />
+            <StatusPill value={data.connections.meta.authorized ? "live" : "warning"} />
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-xs leading-5 text-muted-foreground">
@@ -213,7 +213,7 @@ export default function AdsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Campaign</CardTitle>
-            <StatusPill value={status === "active" ? "live" : "warning"} />
+            <StatusPill value={status === "active" ? "live" : status} />
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-xs leading-5 text-muted-foreground">

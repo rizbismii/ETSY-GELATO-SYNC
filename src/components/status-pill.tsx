@@ -37,6 +37,8 @@ const labels: Record<string, string> = {
   demo: "Sample shop",
   critical: "Down",
   warning: "Waiting",
+  paused: "Paused",
+  draft: "Draft",
   updated: "Tunnel updated",
   not_updated: "Tunnel not updated",
   drop: "Live five",
