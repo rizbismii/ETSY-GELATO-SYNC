@@ -7,6 +7,7 @@ const HERO_FILE = "fernora-hero.png";
 const COUNTRY_CURRENCY_MARK = "localization.country.name }} · {{ localization.country.currency.iso_code";
 const PICKER_CSS_MARK = "/* fernora-country-currency */";
 const MOBILE_LAYOUT_MARK = "/* fernora-mobile-layout */";
+const STUDIO_LAYOUT_MARK = "/* fernora-studio-layout */";
 const COLLECTION_HANDLES = ["botanical", "scenic", "quotes", "home-decor"] as const;
 const SERIES_COLLECTIONS = [
   { handle: "botanical", title: "Botanical" },
@@ -108,8 +109,8 @@ function withVisiblePickerCss(header: string) {
       ? next.replace("{% endstylesheet %}", `${css}{% endstylesheet %}`)
       : `${next}\n{% stylesheet %}${css}{% endstylesheet %}\n`;
   }
-  if (next.includes(MOBILE_LAYOUT_MARK)) return next;
-  const mobile = `
+  if (!next.includes(MOBILE_LAYOUT_MARK)) {
+    const mobile = `
   ${MOBILE_LAYOUT_MARK}
   @media screen and (max-width: 749px) {
     .dropdown-localization,
@@ -125,9 +126,62 @@ function withVisiblePickerCss(header: string) {
     }
   }
 `;
+    next = next.includes("{% endstylesheet %}")
+      ? next.replace("{% endstylesheet %}", `${mobile}{% endstylesheet %}`)
+      : `${next}\n{% stylesheet %}${mobile}{% endstylesheet %}\n`;
+  }
+  if (next.includes(STUDIO_LAYOUT_MARK)) return next;
+  const studio = `
+  ${STUDIO_LAYOUT_MARK}
+  #MainContent .section--page-width,
+  #MainContent .section-content-wrapper {
+    width: 100%;
+    max-width: 100%;
+  }
+  [id$="__story_fernora"] .section-content-wrapper {
+    width: 100%;
+  }
+  @media screen and (min-width: 750px) {
+    [id$="__story_fernora"] .section-content-wrapper {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(18rem, 0.9fr);
+      align-items: center;
+      gap: 2.5rem;
+      width: 100%;
+    }
+    [id$="__story_fernora"] .image-block,
+    [id$="__story_fernora"] .group-block {
+      min-width: 0;
+      max-width: none;
+      width: auto;
+      height: auto;
+    }
+    [id$="__story_fernora"] .image-block__image {
+      width: 100%;
+      height: auto;
+      max-height: 32rem;
+      object-fit: cover;
+      aspect-ratio: 4 / 5;
+    }
+    [id$="__story_fernora"] .text-block {
+      max-width: 36rem;
+    }
+  }
+  @media screen and (max-width: 749px) {
+    [id$="__story_fernora"] .section-content-wrapper {
+      display: flex;
+      flex-direction: column;
+    }
+    [id$="__story_fernora"] .image-block,
+    [id$="__story_fernora"] .group-block {
+      width: 100%;
+      max-width: 100%;
+    }
+  }
+`;
   return next.includes("{% endstylesheet %}")
-    ? next.replace("{% endstylesheet %}", `${mobile}{% endstylesheet %}`)
-    : `${next}\n{% stylesheet %}${mobile}{% endstylesheet %}\n`;
+    ? next.replace("{% endstylesheet %}", `${studio}{% endstylesheet %}`)
+    : `${next}\n{% stylesheet %}${studio}{% endstylesheet %}\n`;
 }
 
 async function patchHorizonLocalization(themeId: string) {
@@ -346,10 +400,12 @@ function imageBlock(image: string): ThemeBlock {
     type: "image",
     settings: {
       image,
-      image_ratio: "portrait",
-      width: "fill",
+      image_ratio: "adapt",
+      width: "custom",
+      custom_width: 48,
       width_mobile: "fill",
-      height: "fill",
+      custom_width_mobile: 100,
+      height: "fit",
       border: "none",
       border_radius: 8,
       "padding-block-start": 0,
@@ -560,19 +616,30 @@ async function upsertHorizonJson(themeId: string, heroRef: string) {
           vertical_on_mobile: true,
           horizontal_alignment_flex_direction_column: "flex-start",
           vertical_alignment_flex_direction_column: "center",
-          gap: 16,
-          width: "fill",
-          height: "fill",
-          "padding-block-start": 8,
-          "padding-block-end": 8,
+          gap: 20,
+          width: "custom",
+          custom_width: 48,
+          width_mobile: "fill",
+          custom_width_mobile: 100,
+          height: "fit",
+          "padding-block-start": 12,
+          "padding-block-end": 12,
           "padding-inline-start": 8,
           "padding-inline-end": 8,
         },
         blocks: {
           caption: textBlock("<p>The studio</p>", { type_preset: "h6" }),
-          heading: textBlock("<h3>Made to order. Never warehoused.</h3>", { type_preset: "h3", width: "100%" }),
-          body: textBlock(
-            "<p>Fernora is printed by Gelato in-region after payment. Choose your country in the header — the control shows the country name and currency code, and catalog prices convert with it. Change of mind is not returnable; defects are reprinted.</p>",
+          heading: textBlock("<h3>Made to order.<br>Never warehoused.</h3>", { type_preset: "h3", width: "100%" }),
+          print: textBlock(
+            "<p>Every piece is printed by Gelato in your region after you pay. Nothing is stored in a warehouse.</p>",
+            { type_preset: "rte", width: "100%", max_width: "normal" },
+          ),
+          price: textBlock(
+            "<p>Choose your country in the header. Catalog prices show in that currency.</p>",
+            { type_preset: "rte", width: "100%", max_width: "normal" },
+          ),
+          returns: textBlock(
+            "<p>Change of mind cannot be returned. If a print arrives damaged, we reprint it.</p>",
             { type_preset: "rte", width: "100%", max_width: "normal" },
           ),
           button: {
@@ -585,21 +652,21 @@ async function upsertHorizonJson(themeId: string, heroRef: string) {
             },
           },
         },
-        block_order: ["caption", "heading", "body", "button"],
+        block_order: ["caption", "heading", "print", "price", "returns", "button"],
       },
     },
     block_order: ["image", "copy"],
     settings: {
       content_direction: "row",
       vertical_on_mobile: true,
-      horizontal_alignment: "flex-start",
+      horizontal_alignment: "space-between",
       vertical_alignment: "center",
-      gap: 32,
+      gap: 40,
       section_width: "page-width",
       background_media: "none",
       background_color: PALETTE.background,
-      "padding-block-start": 40,
-      "padding-block-end": 48,
+      "padding-block-start": 48,
+      "padding-block-end": 56,
     },
   };
 
@@ -623,7 +690,7 @@ async function upsertHorizonJson(themeId: string, heroRef: string) {
       current?: Record<string, unknown> & { color_palette?: Record<string, string> };
     };
     if (settings.current) {
-      settings.current.page_width = "wide";
+      settings.current.page_width = "normal";
       settings.current.card_hover_effect = "lift";
       settings.current.color_palette = PALETTE;
     }
