@@ -99,7 +99,7 @@ The catalog in this repo is the live Fernora sale: **20 listings**, with Etsy li
 
 ### Printify
 
-On **Connections**, paste a Printify personal access token from [printify.com/app/account/api](https://printify.com/app/account/api). **Gelato** stays the live printer for fernora.nz. Printify now shows **Fernora Trends** twice: Etsy Connected (the FERNORATRENDS shop) and Not Connected (old disconnected store). External products with Migrate product are existing Gelato/Etsy listings — do not migrate them. Keep **Non-EU**.
+On **Connections**, paste a Printify personal access token from [printify.com/app/account/api](https://printify.com/app/account/api). **Gelato** stays the live printer for fernora.nz. Printify now shows **Fernora Trends** twice: Etsy Connected (the FERNORATRENDS shop) and Not Connected (old disconnected store). External products with Migrate product are existing Gelato/Etsy listings — do not migrate them. **Create Fern Arc Poster and Fern Spray tote** adds two unpublished Printify products on the Etsy-connected shop (matte vertical poster + AS Colour cotton tote). They stay in My products until you publish them in Printify. Keep **Non-EU**.
 
 ### Meta ads
 

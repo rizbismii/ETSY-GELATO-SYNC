@@ -1,4 +1,5 @@
-import { getCredentials } from "@/lib/credentials";
+import { readFile } from "node:fs/promises";
+import { getCredentials, patchCredentials } from "@/lib/credentials";
 import {
   formatPrintifySafetyInformation,
   pickPrintifyShop,
@@ -11,6 +12,14 @@ import {
   type PrintifyGpsrStatus,
   type PrintifyShopSummary,
 } from "@/lib/printify-gpsr";
+import {
+  buildPrintifyProductPayload,
+  existingPrintifyProductId,
+  FERNORA_PRINTIFY_STARTERS,
+  printifyCatalogFile,
+  printifyImageFileName,
+  type PrintifyStarterSpec,
+} from "@/lib/printify-products";
 
 export {
   formatPrintifySafetyInformation,
@@ -27,6 +36,7 @@ export {
   safetyInformationNeedsGpsr,
 } from "@/lib/printify-gpsr";
 export type { PrintifyGpsrStatus, PrintifyShopSummary } from "@/lib/printify-gpsr";
+export { FERNORA_PRINTIFY_STARTERS } from "@/lib/printify-products";
 
 const API = "https://api.printify.com/v1";
 
@@ -72,9 +82,14 @@ async function printify<T>(
     body: init?.body ? JSON.stringify(init.body) : undefined,
     cache: "no-store",
   });
-  const json = (await response.json().catch(() => ({}))) as T & { message?: string; error?: string };
+  const json = (await response.json().catch(() => ({}))) as T & {
+    message?: string;
+    error?: string;
+    errors?: unknown;
+  };
   if (!response.ok) {
-    throw new Error(json.message || json.error || `Printify API ${response.status}`);
+    const extra = json.errors ? ` ${JSON.stringify(json.errors)}` : "";
+    throw new Error(`${json.message || json.error || `Printify API ${response.status}`}${extra}`);
   }
   return json as T;
 }
@@ -104,6 +119,82 @@ export async function pingPrintify(token?: string) {
     shops,
     shopSummaries,
     fullyConnected: printifyIsFullyConnected(shopSummaries),
+  };
+}
+
+export type CreatedPrintifyProduct = {
+  key: string;
+  id: string;
+  title: string;
+  skipped: boolean;
+};
+
+export async function uploadPrintifyImage(fileName: string, token?: string) {
+  const bytes = await readFile(printifyCatalogFile(fileName));
+  const uploadName = printifyImageFileName(fileName, bytes);
+  const uploaded = await printify<{ id: string; file_name?: string }>("/uploads/images.json", {
+    method: "POST",
+    token,
+    body: {
+      file_name: uploadName,
+      contents: bytes.toString("base64"),
+    },
+  });
+  if (!uploaded.id) throw new Error(`Printify did not return an image id for ${uploadName}`);
+  return uploaded;
+}
+
+async function createPrintifyProduct(shopId: number, spec: PrintifyStarterSpec, imageId: string, token?: string) {
+  const created = await printify<{ id: string; title?: string }>(`/shops/${shopId}/products.json`, {
+    method: "POST",
+    token,
+    body: buildPrintifyProductPayload(spec, imageId),
+  });
+  if (!created.id) throw new Error(`Printify did not return a product id for ${spec.title}`);
+  return created;
+}
+
+export async function createFernoraPrintifyProducts(input?: { shopId?: number; token?: string }) {
+  const ping = await pingPrintify(input?.token);
+  const shopId = input?.shopId || ping.shopId;
+  if (!shopId) throw new Error("No Printify shop on this token. Save Printify on Connections first.");
+  const existing = await listShopProducts(shopId);
+  const products: CreatedPrintifyProduct[] = [];
+  for (const spec of FERNORA_PRINTIFY_STARTERS) {
+    const already = existingPrintifyProductId(existing, spec.title);
+    if (already) {
+      products.push({ key: spec.key, id: already, title: spec.title, skipped: true });
+      continue;
+    }
+    const image = await uploadPrintifyImage(spec.printFile, input?.token);
+    const created = await createPrintifyProduct(shopId, spec, image.id, input?.token);
+    products.push({ key: spec.key, id: created.id, title: created.title || spec.title, skipped: false });
+  }
+  const gpsr = await applyPrintifyGpsr({ token: input?.token, shopId });
+  await patchCredentials({
+    printify: {
+      apiToken: input?.token || (await getCredentials()).printify?.apiToken || "",
+      shopId: String(gpsr.shopId || shopId),
+      shopTitle: gpsr.shopTitle,
+      gpsrStatus: gpsr.gpsrStatus,
+      salesChannel: ping.salesChannel,
+      fullyConnected: gpsr.fullyConnected,
+      shops: gpsr.shopSummaries || ping.shopSummaries,
+    },
+  });
+  return {
+    shopId,
+    shopTitle: gpsr.shopTitle || ping.shopTitle,
+    published: false,
+    products,
+    gpsr,
+    fullyConnected: gpsr.fullyConnected,
+    notes: [
+      `Created ${products.filter((row) => !row.skipped).length} Printify product${
+        products.filter((row) => !row.skipped).length === 1 ? "" : "s"
+      } on ${gpsr.shopTitle || "Fernora Trends"} (${shopId}). Left unpublished — not migrated from Gelato.`,
+      ...gpsr.notes,
+    ],
   };
 }
 

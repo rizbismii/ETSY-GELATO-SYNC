@@ -227,7 +227,7 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
       severity: "info",
       title: "Printify cannot replace Gelato (Non-EU)",
       detail:
-        "Printify’s EU radio will not save unless Add business information is filled with a real EU or Northern Ireland address. Wellington is not valid, so Non-EU is required. Paid fernora.nz orders stay on Gelato. Printify stays for other sales channels only.",
+        "Printify’s EU radio will not save unless Add business information is filled with a real EU or Northern Ireland address. Wellington is not valid, so Non-EU is required. Paid fernora.nz orders stay on Gelato. Printify stays for other sales channels only. Do not click Migrate product on existing Gelato/Etsy listings.",
       action: { label: "Printify GPSR", href: "/connections", kind: "connect" },
     });
   }

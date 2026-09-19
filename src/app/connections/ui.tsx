@@ -341,6 +341,33 @@ export function ConnectionsClient() {
     }
   }
 
+  async function createPrintifyProducts() {
+    setBusy("printify-products");
+    try {
+      const result = await api<{
+        products?: Array<{ id: string; title: string; skipped: boolean }>;
+        notes?: string[];
+        fullyConnected?: boolean;
+        shopTitle?: string;
+      }>("/api/printify/products", { method: "POST" });
+      const created = (result.products || []).filter((row) => !row.skipped);
+      const skipped = (result.products || []).filter((row) => row.skipped);
+      toast.success(
+        created.length
+          ? `Created ${created.map((row) => row.title).join(" and ")} on ${result.shopTitle || "Printify"} · unpublished`
+          : skipped.length
+            ? `${skipped.map((row) => row.title).join(" and ")} already on ${result.shopTitle || "Printify"}`
+            : "Printify products unchanged",
+      );
+      for (const note of result.notes || []) toast.message(note);
+      await load();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function saveGelato() {
     setBusy("gelato");
     try {
@@ -1028,11 +1055,12 @@ export function ConnectionsClient() {
             </p>
             <ol className="list-decimal space-y-2 pl-4 text-sm leading-6 text-muted-foreground">
               <li>Leave the dropdown on Fernora Trends · Etsy · Connected.</li>
-              <li>
-                Open the <strong className="font-medium text-foreground">My products</strong> tab (not External
-                products) to add new Printify products.
-              </li>
               <li>Do not click Migrate product on the current Fernora catalog.</li>
+              <li>
+                Create Fern Arc Poster and Fern Spray tote here. They land in{" "}
+                <strong className="font-medium text-foreground">My products</strong> unpublished. Do not publish
+                them onto the existing Gelato Etsy listings.
+              </li>
               <li>Save Printify below so this desk refreshes shop names and the Etsy channel.</li>
             </ol>
             {secretField(
@@ -1058,10 +1086,20 @@ export function ConnectionsClient() {
                 {printifyHeadlineFrom(data) ? ` · ${printifyHeadlineFrom(data)}` : ""}
               </p>
             ) : null}
-            <Button onClick={() => void savePrintify()} disabled={!printifyToken || busy === "printify"}>
-              {busy === "printify" ? <Loader2 className="animate-spin" /> : null}
-              Save Printify and check shops
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => void savePrintify()} disabled={!printifyToken || busy === "printify"}>
+                {busy === "printify" ? <Loader2 className="animate-spin" /> : null}
+                Save Printify and check shops
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => void createPrintifyProducts()}
+                disabled={!printifyToken || Boolean(busy)}
+              >
+                {busy === "printify-products" ? <Loader2 className="animate-spin" /> : null}
+                Create Fern Arc Poster and Fern Spray tote
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
