@@ -1,9 +1,9 @@
 export const ETSY_TRANSACTION_RATE = 0.065;
 export const ETSY_PAYMENT_RATE = 0.03;
 export const ETSY_PAYMENT_FIXED = 0.25;
-/** Etsy Offsite Ads: charged only when a sale is attributed. Shops under US$10k pay 15%. */
+/** Etsy Offsite Ads: 15% of an attributed sale. Keep this off — Pressroom runs a capped Meta daily budget instead. */
 export const OFFSITE_ADS_RATE = 0.15;
-/** Keep at least this share of listing price after marketplace fees, print, and Offsite Ads. */
+/** Keep at least this share of listing price after marketplace fees, print, and a worst-case Offsite hit. */
 export const TARGET_AFTER_ADS_MARGIN = 0.4;
 /** On-site Etsy Ads are CPC. Keep them off so spend never runs without a sale. */
 export const ETSY_CPC_ADS_ENABLED = false;

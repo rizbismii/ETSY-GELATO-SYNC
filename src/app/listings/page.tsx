@@ -215,8 +215,9 @@ export default function ListingsPage() {
           <h1 className="font-heading text-4xl tracking-tight">Catalog</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
             Mixed Fernora shop: positive quote prints, botanicals, scenic work and five home-décor
-            pieces — not an all-abstract wall. Prices in {currency}. Every listing (current and
-            future) is set so Offsite Ads still leave at least 40% after print and Etsy fees.
+            pieces — not an all-abstract wall. Prices in {currency}. Listings stay priced so a
+            worst-case Etsy Offsite sale still leaves 40% after print and fees. Actual ad spend is
+            the Meta daily cap on Ads.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -265,13 +266,18 @@ export default function ListingsPage() {
           Buyers in{" "}
           {(data.ads?.countries ?? []).map((country) => country.label).join(", ") ||
             "New Zealand, Australia, United States, United Kingdom, European Union"}{" "}
-          and other Gelato destinations see destination shipping at checkout (Gelato prints in-region). Advertising is{" "}
-          <strong>Etsy Offsite Ads</strong>: {adsRate}% of that sale only if an ad brought the
-          buyer. On-site CPC Etsy Ads stay off so there is no daily click budget eating profit.
+          and other destinations we print for see destination shipping at checkout. Advertising is a{" "}
+          <strong>Meta campaign from Pressroom</strong> to fernora.nz with a low daily cap. Etsy
+          Offsite Ads ({adsRate}% of an attributed sale) and on-site CPC Etsy Ads stay off so spend
+          does not stack.
         </p>
         <p className="mt-2 text-xs text-muted-foreground">
-          Confirm Offsite Ads is on and Etsy Ads (CPC) is off in Shop Manager → Marketing. The Open
-          API cannot flip those switches.
+          Set the daily cap on{" "}
+          <a className="underline" href="/ads">
+            Ads
+          </a>
+          . In Etsy Shop Manager → Marketing leave Offsite Ads and Etsy Ads (CPC) off — the Open API
+          cannot flip those switches.
         </p>
       </div>
 
@@ -439,9 +445,8 @@ export default function ListingsPage() {
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Buyer pays destination shipping. Organic net is price minus marketplace fees and
-                      print. After ads subtracts Offsite Ads ({adsRate}% of price + shipping) only when
-                      Etsy attributes the order. Prices are raised so that after-ads margin is at least
-                      40% in every destination.
+                      print. After ads is the Etsy Offsite worst case ({adsRate}% of price + shipping) if
+                      that switch is left on. Actual spend is the Meta daily cap on Ads.
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {listing.printFileUrl ? (

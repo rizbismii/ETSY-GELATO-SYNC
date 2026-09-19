@@ -64,6 +64,22 @@ export async function GET(request: Request) {
       accessTokenSet: Boolean(creds.shopify?.accessToken),
       accessToken: creds.shopify?.accessToken || "",
     },
+    meta: {
+      accessTokenSet: Boolean(creds.meta?.accessToken),
+      adAccountId: creds.meta?.adAccountId || "",
+      pixelId: creds.meta?.pixelId || "",
+      pageId: creds.meta?.pageId || "",
+    },
+    printify: {
+      apiTokenSet: Boolean(creds.printify?.apiToken),
+      apiToken: creds.printify?.apiToken || "",
+      shopId: creds.printify?.shopId || "",
+      shopTitle: creds.printify?.shopTitle || "",
+      gpsrStatus: creds.printify?.gpsrStatus || "",
+      salesChannel: creds.printify?.salesChannel || "",
+      fullyConnected: Boolean(creds.printify?.fullyConnected),
+      shops: creds.printify?.shops || [],
+    },
     shopifyInstallUrl: "https://dev.shopify.com/dashboard",
   });
 }
@@ -134,6 +150,8 @@ export async function DELETE() {
           shop: current.shopify.shop,
         }
       : undefined,
+    meta: current.meta,
+    printify: current.printify,
   });
   return Response.json({ ok: true, connections: await connectionStatus() });
 }

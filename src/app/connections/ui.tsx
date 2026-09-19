@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { StatusPill } from "@/components/status-pill";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { printifyConnectionHeadline, printifyShopLine, type PrintifyGpsrStatus, type PrintifyShopSummary } from "@/lib/printify-gpsr";
 import { FERNORA_SHOPIFY_SHOP, FERNORA_SHOPIFY_STOREFRONT } from "@/lib/shopify-shop";
 import type { Connections } from "@/lib/types";
 
@@ -28,6 +29,17 @@ type LiveStatus = {
   shopify?:
     | { ok: true; storefrontStatus?: string; shop?: string; name?: string; url?: string }
     | { ok: false; storefrontStatus?: string; shop?: string; error: string };
+  printify?:
+    | {
+        ok: true;
+        shopTitle?: string;
+        shopId?: number;
+        gpsrStatus?: PrintifyGpsrStatus;
+        salesChannel?: string;
+        fullyConnected?: boolean;
+        shops?: PrintifyShopSummary[];
+      }
+    | { ok: false; error: string };
   callbackReachable: boolean;
   readyToSell: boolean;
 };
@@ -64,6 +76,16 @@ type Payload = {
     shopId?: string;
   };
   gelato: { apiKeySet: boolean; apiKey?: string };
+  printify?: {
+    apiTokenSet: boolean;
+    apiToken?: string;
+    shopId?: string;
+    shopTitle?: string;
+    gpsrStatus?: PrintifyGpsrStatus | "";
+    salesChannel?: string;
+    fullyConnected?: boolean;
+    shops?: PrintifyShopSummary[];
+  };
   shopify?: {
     clientIdSet: boolean;
     clientSecretSet: boolean;
@@ -79,12 +101,33 @@ type Payload = {
   shopifyInstallUrl?: string;
 };
 
+function printifyShopsFrom(data: Payload) {
+  if (data.live?.printify && data.live.printify.ok && data.live.printify.shops?.length) return data.live.printify.shops;
+  return data.printify?.shops || data.connections.printify.shops || [];
+}
+
+function printifyHeadlineFrom(data: Payload) {
+  const live = data.live?.printify && data.live.printify.ok ? data.live.printify : undefined;
+  return printifyConnectionHeadline({
+    gpsrStatus: live?.gpsrStatus || data.printify?.gpsrStatus || data.connections.printify.gpsrStatus,
+    fullyConnected: live?.fullyConnected ?? data.printify?.fullyConnected ?? data.connections.printify.fullyConnected,
+    shops: printifyShopsFrom(data),
+    etsyShopName: data.connections.etsy.shopName,
+  });
+}
+
+function printifyPillFrom(data: Payload): "live" | "warning" | "demo" {
+  if (data.live?.printify?.ok) return data.live.printify.fullyConnected ? "live" : "warning";
+  return data.connections.printify.configured ? "warning" : "demo";
+}
+
 export function ConnectionsClient() {
   const search = useSearchParams();
   const [data, setData] = useState<Payload | null>(null);
   const [etsyKey, setEtsyKey] = useState("");
   const [etsySecret, setEtsySecret] = useState("");
   const [gelatoKey, setGelatoKey] = useState("");
+  const [printifyToken, setPrintifyToken] = useState("");
   const [shopifyKey, setShopifyKey] = useState("");
   const [shopifySecret, setShopifySecret] = useState("");
   const [shopifyToken, setShopifyToken] = useState("");
@@ -102,6 +145,7 @@ export function ConnectionsClient() {
     | "etsy-key"
     | "etsy-secret"
     | "gelato-key"
+    | "printify-key"
     | "shopify-key"
     | "shopify-secret"
     | "shopify-token"
@@ -123,6 +167,7 @@ export function ConnectionsClient() {
     if (!dirty.current.etsyKey) setEtsyKey(next.etsy.apiKey || "");
     if (!dirty.current.etsySecret) setEtsySecret(next.etsy.sharedSecret || "");
     if (!dirty.current.gelatoKey) setGelatoKey(next.gelato.apiKey || "");
+    if (!dirty.current.printifyToken) setPrintifyToken(next.printify?.apiToken || "");
     if (!dirty.current.shopifyKey) setShopifyKey(next.shopify?.clientId || "");
     if (!dirty.current.shopifySecret) setShopifySecret(next.shopify?.clientSecret || "");
     if (!dirty.current.shopifyToken) setShopifyToken(next.shopify?.accessToken || "");
@@ -257,6 +302,72 @@ export function ConnectionsClient() {
       setBusy(null);
     }
   }
+  async function savePrintify() {
+    setBusy("printify");
+    try {
+      const result = await api<{
+        live: boolean;
+        warning?: string;
+        notes?: string[];
+        gpsrStatus?: PrintifyGpsrStatus;
+        fullyConnected?: boolean;
+        ping?: { shopTitle?: string; fullyConnected?: boolean };
+      }>(
+        "/api/printify/connect",
+        {
+          method: "POST",
+          body: JSON.stringify({ apiToken: printifyToken }),
+        },
+      );
+      if (result.live) {
+        toast.success(
+          result.fullyConnected || result.ping?.fullyConnected
+            ? `Printify fully connected · ${result.ping?.shopTitle || "shop live"}`
+            : result.ping?.shopTitle
+              ? `Printify token live · ${result.ping.shopTitle} · not fully connected`
+              : "Printify token accepted · not fully connected",
+        );
+      } else toast.warning(result.warning || "Token saved, but Printify did not confirm it yet");
+      if (result.gpsrStatus === "non-eu") {
+        toast.message("Non-EU hold. Printify is for other platforms only — Gelato stays the live printer for fernora.nz.");
+      }
+      for (const note of result.notes || []) toast.message(note);
+      dirty.current.printifyToken = false;
+      await load();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function createPrintifyProducts() {
+    setBusy("printify-products");
+    try {
+      const result = await api<{
+        products?: Array<{ id: string; title: string; skipped: boolean }>;
+        notes?: string[];
+        fullyConnected?: boolean;
+        shopTitle?: string;
+      }>("/api/printify/products", { method: "POST" });
+      const created = (result.products || []).filter((row) => !row.skipped);
+      const skipped = (result.products || []).filter((row) => row.skipped);
+      toast.success(
+        created.length
+          ? `Created ${created.map((row) => row.title).join(" and ")} on ${result.shopTitle || "Printify"} · unpublished`
+          : skipped.length
+            ? `${skipped.map((row) => row.title).join(" and ")} already on ${result.shopTitle || "Printify"}`
+            : "Printify products unchanged",
+      );
+      for (const note of result.notes || []) toast.message(note);
+      await load();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function saveGelato() {
     setBusy("gelato");
     try {
@@ -333,7 +444,14 @@ export function ConnectionsClient() {
 
   function secretField(
     id: string,
-    copyId: "etsy-key" | "etsy-secret" | "gelato-key" | "shopify-key" | "shopify-secret" | "shopify-token",
+    copyId:
+      | "etsy-key"
+      | "etsy-secret"
+      | "gelato-key"
+      | "printify-key"
+      | "shopify-key"
+      | "shopify-secret"
+      | "shopify-token",
     label: string,
     value: string,
     onChange: (value: string) => void,
@@ -569,6 +687,15 @@ export function ConnectionsClient() {
         <span className="text-sm text-muted-foreground">
           Gelato {live?.gelato.ok ? "print API live" : "not configured"}
         </span>
+        <StatusPill value={printifyPillFrom(data)} />
+        <span className="text-sm text-muted-foreground">
+          Printify{" "}
+          {live?.printify?.ok
+            ? [live.printify.shopTitle || "shop connected", printifyHeadlineFrom(data)].filter(Boolean).join(" · ")
+            : data.connections.printify.configured
+              ? "token saved · check the shop"
+              : "not connected"}
+        </span>
         <StatusPill value={data.connections.shopify.authorized ? "live" : data.shopify?.storefrontStatus === "frozen" ? "warning" : "demo"} />
         <span className="text-sm text-muted-foreground">
           Shopify{" "}
@@ -577,6 +704,19 @@ export function ConnectionsClient() {
             : data.shopify?.clientIdSet
               ? "app keys saved · paste matching App URL + Redirect URL, then authorize"
               : "not connected"}
+        </span>
+        <StatusPill value={data.connections.meta.authorized ? "live" : "warning"} />
+        <span className="text-sm text-muted-foreground">
+          Meta ads{" "}
+          {data.connections.meta.authorized ? (
+            <a className="underline" href="/ads">
+              campaign desk
+            </a>
+          ) : (
+            <a className="underline" href="/ads">
+              not connected — get token + IDs from developers.facebook.com on Ads
+            </a>
+          )}
         </span>
       </div>
 
@@ -646,6 +786,24 @@ export function ConnectionsClient() {
                     : live?.shopify && !live.shopify.ok
                       ? ` · ${live.shopify.error}`
                       : " · not authorized"}
+              </span>
+            </li>
+            <li className="flex flex-wrap items-center gap-2">
+              <StatusPill value={printifyPillFrom(data)} />
+              <span>
+                Printify
+                {live?.printify?.ok
+                  ? ` · ${live.printify.shopTitle || data.printify?.shopTitle || "shop connected"} · ${printifyHeadlineFrom(data)}`
+                  : " · paste a personal access token below · Printify is for other platforms; Gelato stays live"}
+              </span>
+            </li>
+            <li className="flex flex-wrap items-center gap-2">
+              <StatusPill value={data.connections.meta.authorized ? "live" : "warning"} />
+              <span>
+                Meta ads
+                {data.connections.meta.authorized
+                  ? " · ad account linked · low daily cap on Ads"
+                  : " · not connected · get the token from developers.facebook.com · open Ads"}
               </span>
             </li>
             <li className="flex flex-wrap items-center gap-2">
@@ -874,6 +1032,74 @@ export function ConnectionsClient() {
               {busy === "gelato" ? <Loader2 className="animate-spin" /> : null}
               Save and test Gelato
             </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Printify</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm leading-6 text-muted-foreground">
+              Printify now has two shops named Fernora Trends. The one with the{" "}
+              <strong className="font-medium text-foreground">Etsy · Connected</strong> badge is the live
+              FERNORATRENDS shop. The other is <strong className="font-medium text-foreground">Not Connected</strong>{" "}
+              (the old disconnected store with 5 tees). Stay on the Etsy-connected shop.
+            </p>
+            <p className="text-sm leading-6 text-muted-foreground">
+              <strong className="font-medium text-foreground">External products</strong> with{" "}
+              <strong className="font-medium text-foreground">Migrate product</strong> are existing Etsy
+              listings (Dusk Hills, Tui on Kōwhai, Be Brave in the Small Hours). Those already print through
+              Gelato. Do not migrate them. Create new Printify products only for items you want Printify to
+              print on other channels. Keep Gelato for fernora.nz. Keep Non-EU.
+            </p>
+            <ol className="list-decimal space-y-2 pl-4 text-sm leading-6 text-muted-foreground">
+              <li>Leave the dropdown on Fernora Trends · Etsy · Connected.</li>
+              <li>Do not click Migrate product on the current Fernora catalog.</li>
+              <li>
+                Create Fern Arc Poster and Fern Spray tote here. They land in{" "}
+                <strong className="font-medium text-foreground">My products</strong> unpublished. Do not publish
+                them onto the existing Gelato Etsy listings.
+              </li>
+              <li>Save Printify below so this desk refreshes shop names and the Etsy channel.</li>
+            </ol>
+            {secretField(
+              "printify-key",
+              "printify-key",
+              "Personal access token",
+              printifyToken,
+              setPrintifyToken,
+              data.printify?.apiTokenSet ? "Saved on this desk" : "Printify token",
+              "printifyToken",
+              data.printify?.apiTokenSet,
+            )}
+            {printifyShopsFrom(data).length ? (
+              <ul className="space-y-1 text-xs text-muted-foreground">
+                {printifyShopsFrom(data).map((shop) => (
+                  <li key={shop.id}>{printifyShopLine(shop, data.connections.etsy.shopName)}</li>
+                ))}
+              </ul>
+            ) : data.printify?.shopTitle ? (
+              <p className="text-xs text-muted-foreground">
+                Shop {data.printify.shopTitle}
+                {data.printify.shopId ? ` · ${data.printify.shopId}` : ""}
+                {printifyHeadlineFrom(data) ? ` · ${printifyHeadlineFrom(data)}` : ""}
+              </p>
+            ) : null}
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => void savePrintify()} disabled={!printifyToken || busy === "printify"}>
+                {busy === "printify" ? <Loader2 className="animate-spin" /> : null}
+                Save Printify and check shops
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => void createPrintifyProducts()}
+                disabled={!printifyToken || Boolean(busy)}
+              >
+                {busy === "printify-products" ? <Loader2 className="animate-spin" /> : null}
+                Create Fern Arc Poster and Fern Spray tote
+              </Button>
+            </div>
           </CardContent>
         </Card>
 

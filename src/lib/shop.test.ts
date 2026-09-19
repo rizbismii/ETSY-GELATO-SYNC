@@ -83,7 +83,7 @@ test("Horizon branding shows country · currency and Gelato homepage copy", () =
   assert.match(source, /Original botanicals for considered homes/);
   assert.match(source, /Made to order\.<br>Never warehoused/);
   assert.match(source, /Shop by series/);
-  assert.match(source, /privacyFeaturesDisable|publishGelatoLegalPages/);
+  assert.match(source, /privacyFeaturesDisable|publishGelatoLegalPages|installFernoraMetaPixel/);
   assert.match(source, /product_grid_width = "full-width"/);
   assert.match(source, /content_direction: "row"/);
   assert.match(source, /vertical_on_mobile: true/);
