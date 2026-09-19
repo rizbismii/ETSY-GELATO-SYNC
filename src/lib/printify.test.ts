@@ -64,10 +64,22 @@ test("Printify is fully connected only with products on a sales channel", () => 
     { id: 28911689, title: "My Etsy Store", salesChannel: "etsy", productCount: 0 },
   ];
   assert.equal(printifyIsFullyConnected(shops), false);
-  assert.match(printifyConnectionHeadline({ shops, fullyConnected: false, gpsrStatus: "non-eu" }), /Etsy channel empty/);
+  assert.match(
+    printifyConnectionHeadline({
+      shops,
+      fullyConnected: false,
+      gpsrStatus: "non-eu",
+      etsyShopName: "FERNORATRENDS",
+    }),
+    /Printify does not show FERNORATRENDS/,
+  );
   assert.equal(
     printifyShopLine(shops[0]),
     "Fernora · 28911657 · not linked to a sales platform · 5 products",
+  );
+  assert.equal(
+    printifyShopLine(shops[1], "FERNORATRENDS"),
+    "My Etsy Store · 28911689 · Etsy channel · 0 products · not FERNORATRENDS",
   );
   assert.equal(printifyIsFullyConnected([{ id: 1, title: "Etsy", salesChannel: "etsy", productCount: 2 }]), true);
 });

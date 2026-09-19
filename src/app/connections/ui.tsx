@@ -112,6 +112,7 @@ function printifyHeadlineFrom(data: Payload) {
     gpsrStatus: live?.gpsrStatus || data.printify?.gpsrStatus || data.connections.printify.gpsrStatus,
     fullyConnected: live?.fullyConnected ?? data.printify?.fullyConnected ?? data.connections.printify.fullyConnected,
     shops: printifyShopsFrom(data),
+    etsyShopName: data.connections.etsy.shopName,
   });
 }
 
@@ -1013,44 +1014,48 @@ export function ConnectionsClient() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm leading-6 text-muted-foreground">
-              Keep <strong className="font-medium text-foreground">Gelato</strong> as the live printer for
-              fernora.nz. Printify is for other platforms only (Etsy channel and any store that is not
-              Shopify/Gelato). Token is live, but Printify is{" "}
-              <strong className="font-medium text-foreground">not fully connected</strong> until a shop has
-              products on a sales channel. Fernora is disconnected; My Etsy Store is the Etsy channel with no
-              products. Keep Non-EU — Add business information will not save a blank EU form, and Wellington
-              is not valid.
+              Etsy is already connected to Pressroom as{" "}
+              <strong className="font-medium text-foreground">
+                {data.connections.etsy.shopName || "FERNORATRENDS"}
+              </strong>
+              . That login is not Printify. Printify still shows{" "}
+              <strong className="font-medium text-foreground">My Etsy Store</strong>, not{" "}
+              {data.connections.etsy.shopName || "FERNORATRENDS"}, with 0 products — so the Etsy shop does not
+              appear in Printify. Pressroom cannot attach Etsy inside Printify. Keep Gelato for fernora.nz.
+              Keep Non-EU.
             </p>
             <ol className="list-decimal space-y-2 pl-4 text-sm leading-6 text-muted-foreground">
               <li>
-                Open{" "}
+                In Printify, open the store menu →{" "}
                 <a
                   className="underline"
-                  href="https://printify.com/app/account/api"
+                  href="https://printify.com/app/stores"
                   target="_blank"
                   rel="noreferrer"
                 >
-                  printify.com/app/account/api
-                </a>{" "}
-                while logged in.
-              </li>
-              <li>
-                Generate a token named Pressroom. Enable shops and products read/write. Copy it once.
-              </li>
-              <li>
-                In Printify, open <strong className="font-medium text-foreground">My Etsy Store</strong> and
-                publish products, or connect Fernora to Etsy/another channel — not Shopify. Keep Non-EU in{" "}
-                <a
-                  className="underline"
-                  href="https://printify.com/app/store/settings/name"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Store settings
+                  Manage my stores
                 </a>
                 .
               </li>
-              <li>Paste the token below if it is not already saved, then Save so Pressroom can refresh shop status.</li>
+              <li>
+                Click <strong className="font-medium text-foreground">Connect</strong> (or Add a new store) and
+                choose Etsy. Sign in as the{" "}
+                {data.connections.etsy.shopName || "FERNORATRENDS"} owner — do not create a new Etsy account at
+                that step — then <strong className="font-medium text-foreground">Grant access</strong>.
+              </li>
+              <li>
+                Printify’s shop title should become {data.connections.etsy.shopName || "FERNORATRENDS"}. If you
+                already have My Etsy Store, reconnect that row as the same owner. Printify help:{" "}
+                <a
+                  className="underline"
+                  href="https://help.printify.com/hc/en-us/articles/4483617508241-How-can-I-connect-my-Etsy-shop-to-Printify"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  How can I connect my Etsy shop to Printify?
+                </a>
+              </li>
+              <li>Keep Non-EU in Store settings, then Save Printify below so this desk can refresh the shop list.</li>
             </ol>
             {secretField(
               "printify-key",
@@ -1065,7 +1070,7 @@ export function ConnectionsClient() {
             {printifyShopsFrom(data).length ? (
               <ul className="space-y-1 text-xs text-muted-foreground">
                 {printifyShopsFrom(data).map((shop) => (
-                  <li key={shop.id}>{printifyShopLine(shop)}</li>
+                  <li key={shop.id}>{printifyShopLine(shop, data.connections.etsy.shopName)}</li>
                 ))}
               </ul>
             ) : data.printify?.shopTitle ? (

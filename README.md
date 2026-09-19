@@ -99,7 +99,7 @@ The catalog in this repo is the live Fernora sale: **20 listings**, with Etsy li
 
 ### Printify
 
-On **Connections**, paste a Printify personal access token from [printify.com/app/account/api](https://printify.com/app/account/api). **Gelato** stays the live printer for fernora.nz. Printify is for other sales channels only. A token is not a full connection: Fernora is currently disconnected, and My Etsy Store is the Etsy channel with 0 products. Publish products to that Etsy shop (or connect Fernora to Etsy/another non-Shopify channel), keep **Non-EU**, then Save Printify. Printify’s EU radio opens **Add business information** and will not save a blank form; Wellington 6012 is not an EU address.
+On **Connections**, paste a Printify personal access token from [printify.com/app/account/api](https://printify.com/app/account/api). **Gelato** stays the live printer for fernora.nz. Pressroom Etsy (**FERNORATRENDS**) is a different connection from Printify. Printify currently lists **My Etsy Store** (Etsy channel, 0 products), not FERNORATRENDS. Connect Etsy inside Printify: Manage my stores → Connect → Etsy, grant access as the FERNORATRENDS owner, keep **Non-EU**, then Save Printify.
 
 ### Meta ads
 

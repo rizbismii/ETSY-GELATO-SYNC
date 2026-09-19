@@ -197,9 +197,9 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
     issues.push({
       id: "printify-not-fully-connected",
       severity: "info",
-      title: "Printify is not fully connected",
+      title: "Printify does not show the Etsy shop",
       detail:
-        `Token is live, but no Printify shop has products on a sales channel yet. ${shopLines || "No shop summaries yet."} Keep Gelato for fernora.nz. In Printify, publish products to My Etsy Store (or connect Fernora to Etsy/another channel, not Shopify), keep Non-EU, then Save Printify on Connections.`,
+        `Etsy is already connected to Pressroom as ${connections.etsy.shopName || "FERNORATRENDS"}. That does not connect Printify. Printify still lists ${shopLines || "My Etsy Store with 0 products"} — not ${connections.etsy.shopName || "FERNORATRENDS"}. In Printify: store menu → Manage my stores → Connect → Etsy, then Grant access as the ${connections.etsy.shopName || "FERNORATRENDS"} owner. Keep Gelato for fernora.nz. Keep Non-EU, then Save Printify on Connections.`,
       action: { label: "Printify shops", href: "/connections", kind: "connect" },
     });
   } else if (connections.printify.gpsrStatus === "non-eu") {

@@ -104,25 +104,37 @@ export function printifyConnectionHeadline(input: {
   gpsrStatus?: PrintifyGpsrStatus | null;
   fullyConnected?: boolean;
   shops?: PrintifyShopSummary[];
+  etsyShopName?: string | null;
 }) {
   const gpsr = printifyGpsrHeadline(input.gpsrStatus);
   const shops = input.shops || [];
+  const etsyShop = (input.etsyShopName || "").trim();
+  const channel = shops.find((shop) => printifyChannelKey(shop.salesChannel) === "etsy");
+  const channelShowsEtsyShop =
+    Boolean(etsyShop) && Boolean(channel) && (channel?.title || "").toLowerCase().includes(etsyShop.toLowerCase());
   const parts: string[] = [];
-  if (input.fullyConnected) parts.push("fully connected on a sales channel");
+  if (input.fullyConnected && channelShowsEtsyShop) parts.push(`fully connected · ${etsyShop}`);
+  else if (etsyShop && channel && !channelShowsEtsyShop) {
+    parts.push(`token live · Printify does not show ${etsyShop}`);
+  } else if (input.fullyConnected) parts.push("fully connected on a sales channel");
   else if (!shops.length) parts.push("token live · not fully connected");
-  else {
-    const etsy = shops.find((shop) => printifyChannelKey(shop.salesChannel) === "etsy");
-    if (etsy && etsy.productCount === 0) parts.push("token live · Etsy channel empty · not fully connected");
-    else parts.push("token live · not fully connected");
-  }
+  else if (channel && channel.productCount === 0) parts.push("token live · Etsy channel empty · not fully connected");
+  else parts.push("token live · not fully connected");
   if (gpsr) parts.push(gpsr);
   return parts.join(" · ");
 }
 
-export function printifyShopLine(shop: PrintifyShopSummary) {
+export function printifyShopLine(shop: PrintifyShopSummary, etsyShopName?: string | null) {
   const title = shop.title || "Printify shop";
   const products = `${shop.productCount} product${shop.productCount === 1 ? "" : "s"}`;
-  return `${title} · ${shop.id} · ${printifySalesChannelLabel(shop.salesChannel)} · ${products}`;
+  const etsy = (etsyShopName || "").trim();
+  const mismatch =
+    printifyChannelKey(shop.salesChannel) === "etsy" &&
+    etsy &&
+    !title.toLowerCase().includes(etsy.toLowerCase())
+      ? ` · not ${etsy}`
+      : "";
+  return `${title} · ${shop.id} · ${printifySalesChannelLabel(shop.salesChannel)} · ${products}${mismatch}`;
 }
 
 export function pickPrintifyShop<T extends { id: number; title?: string }>(shops: T[]) {
