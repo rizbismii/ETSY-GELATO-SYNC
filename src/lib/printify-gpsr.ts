@@ -96,6 +96,17 @@ export function printifySalesChannelLabel(channel?: string | null) {
   return `${channel} channel`;
 }
 
+export function printifyShopNameKey(value?: string | null) {
+  return (value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+export function printifyShopNamesMatch(left?: string | null, right?: string | null) {
+  const a = printifyShopNameKey(left);
+  const b = printifyShopNameKey(right);
+  if (!a || !b) return false;
+  return a === b || a.includes(b) || b.includes(a);
+}
+
 export function printifyIsFullyConnected(shops: PrintifyShopSummary[]) {
   return shops.some((shop) => printifyChannelKey(shop.salesChannel) !== "disconnected" && shop.productCount > 0);
 }
@@ -110,11 +121,12 @@ export function printifyConnectionHeadline(input: {
   const shops = input.shops || [];
   const etsyShop = (input.etsyShopName || "").trim();
   const channel = shops.find((shop) => printifyChannelKey(shop.salesChannel) === "etsy");
-  const channelShowsEtsyShop =
-    Boolean(etsyShop) && Boolean(channel) && (channel?.title || "").toLowerCase().includes(etsyShop.toLowerCase());
+  const channelShowsEtsyShop = Boolean(channel) && printifyShopNamesMatch(channel?.title, etsyShop || channel?.title);
   const parts: string[] = [];
-  if (input.fullyConnected && channelShowsEtsyShop) parts.push(`fully connected · ${etsyShop}`);
-  else if (etsyShop && channel && !channelShowsEtsyShop) {
+  if (input.fullyConnected && channelShowsEtsyShop) parts.push(`Etsy connected · ${channel?.title || etsyShop}`);
+  else if (channel && printifyShopNamesMatch(channel.title, etsyShop || "Fernora Trends") && channel.productCount === 0) {
+    parts.push(`Etsy connected as ${channel.title} · 0 Printify products`);
+  } else if (etsyShop && channel && !printifyShopNamesMatch(channel.title, etsyShop)) {
     parts.push(`token live · Printify does not show ${etsyShop}`);
   } else if (input.fullyConnected) parts.push("fully connected on a sales channel");
   else if (!shops.length) parts.push("token live · not fully connected");
@@ -129,18 +141,25 @@ export function printifyShopLine(shop: PrintifyShopSummary, etsyShopName?: strin
   const products = `${shop.productCount} product${shop.productCount === 1 ? "" : "s"}`;
   const etsy = (etsyShopName || "").trim();
   const mismatch =
-    printifyChannelKey(shop.salesChannel) === "etsy" &&
-    etsy &&
-    !title.toLowerCase().includes(etsy.toLowerCase())
+    printifyChannelKey(shop.salesChannel) === "etsy" && etsy && !printifyShopNamesMatch(title, etsy)
       ? ` · not ${etsy}`
       : "";
-  return `${title} · ${shop.id} · ${printifySalesChannelLabel(shop.salesChannel)} · ${products}${mismatch}`;
+  const connected =
+    printifyChannelKey(shop.salesChannel) === "etsy" && printifyShopNamesMatch(title, etsy || title)
+      ? " · Etsy connected"
+      : "";
+  return `${title} · ${shop.id} · ${printifySalesChannelLabel(shop.salesChannel)} · ${products}${connected}${mismatch}`;
 }
 
-export function pickPrintifyShop<T extends { id: number; title?: string }>(shops: T[]) {
+export function pickPrintifyShop<
+  T extends { id: number; title?: string; sales_channel?: string; salesChannel?: string },
+>(shops: T[]) {
   if (!shops.length) return undefined;
-  const fernora = shops.find((shop) => /fernora/i.test(shop.title || ""));
-  if (fernora) return fernora;
+  const channelOf = (shop: T) => printifyChannelKey(shop.sales_channel || shop.salesChannel);
+  const fernora = shops.filter((shop) => /fernora/i.test(shop.title || ""));
+  const etsyFernora = fernora.find((shop) => channelOf(shop) === "etsy");
+  if (etsyFernora) return etsyFernora;
+  if (fernora[0]) return fernora[0];
   const named = shops.find((shop) => /new store|my store/i.test(shop.title || ""));
   return named || shops[0];
 }

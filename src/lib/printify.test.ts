@@ -58,15 +58,23 @@ test("GPSR 404 is treated as Non-EU, not a per-product failure", () => {
   assert.equal(printifyGpsrHeadline("non-eu"), "Non-EU hold · Gelato stays the live print path");
 });
 
+test("Fernora Trends Etsy shop is preferred over the disconnected store", () => {
+  const shop = pickPrintifyShop([
+    { id: 28911657, title: "Fernora Trends", sales_channel: "disconnected" },
+    { id: 28911689, title: "Fernora Trends", sales_channel: "etsy" },
+  ]);
+  assert.equal(shop?.id, 28911689);
+});
+
 test("Printify is fully connected only with products on a sales channel", () => {
-  const shops = [
+  const placeholder = [
     { id: 28911657, title: "Fernora", salesChannel: "disconnected", productCount: 5 },
     { id: 28911689, title: "My Etsy Store", salesChannel: "etsy", productCount: 0 },
   ];
-  assert.equal(printifyIsFullyConnected(shops), false);
+  assert.equal(printifyIsFullyConnected(placeholder), false);
   assert.match(
     printifyConnectionHeadline({
-      shops,
+      shops: placeholder,
       fullyConnected: false,
       gpsrStatus: "non-eu",
       etsyShopName: "FERNORATRENDS",
@@ -74,13 +82,25 @@ test("Printify is fully connected only with products on a sales channel", () => 
     /Printify does not show FERNORATRENDS/,
   );
   assert.equal(
-    printifyShopLine(shops[0]),
-    "Fernora · 28911657 · not linked to a sales platform · 5 products",
-  );
-  assert.equal(
-    printifyShopLine(shops[1], "FERNORATRENDS"),
+    printifyShopLine(placeholder[1], "FERNORATRENDS"),
     "My Etsy Store · 28911689 · Etsy channel · 0 products · not FERNORATRENDS",
   );
+
+  const connected = [
+    { id: 28911657, title: "Fernora Trends", salesChannel: "disconnected", productCount: 5 },
+    { id: 28911689, title: "Fernora Trends", salesChannel: "etsy", productCount: 0 },
+  ];
+  assert.match(
+    printifyConnectionHeadline({
+      shops: connected,
+      fullyConnected: false,
+      gpsrStatus: "non-eu",
+      etsyShopName: "FERNORATRENDS",
+    }),
+    /Etsy connected as Fernora Trends/,
+  );
+  assert.match(printifyShopLine(connected[1], "FERNORATRENDS"), /Etsy connected/);
+  assert.doesNotMatch(printifyShopLine(connected[1], "FERNORATRENDS"), /not FERNORATRENDS/);
   assert.equal(printifyIsFullyConnected([{ id: 1, title: "Etsy", salesChannel: "etsy", productCount: 2 }]), true);
 });
 

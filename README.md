@@ -99,7 +99,7 @@ The catalog in this repo is the live Fernora sale: **20 listings**, with Etsy li
 
 ### Printify
 
-On **Connections**, paste a Printify personal access token from [printify.com/app/account/api](https://printify.com/app/account/api). **Gelato** stays the live printer for fernora.nz. Pressroom Etsy (**FERNORATRENDS**) is a different connection from Printify. Printify currently lists **My Etsy Store** (Etsy channel, 0 products), not FERNORATRENDS. Connect Etsy inside Printify: Manage my stores → Connect → Etsy, grant access as the FERNORATRENDS owner, keep **Non-EU**, then Save Printify.
+On **Connections**, paste a Printify personal access token from [printify.com/app/account/api](https://printify.com/app/account/api). **Gelato** stays the live printer for fernora.nz. Printify now shows **Fernora Trends** twice: Etsy Connected (the FERNORATRENDS shop) and Not Connected (old disconnected store). External products with Migrate product are existing Gelato/Etsy listings — do not migrate them. Keep **Non-EU**.
 
 ### Meta ads
 

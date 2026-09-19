@@ -191,17 +191,36 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
     });
   } else if (!connections.printify.fullyConnected) {
     const shops = connections.printify.shops || [];
+    const etsyShop = connections.etsy.shopName || "FERNORATRENDS";
+    const channel = shops.find((shop) => (shop.salesChannel || "").toLowerCase() === "etsy");
+    const showsEtsy =
+      Boolean(channel) &&
+      (channel?.title || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "")
+        .includes(etsyShop.toLowerCase().replace(/[^a-z0-9]/g, ""));
     const shopLines = shops
       .map((shop) => `${shop.title || shop.id}: ${shop.salesChannel || "disconnected"}, ${shop.productCount} products`)
       .join(" ");
-    issues.push({
-      id: "printify-not-fully-connected",
-      severity: "info",
-      title: "Printify does not show the Etsy shop",
-      detail:
-        `Etsy is already connected to Pressroom as ${connections.etsy.shopName || "FERNORATRENDS"}. That does not connect Printify. Printify still lists ${shopLines || "My Etsy Store with 0 products"} — not ${connections.etsy.shopName || "FERNORATRENDS"}. In Printify: store menu → Manage my stores → Connect → Etsy, then Grant access as the ${connections.etsy.shopName || "FERNORATRENDS"} owner. Keep Gelato for fernora.nz. Keep Non-EU, then Save Printify on Connections.`,
-      action: { label: "Printify shops", href: "/connections", kind: "connect" },
-    });
+    if (showsEtsy) {
+      issues.push({
+        id: "printify-etsy-external",
+        severity: "info",
+        title: "Printify Etsy is connected — do not migrate Gelato listings",
+        detail:
+          `Printify now shows ${channel?.title || "Fernora Trends"} as the Etsy store. The External products tab is existing Etsy listings (Dusk Hills, Tui on Kōwhai, Be Brave in the Small Hours). Do not click Migrate product — that would move those listings off Gelato. Stay on the Etsy-connected Fernora Trends shop. Create new Printify products only for items you want Printify to print. Keep Gelato for fernora.nz. Keep Non-EU.`,
+        action: { label: "Printify shops", href: "/connections", kind: "connect" },
+      });
+    } else {
+      issues.push({
+        id: "printify-not-fully-connected",
+        severity: "info",
+        title: "Printify does not show the Etsy shop",
+        detail:
+          `Etsy is already connected to Pressroom as ${etsyShop}. That does not connect Printify. Printify still lists ${shopLines || "My Etsy Store with 0 products"} — not ${etsyShop}. In Printify: store menu → Manage my stores → Connect → Etsy, then Grant access as the ${etsyShop} owner. Keep Gelato for fernora.nz. Keep Non-EU, then Save Printify on Connections.`,
+        action: { label: "Printify shops", href: "/connections", kind: "connect" },
+      });
+    }
   } else if (connections.printify.gpsrStatus === "non-eu") {
     issues.push({
       id: "printify-gpsr-noneu",

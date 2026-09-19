@@ -1014,48 +1014,26 @@ export function ConnectionsClient() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm leading-6 text-muted-foreground">
-              Etsy is already connected to Pressroom as{" "}
-              <strong className="font-medium text-foreground">
-                {data.connections.etsy.shopName || "FERNORATRENDS"}
-              </strong>
-              . That login is not Printify. Printify still shows{" "}
-              <strong className="font-medium text-foreground">My Etsy Store</strong>, not{" "}
-              {data.connections.etsy.shopName || "FERNORATRENDS"}, with 0 products — so the Etsy shop does not
-              appear in Printify. Pressroom cannot attach Etsy inside Printify. Keep Gelato for fernora.nz.
-              Keep Non-EU.
+              Printify now has two shops named Fernora Trends. The one with the{" "}
+              <strong className="font-medium text-foreground">Etsy · Connected</strong> badge is the live
+              FERNORATRENDS shop. The other is <strong className="font-medium text-foreground">Not Connected</strong>{" "}
+              (the old disconnected store with 5 tees). Stay on the Etsy-connected shop.
+            </p>
+            <p className="text-sm leading-6 text-muted-foreground">
+              <strong className="font-medium text-foreground">External products</strong> with{" "}
+              <strong className="font-medium text-foreground">Migrate product</strong> are existing Etsy
+              listings (Dusk Hills, Tui on Kōwhai, Be Brave in the Small Hours). Those already print through
+              Gelato. Do not migrate them. Create new Printify products only for items you want Printify to
+              print on other channels. Keep Gelato for fernora.nz. Keep Non-EU.
             </p>
             <ol className="list-decimal space-y-2 pl-4 text-sm leading-6 text-muted-foreground">
+              <li>Leave the dropdown on Fernora Trends · Etsy · Connected.</li>
               <li>
-                In Printify, open the store menu →{" "}
-                <a
-                  className="underline"
-                  href="https://printify.com/app/stores"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Manage my stores
-                </a>
-                .
+                Open the <strong className="font-medium text-foreground">My products</strong> tab (not External
+                products) to add new Printify products.
               </li>
-              <li>
-                Click <strong className="font-medium text-foreground">Connect</strong> (or Add a new store) and
-                choose Etsy. Sign in as the{" "}
-                {data.connections.etsy.shopName || "FERNORATRENDS"} owner — do not create a new Etsy account at
-                that step — then <strong className="font-medium text-foreground">Grant access</strong>.
-              </li>
-              <li>
-                Printify’s shop title should become {data.connections.etsy.shopName || "FERNORATRENDS"}. If you
-                already have My Etsy Store, reconnect that row as the same owner. Printify help:{" "}
-                <a
-                  className="underline"
-                  href="https://help.printify.com/hc/en-us/articles/4483617508241-How-can-I-connect-my-Etsy-shop-to-Printify"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  How can I connect my Etsy shop to Printify?
-                </a>
-              </li>
-              <li>Keep Non-EU in Store settings, then Save Printify below so this desk can refresh the shop list.</li>
+              <li>Do not click Migrate product on the current Fernora catalog.</li>
+              <li>Save Printify below so this desk refreshes shop names and the Etsy channel.</li>
             </ol>
             {secretField(
               "printify-key",
