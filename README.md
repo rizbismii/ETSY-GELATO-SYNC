@@ -98,7 +98,7 @@ The catalog in this repo is the live Fernora sale: **20 listings**, with Etsy li
 
 ### Meta ads
 
-On **Ads**, paste credentials from a **live** Meta Business identity. A Facebook login Meta has disabled (account integrity checkpoint) cannot issue a token — Pressroom cannot override that. Instagram or a Managed Meta Account on the same email is still Dealstic and will not open Business Suite. A partner who already has a live Business Suite can create a system-user token (`ads_management`, `ads_read`) plus ad account ID, Pixel ID, and Page ID. Save installs the Pixel on the Horizon theme. **Create paused campaign** builds a traffic campaign to https://fernora.nz for New Zealand and Australia. **Go live** spends only the daily cap. Paid Shopify orders send Purchase events to the Pixel from Pressroom.
+On **Ads**, create a Business app at [developers.facebook.com](https://developers.facebook.com/apps/creation/), add Marketing API, then generate a User token in [Graph API Explorer](https://developers.facebook.com/tools/explorer/) with `ads_management`, `ads_read`, `pages_show_list`, `pages_read_engagement`, `pages_manage_ads`, and `business_management`. Copy `GET /me/adaccounts`, `GET /me/accounts`, and `GET /act_…/adspixels` IDs into Ads. A Facebook login Meta has disabled cannot issue those calls. Save installs the Pixel on the Horizon theme. **Create paused campaign** builds a traffic campaign to https://fernora.nz for New Zealand and Australia. **Go live** spends only the daily cap. Paid Shopify orders send Purchase events to the Pixel from Pressroom.
 
 | Product | Mix | Price (NZD) |
 | --- | --- | --- |

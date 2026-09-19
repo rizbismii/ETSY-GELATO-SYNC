@@ -587,7 +587,7 @@ export function ConnectionsClient() {
             </a>
           ) : (
             <a className="underline" href="/ads">
-              not connected — Dealstic email cannot issue a token (Facebook, Instagram, or managed)
+              not connected — get token + IDs from developers.facebook.com on Ads
             </a>
           )}
         </span>
@@ -667,7 +667,7 @@ export function ConnectionsClient() {
                 Meta ads
                 {data.connections.meta.authorized
                   ? " · ad account linked · low daily cap on Ads"
-                  : " · not connected · same-email Instagram will not open Business Suite · open Ads"}
+                  : " · not connected · get the token from developers.facebook.com · open Ads"}
               </span>
             </li>
             <li className="flex flex-wrap items-center gap-2">

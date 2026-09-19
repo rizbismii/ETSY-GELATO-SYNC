@@ -152,34 +152,66 @@ export default function AdsPage() {
           metaDisabled ? "border-destructive/40 bg-destructive/5" : "border-border bg-background"
         }`}
       >
-        <p className="font-medium">If Facebook says the account is disabled</p>
+        <p className="font-medium">Get the API from Meta for Developers</p>
         <p className="mt-1 text-muted-foreground">
-          Pressroom cannot unlock a Facebook login Meta has disabled (the Dealstic checkpoint for
-          account integrity). That login cannot issue an ads token, and Meta will not take another
-          review. Do not paste a token from it.
-        </p>
-        <p className="mt-3 font-medium">Same-email Instagram or Managed Meta Account will not open Business Suite</p>
-        <p className="mt-1 text-muted-foreground">
-          Instagram and Facebook share one Meta identity per email. Opening Instagram with the Dealstic
-          email does not create a new login — Business Suite still blocks it. A Managed Meta Account on
-          that email will say the account already exists. Signing in returns you to the disabled
-          checkpoint.
+          Stay in{" "}
+          <a className="underline" href="https://developers.facebook.com/apps/" target="_blank" rel="noreferrer">
+            developers.facebook.com/apps
+          </a>
+          . Pressroom needs four values: access token, ad account ID, Pixel ID, and Page ID. Keep the
+          App Secret in Meta — never paste it here.
         </p>
         <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted-foreground">
           <li>
-            Stop retrying Dealstic, same-email Instagram, and Managed Meta Account on that email.
-            Those are the same disabled identity.
+            <strong>Create app</strong> at{" "}
+            <a className="underline" href="https://developers.facebook.com/apps/creation/" target="_blank" rel="noreferrer">
+              apps/creation
+            </a>
+            . Choose <strong>Other</strong> then <strong>Business</strong>, or the use case{" "}
+            <strong>Create &amp; manage ads with Marketing API</strong>. Name it Fernora Pressroom.
           </li>
           <li>
-            Meta ads need a person who already has a live Business Suite (not created to replace
-            Dealstic). That person generates a system-user token with <code>ads_management</code> and{" "}
-            <code>ads_read</code>, plus the ad account ID, Pixel ID, and Page ID.
+            In the app dashboard add the <strong>Marketing API</strong> product if it is not already
+            there.
           </li>
           <li>
-            Paste those four values below and save. If nobody with a live Business Suite can do that,
-            campaigns stay off — Pressroom cannot override Meta. fernora.nz still sells.
+            Open{" "}
+            <a className="underline" href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noreferrer">
+              Graph API Explorer
+            </a>
+            . Meta App = your new app. User or Page = <strong>User Token</strong>. Add permissions{" "}
+            <code>ads_management</code>, <code>ads_read</code>, <code>pages_show_list</code>,{" "}
+            <code>pages_read_engagement</code>, <code>pages_manage_ads</code>,{" "}
+            <code>business_management</code>. Click <strong>Generate Access Token</strong> and allow
+            the login dialog. Copy the token (starts with EAAB) into Access token below.
           </li>
+          <li>
+            In Explorer run <code>GET /me/adaccounts?fields=id,name,account_id,currency</code>. Copy the{" "}
+            <code>id</code> that looks like <code>act_…</code> into Ad account ID. If the list is
+            empty, create an ad account in{" "}
+            <a className="underline" href="https://adsmanager.facebook.com/" target="_blank" rel="noreferrer">
+              Ads Manager
+            </a>{" "}
+            and run the query again.
+          </li>
+          <li>
+            Run <code>GET /me/accounts?fields=id,name</code>. Copy the Fernora Page <code>id</code> into
+            Facebook Page ID. If there is no Page, create one, then run the query again.
+          </li>
+          <li>
+            Run <code>GET /act_YOURID/adspixels?fields=id,name</code> (use the digits after{" "}
+            <code>act_</code>). Copy the Pixel <code>id</code>. Or create a Pixel for fernora.nz in{" "}
+            <a className="underline" href="https://business.facebook.com/events_manager" target="_blank" rel="noreferrer">
+              Events Manager
+            </a>
+            .
+          </li>
+          <li>Save and install Pixel here. Explorer tokens expire in about an hour — generate a new one if Save fails.</li>
         </ol>
+        <p className="mt-3 text-muted-foreground">
+          If any of those calls return a disabled / account-integrity error, that login is still the
+          blocked Dealstic identity and cannot issue ads API access.
+        </p>
       </div>
 
       <section className="grid gap-4 lg:grid-cols-2">
@@ -192,12 +224,10 @@ export default function AdsPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-xs leading-5 text-muted-foreground">
-              The login must be a live Business Suite identity that is not Dealstic. Same-email
-              Instagram and a Managed Meta Account on that email cannot connect. From a live account
-              copy the ad account ID, a system-user or admin token with <code>ads_management</code> and{" "}
-              <code>ads_read</code>, the Pixel, and the Page ID.{" "}
-              <a className="underline" href="https://business.facebook.com" target="_blank" rel="noreferrer">
-                business.facebook.com
+              Use the Graph API Explorer steps above. Paste only the user token, ad account ID, Pixel
+              ID, and Page ID.{" "}
+              <a className="underline" href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noreferrer">
+                developers.facebook.com/tools/explorer
               </a>
             </p>
             <div className="space-y-1">

@@ -174,7 +174,7 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
       id: "meta-ads",
       severity: "info",
       title: "Meta ads are not running",
-      detail: "Pressroom can send a low daily-budget campaign to fernora.nz. A Facebook login Meta has disabled cannot connect. Instagram or a Managed Meta Account on that same email will not open Business Suite. Open Ads. Leave Etsy Offsite Ads off so spend stays on that cap.",
+      detail: "Pressroom can send a low daily-budget campaign to fernora.nz. On Ads, create a Meta app, generate a Graph API Explorer token, and paste ad account, Pixel, and Page IDs. Leave Etsy Offsite Ads off so spend stays on that cap.",
       action: { label: "Open Ads", href: "/ads", kind: "connect" },
     });
   }
