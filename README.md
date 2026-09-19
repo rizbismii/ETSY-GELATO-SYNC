@@ -12,7 +12,7 @@ There is no sample shop. The desk opens on the **20 live Fernora products** in N
 - **Map listings** to Gelato product UIDs and print files so orders are not blocked.
 - **Fulfill** paid Etsy receipts as Gelato v4 orders.
 - **Push tracking** from Gelato onto the Etsy receipt (Star Seller / case protection).
-- **Price for profit** using Etsy 6.5% transaction + 3% + $0.25 payment fees against Gelato unit cost, then **Offsite Ads 15%**. Every current and future listing is priced so **after-ads net is at least 40% of the listing price**. Buyer pays Gelato shipping (pass-through).
+- **Price for profit** using Etsy 6.5% transaction + 3% + $0.25 payment fees against Gelato unit cost. Listings stay priced so a worst-case Etsy Offsite hit still leaves **40%**. Paid traffic to [fernora.nz](https://fernora.nz) is a **Meta campaign from Ads** with a low daily cap (default 5, max 15 in the ad-account currency). Leave Etsy Offsite Ads and CPC Ads off.
 - **Fix store operations** in one pass: auto-map, reprice thin listings, send ready orders, push missing tracking.
 
 Gelato already offers a native Etsy channel. Pressroom is the control plane around it: catalog publish, blocked orders, margin math, and tracking gaps in one desk.
@@ -94,7 +94,11 @@ GELATO_API_KEY=
 
 ## Live catalog
 
-The catalog in this repo is the live Fernora sale: **20 listings**, with Etsy listing IDs and Gelato store product IDs in `src/lib/live-catalog.ts`. Shop origin on Etsy is Wellington 6012; Gelato still prints in-region. Advertising is Etsy **Offsite Ads** (15% of an attributed sale only). On-site CPC Etsy Ads stay off. Prices are set so **after-ads profit is at least 40%** in every destination (print + ship + fees + ads). Push those prices to live Etsy listings from Catalog.
+The catalog in this repo is the live Fernora sale: **20 listings**, with Etsy listing IDs and Gelato store product IDs in `src/lib/live-catalog.ts`. Shop origin on Etsy is Wellington 6012; Gelato still prints in-region. Advertising is a **Meta campaign** from Pressroom **Ads** to fernora.nz (daily cap 5, max 15). Leave Etsy Offsite Ads and on-site CPC Etsy Ads off. Listing prices still survive a 15% Offsite hit at **40% after-ads profit**. Push those prices to live Etsy listings from Catalog.
+
+### Meta ads
+
+On **Ads**, create a Business app at [developers.facebook.com](https://developers.facebook.com/apps/creation/), add Marketing API, then generate a User token in [Graph API Explorer](https://developers.facebook.com/tools/explorer/) with `ads_management`, `ads_read`, `pages_show_list`, `pages_read_engagement`, `pages_manage_ads`, and `business_management`. Copy `GET /me/adaccounts`, `GET /me/accounts`, and `GET /act_…/adspixels` IDs into Ads. A Facebook login Meta has disabled cannot issue those calls. Save installs the Pixel on the Horizon theme. **Create paused campaign** builds a traffic campaign to https://fernora.nz for New Zealand and Australia. **Go live** spends only the daily cap. Paid Shopify orders send Purchase events to the Pixel from Pressroom.
 
 | Product | Mix | Price (NZD) |
 | --- | --- | --- |

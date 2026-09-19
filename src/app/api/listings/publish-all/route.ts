@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   const mode = body.mode === "live" ? "live" : "draft";
   try {
     await updateEtsyShopAnnouncement(
-      `Welcome to FERNORATRENDS. ${SHIP_BLURB} Made to order. Offsite Ads: we only pay Etsy a percentage when an ad actually makes a sale — no click budget eating margin.`,
+      `Welcome to FERNORATRENDS. ${SHIP_BLURB} Made to order.`,
     );
   } catch {
     /* announcement is optional; listings still publish */

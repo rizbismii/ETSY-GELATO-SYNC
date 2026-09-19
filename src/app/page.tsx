@@ -133,7 +133,8 @@ export default function DeskPage() {
       {sample ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
           Gelato is live. Authorize Etsy on Connections if you have not already, then publish
-          from Catalog. New listings use Offsite Ads (pay a % of the sale only).
+          from Catalog. Paid traffic to fernora.nz is a low daily-budget Meta campaign on Ads —
+          leave Etsy Offsite Ads off.
         </div>
       ) : null}
 
