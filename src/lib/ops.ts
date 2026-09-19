@@ -64,6 +64,13 @@ export async function connectionStatus(): Promise<Connections> {
       adAccountId: creds.meta?.adAccountId,
       pixelId: creds.meta?.pixelId,
     },
+    printify: {
+      configured: Boolean(creds.printify?.apiToken),
+      authorized: Boolean(creds.printify?.apiToken && creds.printify.shopId),
+      mode: creds.printify?.apiToken ? "live" : "demo",
+      shopId: creds.printify?.shopId,
+      shopTitle: creds.printify?.shopTitle,
+    },
   };
 }
 
@@ -167,6 +174,16 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
           ? `${connections.shopify.shop || FERNORA_SHOPIFY_SHOP} exists but Shopify has paused the storefront (unpaid plan). Unfreeze it, then authorize the app. The Fernora website at /shop still sells Gelato destinations (AU, NZ, and other print countries) and prints through Gelato.`
           : "Authorize the Fernora Shopify shop so Pressroom can push the catalog and pull paid checkouts.",
       action: { label: "Connect Shopify", href: "/connections", kind: "connect" },
+    });
+  }
+  if (!connections.printify.configured) {
+    issues.push({
+      id: "printify-connect",
+      severity: "info",
+      title: "Printify is not connected",
+      detail:
+        "Paste a Printify personal access token on Connections. Keep EU selected in Printify store settings so GPSR can sit on EU/UK listings.",
+      action: { label: "Connect Printify", href: "/connections", kind: "connect" },
     });
   }
   if (!connections.meta.authorized) {

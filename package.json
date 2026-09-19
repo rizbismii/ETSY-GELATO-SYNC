@@ -12,7 +12,7 @@
     "apparel-prints": "python3 scripts/make-apparel-prints.py",
     "print-files": "python3 scripts/make-apparel-prints.py",
     "attach-prints": "python3 scripts/attach-gelato-prints.py",
-    "test": "node --experimental-strip-types --test src/lib/catalog-sku.test.ts src/lib/shop.test.ts src/lib/meta-ads.test.ts"
+    "test": "node --experimental-strip-types --test src/lib/catalog-sku.test.ts src/lib/shop.test.ts src/lib/meta-ads.test.ts src/lib/printify.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

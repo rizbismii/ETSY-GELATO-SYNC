@@ -90,11 +90,16 @@ SHOPIFY_CLIENT_SECRET=
 SHOPIFY_SHOP=gi6ey4-wc.myshopify.com
 SHOPIFY_REDIRECT_URI=https://your-domain.com/api/shopify/callback
 GELATO_API_KEY=
+PRINTIFY_API_TOKEN=
 ```
 
 ## Live catalog
 
 The catalog in this repo is the live Fernora sale: **20 listings**, with Etsy listing IDs and Gelato store product IDs in `src/lib/live-catalog.ts`. Shop origin on Etsy is Wellington 6012; Gelato still prints in-region. Advertising is a **Meta campaign** from Pressroom **Ads** to fernora.nz (daily cap 5, max 15). Leave Etsy Offsite Ads and on-site CPC Etsy Ads off. Listing prices still survive a 15% Offsite hit at **40% after-ads profit**. Push those prices to live Etsy listings from Catalog.
+
+### Printify
+
+On **Connections**, paste a Printify personal access token from [printify.com/app/account/api](https://printify.com/app/account/api). Keep **EU (selling in the EU and United Kingdom)** selected in Printify store settings — the API cannot flip that radio. Save applies GPSR safety text on products from Printify’s GPSR endpoint. Gelato remains the live print path for Pressroom orders.
 
 ### Meta ads
 

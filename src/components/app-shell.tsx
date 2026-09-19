@@ -73,7 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Link href="/" className="mb-8 px-2">
           <p className="font-heading text-2xl leading-none tracking-tight">Pressroom</p>
           <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-sidebar-foreground/55">
-            Etsy × Shopify × Gelato
+            Etsy × Shopify × Gelato × Printify
           </p>
         </Link>
         <Nav />

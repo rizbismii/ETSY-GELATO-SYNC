@@ -31,11 +31,18 @@ export type MetaCredentials = {
   pageId?: string;
 };
 
+export type PrintifyCredentials = {
+  apiToken: string;
+  shopId?: string;
+  shopTitle?: string;
+};
+
 export type StoredCredentials = {
   etsy?: EtsyCredentials;
   gelatoApiKey?: string;
   shopify?: ShopifyCredentials;
   meta?: MetaCredentials;
+  printify?: PrintifyCredentials;
 };
 
 const FILE = path.join(process.cwd(), "data", "credentials.json");
@@ -163,10 +170,16 @@ function hydrate(disk: StoredCredentials): StoredCredentials {
     pixelId: pickSecret(process.env.META_PIXEL_ID, disk.meta?.pixelId),
     pageId: pickSecret(process.env.META_PAGE_ID, disk.meta?.pageId),
   });
-  const next: StoredCredentials = { gelatoApiKey, etsy, shopify, meta };
+  const printify = mergePrintify(disk.printify, {
+    apiToken: pickSecret(process.env.PRINTIFY_API_TOKEN, disk.printify?.apiToken),
+    shopId: pickSecret(process.env.PRINTIFY_SHOP_ID, disk.printify?.shopId),
+    shopTitle: pickSecret(process.env.PRINTIFY_SHOP_TITLE, disk.printify?.shopTitle),
+  });
+  const next: StoredCredentials = { gelatoApiKey, etsy, shopify, meta, printify };
   if (next.etsy && !next.etsy.apiKey) delete next.etsy;
   if (next.shopify && !next.shopify.clientId) delete next.shopify;
   if (next.meta && !next.meta.accessToken && !next.meta.pixelId && !next.meta.adAccountId) delete next.meta;
+  if (next.printify && !next.printify.apiToken) delete next.printify;
   return next;
 }
 
@@ -186,12 +199,25 @@ function mergeMeta(current?: MetaCredentials, patch?: Partial<MetaCredentials>):
   return { accessToken, adAccountId, pixelId, pageId };
 }
 
+function mergePrintify(
+  current?: PrintifyCredentials,
+  patch?: Partial<PrintifyCredentials>,
+): PrintifyCredentials | undefined {
+  if (!current && !patch) return undefined;
+  const apiToken = pickSecret(patch?.apiToken, current?.apiToken) || "";
+  const shopId = pickSecret(patch?.shopId, current?.shopId);
+  const shopTitle = pickSecret(patch?.shopTitle, current?.shopTitle);
+  if (!apiToken && !shopId && !shopTitle) return current;
+  return { apiToken, shopId, shopTitle };
+}
+
 export async function saveCredentials(next: StoredCredentials) {
   const persisted: StoredCredentials = {
     gelatoApiKey: usableGelatoKey(next.gelatoApiKey),
     etsy: next.etsy,
     shopify: next.shopify,
     meta: next.meta,
+    printify: next.printify,
   };
   cache = persisted;
   await writeDisk(persisted);
@@ -207,6 +233,7 @@ export async function patchCredentials(patch: StoredCredentials) {
     etsy: mergeEtsy(disk.etsy, patch.etsy),
     shopify: mergeShopify(disk.shopify, patch.shopify),
     meta: mergeMeta(disk.meta, patch.meta),
+    printify: mergePrintify(disk.printify, patch.printify),
   };
   await saveCredentials(next);
   return hydrate(next);

@@ -28,6 +28,9 @@ type LiveStatus = {
   shopify?:
     | { ok: true; storefrontStatus?: string; shop?: string; name?: string; url?: string }
     | { ok: false; storefrontStatus?: string; shop?: string; error: string };
+  printify?:
+    | { ok: true; shopTitle?: string; shopId?: number }
+    | { ok: false; error: string };
   callbackReachable: boolean;
   readyToSell: boolean;
 };
@@ -64,6 +67,7 @@ type Payload = {
     shopId?: string;
   };
   gelato: { apiKeySet: boolean; apiKey?: string };
+  printify?: { apiTokenSet: boolean; apiToken?: string; shopId?: string; shopTitle?: string };
   shopify?: {
     clientIdSet: boolean;
     clientSecretSet: boolean;
@@ -85,6 +89,7 @@ export function ConnectionsClient() {
   const [etsyKey, setEtsyKey] = useState("");
   const [etsySecret, setEtsySecret] = useState("");
   const [gelatoKey, setGelatoKey] = useState("");
+  const [printifyToken, setPrintifyToken] = useState("");
   const [shopifyKey, setShopifyKey] = useState("");
   const [shopifySecret, setShopifySecret] = useState("");
   const [shopifyToken, setShopifyToken] = useState("");
@@ -102,6 +107,7 @@ export function ConnectionsClient() {
     | "etsy-key"
     | "etsy-secret"
     | "gelato-key"
+    | "printify-key"
     | "shopify-key"
     | "shopify-secret"
     | "shopify-token"
@@ -123,6 +129,7 @@ export function ConnectionsClient() {
     if (!dirty.current.etsyKey) setEtsyKey(next.etsy.apiKey || "");
     if (!dirty.current.etsySecret) setEtsySecret(next.etsy.sharedSecret || "");
     if (!dirty.current.gelatoKey) setGelatoKey(next.gelato.apiKey || "");
+    if (!dirty.current.printifyToken) setPrintifyToken(next.printify?.apiToken || "");
     if (!dirty.current.shopifyKey) setShopifyKey(next.shopify?.clientId || "");
     if (!dirty.current.shopifySecret) setShopifySecret(next.shopify?.clientSecret || "");
     if (!dirty.current.shopifyToken) setShopifyToken(next.shopify?.accessToken || "");
@@ -257,6 +264,31 @@ export function ConnectionsClient() {
       setBusy(null);
     }
   }
+  async function savePrintify() {
+    setBusy("printify");
+    try {
+      const result = await api<{ live: boolean; warning?: string; notes?: string[]; ping?: { shopTitle?: string } }>(
+        "/api/printify/connect",
+        {
+          method: "POST",
+          body: JSON.stringify({ apiToken: printifyToken }),
+        },
+      );
+      if (result.live) {
+        toast.success(
+          result.ping?.shopTitle ? `Printify connected · ${result.ping.shopTitle}` : "Printify token accepted",
+        );
+      } else toast.warning(result.warning || "Token saved, but Printify did not confirm it yet");
+      for (const note of result.notes || []) toast.message(note);
+      dirty.current.printifyToken = false;
+      await load();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function saveGelato() {
     setBusy("gelato");
     try {
@@ -333,7 +365,14 @@ export function ConnectionsClient() {
 
   function secretField(
     id: string,
-    copyId: "etsy-key" | "etsy-secret" | "gelato-key" | "shopify-key" | "shopify-secret" | "shopify-token",
+    copyId:
+      | "etsy-key"
+      | "etsy-secret"
+      | "gelato-key"
+      | "printify-key"
+      | "shopify-key"
+      | "shopify-secret"
+      | "shopify-token",
     label: string,
     value: string,
     onChange: (value: string) => void,
@@ -569,6 +608,15 @@ export function ConnectionsClient() {
         <span className="text-sm text-muted-foreground">
           Gelato {live?.gelato.ok ? "print API live" : "not configured"}
         </span>
+        <StatusPill value={live?.printify?.ok ? "live" : data.connections.printify.configured ? "warning" : "demo"} />
+        <span className="text-sm text-muted-foreground">
+          Printify{" "}
+          {live?.printify?.ok
+            ? live.printify.shopTitle || "shop connected"
+            : data.connections.printify.configured
+              ? "token saved · check the shop"
+              : "not connected"}
+        </span>
         <StatusPill value={data.connections.shopify.authorized ? "live" : data.shopify?.storefrontStatus === "frozen" ? "warning" : "demo"} />
         <span className="text-sm text-muted-foreground">
           Shopify{" "}
@@ -659,6 +707,15 @@ export function ConnectionsClient() {
                     : live?.shopify && !live.shopify.ok
                       ? ` · ${live.shopify.error}`
                       : " · not authorized"}
+              </span>
+            </li>
+            <li className="flex flex-wrap items-center gap-2">
+              <StatusPill value={live?.printify?.ok ? "live" : data.connections.printify.configured ? "warning" : "warning"} />
+              <span>
+                Printify
+                {live?.printify?.ok
+                  ? ` · ${live.printify.shopTitle || data.printify?.shopTitle || "shop connected"} · keep EU GPSR on`
+                  : " · paste a personal access token below · keep EU selected in Printify"}
               </span>
             </li>
             <li className="flex flex-wrap items-center gap-2">
@@ -895,6 +952,72 @@ export function ConnectionsClient() {
             <Button onClick={() => void saveGelato()} disabled={!gelatoKey || busy === "gelato"}>
               {busy === "gelato" ? <Loader2 className="animate-spin" /> : null}
               Save and test Gelato
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Printify</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm leading-6 text-muted-foreground">
+              Pressroom cannot sign into Printify with your password. Create a personal access token
+              and keep <strong className="font-medium text-foreground">EU (selling in the EU and United Kingdom)</strong>{" "}
+              selected in store settings — the API cannot flip that radio. After Save, Pressroom
+              stamps GPSR safety text onto products from Printify&apos;s GPSR endpoint.
+            </p>
+            <ol className="list-decimal space-y-2 pl-4 text-sm leading-6 text-muted-foreground">
+              <li>
+                Open{" "}
+                <a
+                  className="underline"
+                  href="https://printify.com/app/account/api"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  printify.com/app/account/api
+                </a>{" "}
+                while logged in.
+              </li>
+              <li>
+                Generate a token named Pressroom. Enable shops and products read/write. Copy it once.
+              </li>
+              <li>
+                In{" "}
+                <a
+                  className="underline"
+                  href="https://printify.com/app/store/settings/name"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Store settings
+                </a>{" "}
+                leave EU selected. Click <strong className="font-medium text-foreground">Add my details</strong>{" "}
+                and use Printify&apos;s EU affiliate contact if you do not have an EU address
+                (Wellington 6012 is not valid for GPSR).
+              </li>
+              <li>Paste the token below and save. Pressroom picks the Fernora shop when the title matches.</li>
+            </ol>
+            {secretField(
+              "printify-key",
+              "printify-key",
+              "Personal access token",
+              printifyToken,
+              setPrintifyToken,
+              data.printify?.apiTokenSet ? "Saved on this desk" : "Printify token",
+              "printifyToken",
+              data.printify?.apiTokenSet,
+            )}
+            {data.printify?.shopTitle ? (
+              <p className="text-xs text-muted-foreground">
+                Shop {data.printify.shopTitle}
+                {data.printify.shopId ? ` · ${data.printify.shopId}` : ""}
+              </p>
+            ) : null}
+            <Button onClick={() => void savePrintify()} disabled={!printifyToken || busy === "printify"}>
+              {busy === "printify" ? <Loader2 className="animate-spin" /> : null}
+              Save Printify and apply GPSR
             </Button>
           </CardContent>
         </Card>

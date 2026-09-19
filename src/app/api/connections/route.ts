@@ -70,6 +70,12 @@ export async function GET(request: Request) {
       pixelId: creds.meta?.pixelId || "",
       pageId: creds.meta?.pageId || "",
     },
+    printify: {
+      apiTokenSet: Boolean(creds.printify?.apiToken),
+      apiToken: creds.printify?.apiToken || "",
+      shopId: creds.printify?.shopId || "",
+      shopTitle: creds.printify?.shopTitle || "",
+    },
     shopifyInstallUrl: "https://dev.shopify.com/dashboard",
   });
 }
@@ -141,6 +147,7 @@ export async function DELETE() {
         }
       : undefined,
     meta: current.meta,
+    printify: current.printify,
   });
   return Response.json({ ok: true, connections: await connectionStatus() });
 }

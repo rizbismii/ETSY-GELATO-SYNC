@@ -34,11 +34,21 @@ export type MetaConnection = {
   error?: string;
 };
 
+export type PrintifyConnection = {
+  configured: boolean;
+  authorized: boolean;
+  mode: ConnectionMode;
+  shopId?: string;
+  shopTitle?: string;
+  error?: string;
+};
+
 export type Connections = {
   etsy: EtsyConnection;
   gelato: GelatoConnection;
   shopify: ShopifyConnection;
   meta: MetaConnection;
+  printify: PrintifyConnection;
 };
 
 export type ListingState = "active" | "inactive" | "expired" | "sold_out";
