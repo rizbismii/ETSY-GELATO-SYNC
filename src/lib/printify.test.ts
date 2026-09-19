@@ -48,11 +48,11 @@ test("GPSR 404 is treated as Non-EU, not a per-product failure", () => {
   );
   const notes = printifyGpsrNotes("non-eu", 5, 0);
   assert.equal(notes.length, 1);
-  assert.match(notes[0], /Non-EU/);
+  assert.match(notes[0], /cannot replace Gelato/);
+  assert.match(notes[0], /Add business information/);
   assert.match(notes[0], /Wellington 6012 is not valid/);
-  assert.match(notes[0], /Gelato/);
-  assert.doesNotMatch(notes[0], /Leave EU/);
-  assert.equal(printifyGpsrHeadline("non-eu"), "Non-EU hold · GPSR off until a real EU/NI contact is saved");
+  assert.doesNotMatch(notes[0], /default affiliate/);
+  assert.equal(printifyGpsrHeadline("non-eu"), "Non-EU hold · Gelato stays the live print path");
 });
 
 test("EU GPSR probe without stamps is available; stamps mark applied", () => {

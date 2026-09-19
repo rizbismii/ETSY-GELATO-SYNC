@@ -99,7 +99,7 @@ The catalog in this repo is the live Fernora sale: **20 listings**, with Etsy li
 
 ### Printify
 
-On **Connections**, paste a Printify personal access token from [printify.com/app/account/api](https://printify.com/app/account/api). Printify will not save **EU (selling in the EU and United Kingdom)** without completing **Add my details** with a real EU or Northern Ireland address. Wellington 6012 is not valid, so **Non-EU** is the right temporary save. GPSR product stamps stay off until EU can be saved; fernora.nz still ships EU and UK through Gelato. The API cannot flip the EU / Non-EU radio.
+On **Connections**, paste a Printify personal access token from [printify.com/app/account/api](https://printify.com/app/account/api). Printify’s EU radio opens **Add business information** and will not save a blank form. Wellington 6012 is not an EU address, so **Non-EU** is required. That means Printify cannot replace **Gelato** as the live print platform: Pressroom still sends paid fernora.nz and Etsy orders to Gelato, including EU and UK. The API cannot flip the EU / Non-EU radio.
 
 ### Meta ads
 

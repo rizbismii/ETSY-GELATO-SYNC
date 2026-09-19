@@ -293,7 +293,7 @@ export function ConnectionsClient() {
         );
       } else toast.warning(result.warning || "Token saved, but Printify did not confirm it yet");
       if (result.gpsrStatus === "non-eu") {
-        toast.message("Non-EU hold saved. GPSR stays off until Printify can save EU without a fake Wellington address.");
+        toast.message("Non-EU hold. Printify cannot replace Gelato — EU save needs a real EU address, so live orders stay on Gelato.");
       }
       for (const note of result.notes || []) toast.message(note);
       dirty.current.printifyToken = false;
@@ -991,13 +991,13 @@ export function ConnectionsClient() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm leading-6 text-muted-foreground">
-              Pressroom cannot sign into Printify with your password. Token is saved. Printify will not
-              save{" "}
-              <strong className="font-medium text-foreground">EU (selling in the EU and United Kingdom)</strong>{" "}
-              unless you complete <strong className="font-medium text-foreground">Add my details</strong> with a
-              real EU or Northern Ireland address. Wellington 6012 is not valid, so{" "}
-              <strong className="font-medium text-foreground">Non-EU</strong> is the right temporary save.
-              GPSR stamps stay off until EU can be saved. fernora.nz still ships EU and UK through Gelato.
+              Printify cannot be Fernora&apos;s one print platform while EU save is blocked. The{" "}
+              <strong className="font-medium text-foreground">Add business information</strong> modal
+              requires your own EU email, name, and address — a blank form will not save, and Wellington
+              6012 is not an EU address. Click <strong className="font-medium text-foreground">Cancel</strong>,
+              keep <strong className="font-medium text-foreground">Non-EU</strong>, and leave live orders on{" "}
+              <strong className="font-medium text-foreground">Gelato</strong>, which already prints fernora.nz
+              and Etsy in-region, including EU and UK.
             </p>
             <ol className="list-decimal space-y-2 pl-4 text-sm leading-6 text-muted-foreground">
               <li>
@@ -1025,9 +1025,8 @@ export function ConnectionsClient() {
                 >
                   Store settings
                 </a>{" "}
-                leave <strong className="font-medium text-foreground">Non-EU</strong> saved for now. Do not
-                type Wellington into Add my details. Later, if Printify shows a default affiliate contact
-                you can save without that form, switch to EU, save in Printify, then click Save here.
+                Cancel Add business information and keep Non-EU. Do not type Wellington into that form.
+                Printify stays connected for later; it does not take over Gelato fulfillment.
               </li>
               <li>Paste the token below if it is not already saved. Pressroom picks the Fernora shop when the title matches.</li>
             </ol>

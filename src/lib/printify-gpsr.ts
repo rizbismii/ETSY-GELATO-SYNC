@@ -6,10 +6,10 @@ export type PrintifyGpsrBlock = {
 export type PrintifyGpsrStatus = "no-shop" | "empty" | "non-eu" | "stamped" | "available";
 
 export const PRINTIFY_EU_GPSR_NOTE =
-  "Printify stamps GPSR only after the store is saved as EU with a real EU/Northern Ireland contact, or Printify’s default affiliate contact. The API cannot flip the EU / Non-EU radio.";
+  "Printify stamps GPSR only after Store settings can save EU with a real EU or Northern Ireland responsible-person address. Add business information will not accept Wellington. The API cannot flip the EU / Non-EU radio. Gelato stays the live print path for Pressroom and fernora.nz, including EU and UK.";
 
 export const PRINTIFY_NON_EU_NOTE =
-  "Printify GPSR is off because this store is saved as Non-EU. That is the right temporary hold: Printify will not save EU unless Add my details is completed with a real EU or Northern Ireland address, and Wellington 6012 is not valid. fernora.nz still ships EU and UK through Gelato. When Printify lets you save EU using its default affiliate contact (leave Add my details closed unless you have a real EU/NI address), switch the radio back, save in Printify, then Save Printify here so Pressroom can stamp GPSR.";
+  "Printify cannot replace Gelato as the live print platform while the store is Non-EU. Printify’s EU save opens Add business information and requires your own EU address, email, and name — it will not save a blank form, and Wellington 6012 is not valid. Cancel that modal, keep Non-EU, and leave paid fernora.nz / Etsy orders on Gelato, which already prints in-region for EU and UK.";
 
 export function formatPrintifySafetyInformation(blocks: PrintifyGpsrBlock[]) {
   return blocks
@@ -69,7 +69,7 @@ export function printifyGpsrNotes(status: PrintifyGpsrStatus, scanned: number, u
 }
 
 export function printifyGpsrHeadline(status?: PrintifyGpsrStatus | null) {
-  if (status === "non-eu") return "Non-EU hold · GPSR off until a real EU/NI contact is saved";
+  if (status === "non-eu") return "Non-EU hold · Gelato stays the live print path";
   if (status === "stamped") return "GPSR stamped on products";
   if (status === "available") return "EU GPSR available · stamp on Save";
   if (status === "empty") return "shop connected · no products yet";
