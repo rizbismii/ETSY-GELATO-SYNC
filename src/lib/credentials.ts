@@ -1,7 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { DESK_CREDENTIALS, usableGelatoKey } from "@/lib/desk-credentials";
-import type { PrintifyGpsrStatus } from "@/lib/printify-gpsr";
+import type { PrintifyGpsrStatus, PrintifyShopSummary } from "@/lib/printify-gpsr";
 import { FERNORA_SHOPIFY_SHOP } from "@/lib/shopify-shop";
 
 export type EtsyCredentials = {
@@ -37,6 +37,9 @@ export type PrintifyCredentials = {
   shopId?: string;
   shopTitle?: string;
   gpsrStatus?: PrintifyGpsrStatus;
+  salesChannel?: string;
+  fullyConnected?: boolean;
+  shops?: PrintifyShopSummary[];
 };
 
 export type StoredCredentials = {
@@ -177,6 +180,9 @@ function hydrate(disk: StoredCredentials): StoredCredentials {
     shopId: pickSecret(process.env.PRINTIFY_SHOP_ID, disk.printify?.shopId),
     shopTitle: pickSecret(process.env.PRINTIFY_SHOP_TITLE, disk.printify?.shopTitle),
     gpsrStatus: disk.printify?.gpsrStatus,
+    salesChannel: disk.printify?.salesChannel,
+    fullyConnected: disk.printify?.fullyConnected,
+    shops: disk.printify?.shops,
   });
   const next: StoredCredentials = { gelatoApiKey, etsy, shopify, meta, printify };
   if (next.etsy && !next.etsy.apiKey) delete next.etsy;
@@ -211,8 +217,11 @@ function mergePrintify(
   const shopId = pickSecret(patch?.shopId, current?.shopId);
   const shopTitle = pickSecret(patch?.shopTitle, current?.shopTitle);
   const gpsrStatus = patch && "gpsrStatus" in patch ? patch.gpsrStatus : current?.gpsrStatus;
-  if (!apiToken && !shopId && !shopTitle && !gpsrStatus) return current;
-  return { apiToken, shopId, shopTitle, gpsrStatus };
+  const salesChannel = patch && "salesChannel" in patch ? patch.salesChannel : current?.salesChannel;
+  const fullyConnected = patch && "fullyConnected" in patch ? patch.fullyConnected : current?.fullyConnected;
+  const shops = patch && "shops" in patch ? patch.shops : current?.shops;
+  if (!apiToken && !shopId && !shopTitle && !gpsrStatus && !salesChannel && !shops) return current;
+  return { apiToken, shopId, shopTitle, gpsrStatus, salesChannel, fullyConnected, shops };
 }
 
 export async function saveCredentials(next: StoredCredentials) {

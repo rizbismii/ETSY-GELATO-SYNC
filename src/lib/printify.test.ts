@@ -3,10 +3,13 @@ import { test } from "node:test";
 import {
   formatPrintifySafetyInformation,
   pickPrintifyShop,
+  printifyConnectionHeadline,
   printifyGpsrHeadline,
   printifyGpsrIsUnavailable,
   printifyGpsrModeFromProbe,
   printifyGpsrNotes,
+  printifyIsFullyConnected,
+  printifyShopLine,
   safetyInformationNeedsGpsr,
 } from "./printify-gpsr.ts";
 
@@ -49,10 +52,24 @@ test("GPSR 404 is treated as Non-EU, not a per-product failure", () => {
   const notes = printifyGpsrNotes("non-eu", 5, 0);
   assert.equal(notes.length, 1);
   assert.match(notes[0], /cannot replace Gelato/);
-  assert.match(notes[0], /Add business information/);
-  assert.match(notes[0], /Wellington 6012 is not valid/);
+  assert.match(notes[0], /other sales channels/);
+  assert.match(notes[0], /Wellington 6012 is not/);
   assert.doesNotMatch(notes[0], /default affiliate/);
   assert.equal(printifyGpsrHeadline("non-eu"), "Non-EU hold · Gelato stays the live print path");
+});
+
+test("Printify is fully connected only with products on a sales channel", () => {
+  const shops = [
+    { id: 28911657, title: "Fernora", salesChannel: "disconnected", productCount: 5 },
+    { id: 28911689, title: "My Etsy Store", salesChannel: "etsy", productCount: 0 },
+  ];
+  assert.equal(printifyIsFullyConnected(shops), false);
+  assert.match(printifyConnectionHeadline({ shops, fullyConnected: false, gpsrStatus: "non-eu" }), /Etsy channel empty/);
+  assert.equal(
+    printifyShopLine(shops[0]),
+    "Fernora · 28911657 · not linked to a sales platform · 5 products",
+  );
+  assert.equal(printifyIsFullyConnected([{ id: 1, title: "Etsy", salesChannel: "etsy", productCount: 2 }]), true);
 });
 
 test("EU GPSR probe without stamps is available; stamps mark applied", () => {

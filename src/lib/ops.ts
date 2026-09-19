@@ -71,6 +71,9 @@ export async function connectionStatus(): Promise<Connections> {
       shopId: creds.printify?.shopId,
       shopTitle: creds.printify?.shopTitle,
       gpsrStatus: creds.printify?.gpsrStatus,
+      salesChannel: creds.printify?.salesChannel,
+      fullyConnected: creds.printify?.fullyConnected,
+      shops: creds.printify?.shops,
     },
   };
 }
@@ -183,8 +186,21 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
       severity: "info",
       title: "Printify is not connected",
       detail:
-        "Paste a Printify personal access token on Connections. Printify cannot be the live print platform for EU/UK until Add business information can save a real EU/NI address. Gelato stays the live print path.",
+        "Paste a Printify personal access token on Connections. Printify is for other sales channels only. Gelato stays the live printer for fernora.nz.",
       action: { label: "Connect Printify", href: "/connections", kind: "connect" },
+    });
+  } else if (!connections.printify.fullyConnected) {
+    const shops = connections.printify.shops || [];
+    const shopLines = shops
+      .map((shop) => `${shop.title || shop.id}: ${shop.salesChannel || "disconnected"}, ${shop.productCount} products`)
+      .join(" ");
+    issues.push({
+      id: "printify-not-fully-connected",
+      severity: "info",
+      title: "Printify is not fully connected",
+      detail:
+        `Token is live, but no Printify shop has products on a sales channel yet. ${shopLines || "No shop summaries yet."} Keep Gelato for fernora.nz. In Printify, publish products to My Etsy Store (or connect Fernora to Etsy/another channel, not Shopify), keep Non-EU, then Save Printify on Connections.`,
+      action: { label: "Printify shops", href: "/connections", kind: "connect" },
     });
   } else if (connections.printify.gpsrStatus === "non-eu") {
     issues.push({
@@ -192,7 +208,7 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
       severity: "info",
       title: "Printify cannot replace Gelato (Non-EU)",
       detail:
-        "Printify’s EU radio will not save unless Add business information is filled with a real EU or Northern Ireland address. Wellington is not valid, so Non-EU is required. Paid fernora.nz and Etsy orders stay on Gelato, which already ships EU and UK. Do not move fulfillment to Printify.",
+        "Printify’s EU radio will not save unless Add business information is filled with a real EU or Northern Ireland address. Wellington is not valid, so Non-EU is required. Paid fernora.nz orders stay on Gelato. Printify stays for other sales channels only.",
       action: { label: "Printify GPSR", href: "/connections", kind: "connect" },
     });
   }

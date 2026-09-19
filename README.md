@@ -99,7 +99,7 @@ The catalog in this repo is the live Fernora sale: **20 listings**, with Etsy li
 
 ### Printify
 
-On **Connections**, paste a Printify personal access token from [printify.com/app/account/api](https://printify.com/app/account/api). Printify’s EU radio opens **Add business information** and will not save a blank form. Wellington 6012 is not an EU address, so **Non-EU** is required. That means Printify cannot replace **Gelato** as the live print platform: Pressroom still sends paid fernora.nz and Etsy orders to Gelato, including EU and UK. The API cannot flip the EU / Non-EU radio.
+On **Connections**, paste a Printify personal access token from [printify.com/app/account/api](https://printify.com/app/account/api). **Gelato** stays the live printer for fernora.nz. Printify is for other sales channels only. A token is not a full connection: Fernora is currently disconnected, and My Etsy Store is the Etsy channel with 0 products. Publish products to that Etsy shop (or connect Fernora to Etsy/another non-Shopify channel), keep **Non-EU**, then Save Printify. Printify’s EU radio opens **Add business information** and will not save a blank form; Wellington 6012 is not an EU address.
 
 ### Meta ads
 

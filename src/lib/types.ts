@@ -1,4 +1,4 @@
-import type { PrintifyGpsrStatus } from "@/lib/printify-gpsr";
+import type { PrintifyGpsrStatus, PrintifyShopSummary } from "@/lib/printify-gpsr";
 
 export type ConnectionMode = "demo" | "live";
 
@@ -43,6 +43,9 @@ export type PrintifyConnection = {
   shopId?: string;
   shopTitle?: string;
   gpsrStatus?: PrintifyGpsrStatus;
+  salesChannel?: string;
+  fullyConnected?: boolean;
+  shops?: PrintifyShopSummary[];
   error?: string;
 };
 

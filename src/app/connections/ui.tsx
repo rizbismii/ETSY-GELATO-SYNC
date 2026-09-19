@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { StatusPill } from "@/components/status-pill";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { printifyGpsrHeadline, type PrintifyGpsrStatus } from "@/lib/printify-gpsr";
+import { printifyConnectionHeadline, printifyShopLine, type PrintifyGpsrStatus, type PrintifyShopSummary } from "@/lib/printify-gpsr";
 import { FERNORA_SHOPIFY_SHOP, FERNORA_SHOPIFY_STOREFRONT } from "@/lib/shopify-shop";
 import type { Connections } from "@/lib/types";
 
@@ -30,7 +30,15 @@ type LiveStatus = {
     | { ok: true; storefrontStatus?: string; shop?: string; name?: string; url?: string }
     | { ok: false; storefrontStatus?: string; shop?: string; error: string };
   printify?:
-    | { ok: true; shopTitle?: string; shopId?: number; gpsrStatus?: PrintifyGpsrStatus }
+    | {
+        ok: true;
+        shopTitle?: string;
+        shopId?: number;
+        gpsrStatus?: PrintifyGpsrStatus;
+        salesChannel?: string;
+        fullyConnected?: boolean;
+        shops?: PrintifyShopSummary[];
+      }
     | { ok: false; error: string };
   callbackReachable: boolean;
   readyToSell: boolean;
@@ -74,6 +82,9 @@ type Payload = {
     shopId?: string;
     shopTitle?: string;
     gpsrStatus?: PrintifyGpsrStatus | "";
+    salesChannel?: string;
+    fullyConnected?: boolean;
+    shops?: PrintifyShopSummary[];
   };
   shopify?: {
     clientIdSet: boolean;
@@ -89,6 +100,25 @@ type Payload = {
   };
   shopifyInstallUrl?: string;
 };
+
+function printifyShopsFrom(data: Payload) {
+  if (data.live?.printify && data.live.printify.ok && data.live.printify.shops?.length) return data.live.printify.shops;
+  return data.printify?.shops || data.connections.printify.shops || [];
+}
+
+function printifyHeadlineFrom(data: Payload) {
+  const live = data.live?.printify && data.live.printify.ok ? data.live.printify : undefined;
+  return printifyConnectionHeadline({
+    gpsrStatus: live?.gpsrStatus || data.printify?.gpsrStatus || data.connections.printify.gpsrStatus,
+    fullyConnected: live?.fullyConnected ?? data.printify?.fullyConnected ?? data.connections.printify.fullyConnected,
+    shops: printifyShopsFrom(data),
+  });
+}
+
+function printifyPillFrom(data: Payload): "live" | "warning" | "demo" {
+  if (data.live?.printify?.ok) return data.live.printify.fullyConnected ? "live" : "warning";
+  return data.connections.printify.configured ? "warning" : "demo";
+}
 
 export function ConnectionsClient() {
   const search = useSearchParams();
@@ -279,7 +309,8 @@ export function ConnectionsClient() {
         warning?: string;
         notes?: string[];
         gpsrStatus?: PrintifyGpsrStatus;
-        ping?: { shopTitle?: string };
+        fullyConnected?: boolean;
+        ping?: { shopTitle?: string; fullyConnected?: boolean };
       }>(
         "/api/printify/connect",
         {
@@ -289,11 +320,15 @@ export function ConnectionsClient() {
       );
       if (result.live) {
         toast.success(
-          result.ping?.shopTitle ? `Printify connected · ${result.ping.shopTitle}` : "Printify token accepted",
+          result.fullyConnected || result.ping?.fullyConnected
+            ? `Printify fully connected · ${result.ping?.shopTitle || "shop live"}`
+            : result.ping?.shopTitle
+              ? `Printify token live · ${result.ping.shopTitle} · not fully connected`
+              : "Printify token accepted · not fully connected",
         );
       } else toast.warning(result.warning || "Token saved, but Printify did not confirm it yet");
       if (result.gpsrStatus === "non-eu") {
-        toast.message("Non-EU hold. Printify cannot replace Gelato — EU save needs a real EU address, so live orders stay on Gelato.");
+        toast.message("Non-EU hold. Printify is for other platforms only — Gelato stays the live printer for fernora.nz.");
       }
       for (const note of result.notes || []) toast.message(note);
       dirty.current.printifyToken = false;
@@ -624,16 +659,11 @@ export function ConnectionsClient() {
         <span className="text-sm text-muted-foreground">
           Gelato {live?.gelato.ok ? "print API live" : "not configured"}
         </span>
-        <StatusPill value={live?.printify?.ok ? "live" : data.connections.printify.configured ? "warning" : "demo"} />
+        <StatusPill value={printifyPillFrom(data)} />
         <span className="text-sm text-muted-foreground">
           Printify{" "}
           {live?.printify?.ok
-            ? [
-                live.printify.shopTitle || "shop connected",
-                printifyGpsrHeadline(live.printify.gpsrStatus || data.printify?.gpsrStatus || data.connections.printify.gpsrStatus),
-              ]
-                .filter(Boolean)
-                .join(" · ")
+            ? [live.printify.shopTitle || "shop connected", printifyHeadlineFrom(data)].filter(Boolean).join(" · ")
             : data.connections.printify.configured
               ? "token saved · check the shop"
               : "not connected"}
@@ -731,20 +761,12 @@ export function ConnectionsClient() {
               </span>
             </li>
             <li className="flex flex-wrap items-center gap-2">
-              <StatusPill value={live?.printify?.ok ? "live" : data.connections.printify.configured ? "warning" : "warning"} />
+              <StatusPill value={printifyPillFrom(data)} />
               <span>
                 Printify
                 {live?.printify?.ok
-                  ? ` · ${live.printify.shopTitle || data.printify?.shopTitle || "shop connected"}${
-                      printifyGpsrHeadline(
-                        live.printify.gpsrStatus || data.printify?.gpsrStatus || data.connections.printify.gpsrStatus,
-                      )
-                        ? ` · ${printifyGpsrHeadline(
-                            live.printify.gpsrStatus || data.printify?.gpsrStatus || data.connections.printify.gpsrStatus,
-                          )}`
-                        : ""
-                    }`
-                  : " · paste a personal access token below · Non-EU is OK if Printify blocks EU save"}
+                  ? ` · ${live.printify.shopTitle || data.printify?.shopTitle || "shop connected"} · ${printifyHeadlineFrom(data)}`
+                  : " · paste a personal access token below · Printify is for other platforms; Gelato stays live"}
               </span>
             </li>
             <li className="flex flex-wrap items-center gap-2">
@@ -991,13 +1013,13 @@ export function ConnectionsClient() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm leading-6 text-muted-foreground">
-              Printify cannot be Fernora&apos;s one print platform while EU save is blocked. The{" "}
-              <strong className="font-medium text-foreground">Add business information</strong> modal
-              requires your own EU email, name, and address — a blank form will not save, and Wellington
-              6012 is not an EU address. Click <strong className="font-medium text-foreground">Cancel</strong>,
-              keep <strong className="font-medium text-foreground">Non-EU</strong>, and leave live orders on{" "}
-              <strong className="font-medium text-foreground">Gelato</strong>, which already prints fernora.nz
-              and Etsy in-region, including EU and UK.
+              Keep <strong className="font-medium text-foreground">Gelato</strong> as the live printer for
+              fernora.nz. Printify is for other platforms only (Etsy channel and any store that is not
+              Shopify/Gelato). Token is live, but Printify is{" "}
+              <strong className="font-medium text-foreground">not fully connected</strong> until a shop has
+              products on a sales channel. Fernora is disconnected; My Etsy Store is the Etsy channel with no
+              products. Keep Non-EU — Add business information will not save a blank EU form, and Wellington
+              is not valid.
             </p>
             <ol className="list-decimal space-y-2 pl-4 text-sm leading-6 text-muted-foreground">
               <li>
@@ -1016,7 +1038,8 @@ export function ConnectionsClient() {
                 Generate a token named Pressroom. Enable shops and products read/write. Copy it once.
               </li>
               <li>
-                In{" "}
+                In Printify, open <strong className="font-medium text-foreground">My Etsy Store</strong> and
+                publish products, or connect Fernora to Etsy/another channel — not Shopify. Keep Non-EU in{" "}
                 <a
                   className="underline"
                   href="https://printify.com/app/store/settings/name"
@@ -1024,11 +1047,10 @@ export function ConnectionsClient() {
                   rel="noreferrer"
                 >
                   Store settings
-                </a>{" "}
-                Cancel Add business information and keep Non-EU. Do not type Wellington into that form.
-                Printify stays connected for later; it does not take over Gelato fulfillment.
+                </a>
+                .
               </li>
-              <li>Paste the token below if it is not already saved. Pressroom picks the Fernora shop when the title matches.</li>
+              <li>Paste the token below if it is not already saved, then Save so Pressroom can refresh shop status.</li>
             </ol>
             {secretField(
               "printify-key",
@@ -1040,18 +1062,22 @@ export function ConnectionsClient() {
               "printifyToken",
               data.printify?.apiTokenSet,
             )}
-            {data.printify?.shopTitle ? (
+            {printifyShopsFrom(data).length ? (
+              <ul className="space-y-1 text-xs text-muted-foreground">
+                {printifyShopsFrom(data).map((shop) => (
+                  <li key={shop.id}>{printifyShopLine(shop)}</li>
+                ))}
+              </ul>
+            ) : data.printify?.shopTitle ? (
               <p className="text-xs text-muted-foreground">
                 Shop {data.printify.shopTitle}
                 {data.printify.shopId ? ` · ${data.printify.shopId}` : ""}
-                {printifyGpsrHeadline(data.printify.gpsrStatus || data.connections.printify.gpsrStatus)
-                  ? ` · ${printifyGpsrHeadline(data.printify.gpsrStatus || data.connections.printify.gpsrStatus)}`
-                  : ""}
+                {printifyHeadlineFrom(data) ? ` · ${printifyHeadlineFrom(data)}` : ""}
               </p>
             ) : null}
             <Button onClick={() => void savePrintify()} disabled={!printifyToken || busy === "printify"}>
               {busy === "printify" ? <Loader2 className="animate-spin" /> : null}
-              Save Printify and check GPSR
+              Save Printify and check shops
             </Button>
           </CardContent>
         </Card>

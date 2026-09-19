@@ -78,6 +78,9 @@ export async function vendorHealth() {
             shopTitle: printify.value.shopTitle,
             shopId: printify.value.shopId,
             gpsrStatus: creds.printify?.gpsrStatus,
+            salesChannel: printify.value.salesChannel,
+            fullyConnected: printify.value.fullyConnected,
+            shops: printify.value.shopSummaries,
           }
         : { ok: false as const, error: (printify.reason as Error).message },
   };

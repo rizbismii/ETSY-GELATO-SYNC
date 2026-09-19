@@ -32,6 +32,9 @@ export async function POST(request: Request) {
         shopId: String(gpsr.shopId || shopId),
         shopTitle: gpsr.shopTitle || shopTitle,
         gpsrStatus: gpsr.gpsrStatus,
+        salesChannel: ping.salesChannel,
+        fullyConnected: gpsr.fullyConnected,
+        shops: gpsr.shopSummaries || ping.shopSummaries,
       },
     });
     return Response.json({
@@ -40,6 +43,7 @@ export async function POST(request: Request) {
       ping,
       gpsr,
       gpsrStatus: gpsr.gpsrStatus,
+      fullyConnected: gpsr.fullyConnected,
       notes: gpsr.notes,
       connections: await connectionStatus(),
     });

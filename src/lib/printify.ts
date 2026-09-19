@@ -5,23 +5,28 @@ import {
   printifyGpsrIsUnavailable,
   printifyGpsrModeFromProbe,
   printifyGpsrNotes,
+  printifyIsFullyConnected,
   safetyInformationNeedsGpsr,
   type PrintifyGpsrBlock,
   type PrintifyGpsrStatus,
+  type PrintifyShopSummary,
 } from "@/lib/printify-gpsr";
 
 export {
   formatPrintifySafetyInformation,
   pickPrintifyShop,
+  printifyConnectionHeadline,
   printifyGpsrHeadline,
   printifyGpsrIsUnavailable,
   printifyGpsrModeFromProbe,
   printifyGpsrNotes,
+  printifyIsFullyConnected,
+  printifyShopLine,
   PRINTIFY_EU_GPSR_NOTE,
   PRINTIFY_NON_EU_NOTE,
   safetyInformationNeedsGpsr,
 } from "@/lib/printify-gpsr";
-export type { PrintifyGpsrStatus } from "@/lib/printify-gpsr";
+export type { PrintifyGpsrStatus, PrintifyShopSummary } from "@/lib/printify-gpsr";
 
 const API = "https://api.printify.com/v1";
 
@@ -81,12 +86,24 @@ export async function listPrintifyShops(token?: string) {
 export async function pingPrintify(token?: string) {
   const shops = await listPrintifyShops(token);
   const shop = pickPrintifyShop(shops);
+  const shopSummaries: PrintifyShopSummary[] = [];
+  for (const row of shops) {
+    const products = await listShopProducts(row.id);
+    shopSummaries.push({
+      id: row.id,
+      title: row.title,
+      salesChannel: row.sales_channel || "disconnected",
+      productCount: products.length,
+    });
+  }
   return {
     shopCount: shops.length,
     shopId: shop?.id,
     shopTitle: shop?.title,
-    salesChannel: shop?.sales_channel,
+    salesChannel: shop?.sales_channel || "disconnected",
     shops,
+    shopSummaries,
+    fullyConnected: printifyIsFullyConnected(shopSummaries),
   };
 }
 
@@ -114,6 +131,8 @@ export async function applyPrintifyGpsr(input?: { shopId?: number; token?: strin
       scanned: 0,
       updated: 0,
       gpsrStatus: "no-shop" as PrintifyGpsrStatus,
+      shopSummaries: ping.shopSummaries,
+      fullyConnected: false,
       notes: printifyGpsrNotes("no-shop", 0, 0),
     };
   }
@@ -160,6 +179,8 @@ export async function applyPrintifyGpsr(input?: { shopId?: number; token?: strin
     scanned: products.length,
     updated,
     gpsrStatus,
+    shopSummaries: ping.shopSummaries,
+    fullyConnected: ping.fullyConnected,
     notes: [...printifyGpsrNotes(gpsrStatus, products.length, updated), ...extraNotes],
   };
 }

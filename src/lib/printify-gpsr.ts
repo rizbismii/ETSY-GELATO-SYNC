@@ -5,11 +5,18 @@ export type PrintifyGpsrBlock = {
 
 export type PrintifyGpsrStatus = "no-shop" | "empty" | "non-eu" | "stamped" | "available";
 
+export type PrintifyShopSummary = {
+  id: number;
+  title?: string;
+  salesChannel: string;
+  productCount: number;
+};
+
 export const PRINTIFY_EU_GPSR_NOTE =
   "Printify stamps GPSR only after Store settings can save EU with a real EU or Northern Ireland responsible-person address. Add business information will not accept Wellington. The API cannot flip the EU / Non-EU radio. Gelato stays the live print path for Pressroom and fernora.nz, including EU and UK.";
 
 export const PRINTIFY_NON_EU_NOTE =
-  "Printify cannot replace Gelato as the live print platform while the store is Non-EU. Printify’s EU save opens Add business information and requires your own EU address, email, and name — it will not save a blank form, and Wellington 6012 is not valid. Cancel that modal, keep Non-EU, and leave paid fernora.nz / Etsy orders on Gelato, which already prints in-region for EU and UK.";
+  "Printify cannot replace Gelato as the live print platform. Keep Non-EU: Printify’s EU save opens Add business information and requires your own EU address, which Wellington 6012 is not. Use Printify only on other sales channels (not Shopify/Gelato). Paid fernora.nz orders stay on Gelato, which already prints in-region for EU and UK.";
 
 export function formatPrintifySafetyInformation(blocks: PrintifyGpsrBlock[]) {
   return blocks
@@ -75,6 +82,47 @@ export function printifyGpsrHeadline(status?: PrintifyGpsrStatus | null) {
   if (status === "empty") return "shop connected · no products yet";
   if (status === "no-shop") return "token saved · no shop yet";
   return "";
+}
+
+export function printifyChannelKey(channel?: string | null) {
+  return (channel || "disconnected").trim().toLowerCase() || "disconnected";
+}
+
+export function printifySalesChannelLabel(channel?: string | null) {
+  const value = printifyChannelKey(channel);
+  if (value === "disconnected") return "not linked to a sales platform";
+  if (value === "etsy") return "Etsy channel";
+  if (value === "shopify") return "Shopify channel";
+  return `${channel} channel`;
+}
+
+export function printifyIsFullyConnected(shops: PrintifyShopSummary[]) {
+  return shops.some((shop) => printifyChannelKey(shop.salesChannel) !== "disconnected" && shop.productCount > 0);
+}
+
+export function printifyConnectionHeadline(input: {
+  gpsrStatus?: PrintifyGpsrStatus | null;
+  fullyConnected?: boolean;
+  shops?: PrintifyShopSummary[];
+}) {
+  const gpsr = printifyGpsrHeadline(input.gpsrStatus);
+  const shops = input.shops || [];
+  const parts: string[] = [];
+  if (input.fullyConnected) parts.push("fully connected on a sales channel");
+  else if (!shops.length) parts.push("token live · not fully connected");
+  else {
+    const etsy = shops.find((shop) => printifyChannelKey(shop.salesChannel) === "etsy");
+    if (etsy && etsy.productCount === 0) parts.push("token live · Etsy channel empty · not fully connected");
+    else parts.push("token live · not fully connected");
+  }
+  if (gpsr) parts.push(gpsr);
+  return parts.join(" · ");
+}
+
+export function printifyShopLine(shop: PrintifyShopSummary) {
+  const title = shop.title || "Printify shop";
+  const products = `${shop.productCount} product${shop.productCount === 1 ? "" : "s"}`;
+  return `${title} · ${shop.id} · ${printifySalesChannelLabel(shop.salesChannel)} · ${products}`;
 }
 
 export function pickPrintifyShop<T extends { id: number; title?: string }>(shops: T[]) {

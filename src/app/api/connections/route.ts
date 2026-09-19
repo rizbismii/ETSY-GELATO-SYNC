@@ -76,6 +76,9 @@ export async function GET(request: Request) {
       shopId: creds.printify?.shopId || "",
       shopTitle: creds.printify?.shopTitle || "",
       gpsrStatus: creds.printify?.gpsrStatus || "",
+      salesChannel: creds.printify?.salesChannel || "",
+      fullyConnected: Boolean(creds.printify?.fullyConnected),
+      shops: creds.printify?.shops || [],
     },
     shopifyInstallUrl: "https://dev.shopify.com/dashboard",
   });
