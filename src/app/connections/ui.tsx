@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { StatusPill } from "@/components/status-pill";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { printifyGpsrHeadline, type PrintifyGpsrStatus } from "@/lib/printify-gpsr";
 import { FERNORA_SHOPIFY_SHOP, FERNORA_SHOPIFY_STOREFRONT } from "@/lib/shopify-shop";
 import type { Connections } from "@/lib/types";
 
@@ -29,7 +30,7 @@ type LiveStatus = {
     | { ok: true; storefrontStatus?: string; shop?: string; name?: string; url?: string }
     | { ok: false; storefrontStatus?: string; shop?: string; error: string };
   printify?:
-    | { ok: true; shopTitle?: string; shopId?: number }
+    | { ok: true; shopTitle?: string; shopId?: number; gpsrStatus?: PrintifyGpsrStatus }
     | { ok: false; error: string };
   callbackReachable: boolean;
   readyToSell: boolean;
@@ -67,7 +68,13 @@ type Payload = {
     shopId?: string;
   };
   gelato: { apiKeySet: boolean; apiKey?: string };
-  printify?: { apiTokenSet: boolean; apiToken?: string; shopId?: string; shopTitle?: string };
+  printify?: {
+    apiTokenSet: boolean;
+    apiToken?: string;
+    shopId?: string;
+    shopTitle?: string;
+    gpsrStatus?: PrintifyGpsrStatus | "";
+  };
   shopify?: {
     clientIdSet: boolean;
     clientSecretSet: boolean;
@@ -267,7 +274,13 @@ export function ConnectionsClient() {
   async function savePrintify() {
     setBusy("printify");
     try {
-      const result = await api<{ live: boolean; warning?: string; notes?: string[]; ping?: { shopTitle?: string } }>(
+      const result = await api<{
+        live: boolean;
+        warning?: string;
+        notes?: string[];
+        gpsrStatus?: PrintifyGpsrStatus;
+        ping?: { shopTitle?: string };
+      }>(
         "/api/printify/connect",
         {
           method: "POST",
@@ -279,6 +292,9 @@ export function ConnectionsClient() {
           result.ping?.shopTitle ? `Printify connected · ${result.ping.shopTitle}` : "Printify token accepted",
         );
       } else toast.warning(result.warning || "Token saved, but Printify did not confirm it yet");
+      if (result.gpsrStatus === "non-eu") {
+        toast.message("Non-EU hold saved. GPSR stays off until Printify can save EU without a fake Wellington address.");
+      }
       for (const note of result.notes || []) toast.message(note);
       dirty.current.printifyToken = false;
       await load();
@@ -612,7 +628,12 @@ export function ConnectionsClient() {
         <span className="text-sm text-muted-foreground">
           Printify{" "}
           {live?.printify?.ok
-            ? live.printify.shopTitle || "shop connected"
+            ? [
+                live.printify.shopTitle || "shop connected",
+                printifyGpsrHeadline(live.printify.gpsrStatus || data.printify?.gpsrStatus || data.connections.printify.gpsrStatus),
+              ]
+                .filter(Boolean)
+                .join(" · ")
             : data.connections.printify.configured
               ? "token saved · check the shop"
               : "not connected"}
@@ -714,8 +735,16 @@ export function ConnectionsClient() {
               <span>
                 Printify
                 {live?.printify?.ok
-                  ? ` · ${live.printify.shopTitle || data.printify?.shopTitle || "shop connected"} · keep EU GPSR on`
-                  : " · paste a personal access token below · keep EU selected in Printify"}
+                  ? ` · ${live.printify.shopTitle || data.printify?.shopTitle || "shop connected"}${
+                      printifyGpsrHeadline(
+                        live.printify.gpsrStatus || data.printify?.gpsrStatus || data.connections.printify.gpsrStatus,
+                      )
+                        ? ` · ${printifyGpsrHeadline(
+                            live.printify.gpsrStatus || data.printify?.gpsrStatus || data.connections.printify.gpsrStatus,
+                          )}`
+                        : ""
+                    }`
+                  : " · paste a personal access token below · Non-EU is OK if Printify blocks EU save"}
               </span>
             </li>
             <li className="flex flex-wrap items-center gap-2">
@@ -962,10 +991,13 @@ export function ConnectionsClient() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm leading-6 text-muted-foreground">
-              Pressroom cannot sign into Printify with your password. Create a personal access token
-              and keep <strong className="font-medium text-foreground">EU (selling in the EU and United Kingdom)</strong>{" "}
-              selected in store settings — the API cannot flip that radio. After Save, Pressroom
-              stamps GPSR safety text onto products from Printify&apos;s GPSR endpoint.
+              Pressroom cannot sign into Printify with your password. Token is saved. Printify will not
+              save{" "}
+              <strong className="font-medium text-foreground">EU (selling in the EU and United Kingdom)</strong>{" "}
+              unless you complete <strong className="font-medium text-foreground">Add my details</strong> with a
+              real EU or Northern Ireland address. Wellington 6012 is not valid, so{" "}
+              <strong className="font-medium text-foreground">Non-EU</strong> is the right temporary save.
+              GPSR stamps stay off until EU can be saved. fernora.nz still ships EU and UK through Gelato.
             </p>
             <ol className="list-decimal space-y-2 pl-4 text-sm leading-6 text-muted-foreground">
               <li>
@@ -993,11 +1025,11 @@ export function ConnectionsClient() {
                 >
                   Store settings
                 </a>{" "}
-                leave EU selected. Click <strong className="font-medium text-foreground">Add my details</strong>{" "}
-                and use Printify&apos;s EU affiliate contact if you do not have an EU address
-                (Wellington 6012 is not valid for GPSR).
+                leave <strong className="font-medium text-foreground">Non-EU</strong> saved for now. Do not
+                type Wellington into Add my details. Later, if Printify shows a default affiliate contact
+                you can save without that form, switch to EU, save in Printify, then click Save here.
               </li>
-              <li>Paste the token below and save. Pressroom picks the Fernora shop when the title matches.</li>
+              <li>Paste the token below if it is not already saved. Pressroom picks the Fernora shop when the title matches.</li>
             </ol>
             {secretField(
               "printify-key",
@@ -1013,11 +1045,14 @@ export function ConnectionsClient() {
               <p className="text-xs text-muted-foreground">
                 Shop {data.printify.shopTitle}
                 {data.printify.shopId ? ` · ${data.printify.shopId}` : ""}
+                {printifyGpsrHeadline(data.printify.gpsrStatus || data.connections.printify.gpsrStatus)
+                  ? ` · ${printifyGpsrHeadline(data.printify.gpsrStatus || data.connections.printify.gpsrStatus)}`
+                  : ""}
               </p>
             ) : null}
             <Button onClick={() => void savePrintify()} disabled={!printifyToken || busy === "printify"}>
               {busy === "printify" ? <Loader2 className="animate-spin" /> : null}
-              Save Printify and apply GPSR
+              Save Printify and check GPSR
             </Button>
           </CardContent>
         </Card>

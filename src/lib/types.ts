@@ -1,3 +1,5 @@
+import type { PrintifyGpsrStatus } from "@/lib/printify-gpsr";
+
 export type ConnectionMode = "demo" | "live";
 
 export type EtsyConnection = {
@@ -40,6 +42,7 @@ export type PrintifyConnection = {
   mode: ConnectionMode;
   shopId?: string;
   shopTitle?: string;
+  gpsrStatus?: PrintifyGpsrStatus;
   error?: string;
 };
 

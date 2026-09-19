@@ -26,16 +26,20 @@ export async function POST(request: Request) {
       token: apiToken,
       shopId: shopId ? Number(shopId) : undefined,
     });
-    if (gpsr.shopId && String(gpsr.shopId) !== shopId) {
-      await patchCredentials({
-        printify: { apiToken, shopId: String(gpsr.shopId), shopTitle: gpsr.shopTitle || shopTitle },
-      });
-    }
+    await patchCredentials({
+      printify: {
+        apiToken,
+        shopId: String(gpsr.shopId || shopId),
+        shopTitle: gpsr.shopTitle || shopTitle,
+        gpsrStatus: gpsr.gpsrStatus,
+      },
+    });
     return Response.json({
       ok: true,
       live: true,
       ping,
       gpsr,
+      gpsrStatus: gpsr.gpsrStatus,
       notes: gpsr.notes,
       connections: await connectionStatus(),
     });

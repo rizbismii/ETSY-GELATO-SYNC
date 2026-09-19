@@ -1,6 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { DESK_CREDENTIALS, usableGelatoKey } from "@/lib/desk-credentials";
+import type { PrintifyGpsrStatus } from "@/lib/printify-gpsr";
 import { FERNORA_SHOPIFY_SHOP } from "@/lib/shopify-shop";
 
 export type EtsyCredentials = {
@@ -35,6 +36,7 @@ export type PrintifyCredentials = {
   apiToken: string;
   shopId?: string;
   shopTitle?: string;
+  gpsrStatus?: PrintifyGpsrStatus;
 };
 
 export type StoredCredentials = {
@@ -174,6 +176,7 @@ function hydrate(disk: StoredCredentials): StoredCredentials {
     apiToken: pickSecret(process.env.PRINTIFY_API_TOKEN, disk.printify?.apiToken),
     shopId: pickSecret(process.env.PRINTIFY_SHOP_ID, disk.printify?.shopId),
     shopTitle: pickSecret(process.env.PRINTIFY_SHOP_TITLE, disk.printify?.shopTitle),
+    gpsrStatus: disk.printify?.gpsrStatus,
   });
   const next: StoredCredentials = { gelatoApiKey, etsy, shopify, meta, printify };
   if (next.etsy && !next.etsy.apiKey) delete next.etsy;
@@ -207,8 +210,9 @@ function mergePrintify(
   const apiToken = pickSecret(patch?.apiToken, current?.apiToken) || "";
   const shopId = pickSecret(patch?.shopId, current?.shopId);
   const shopTitle = pickSecret(patch?.shopTitle, current?.shopTitle);
-  if (!apiToken && !shopId && !shopTitle) return current;
-  return { apiToken, shopId, shopTitle };
+  const gpsrStatus = patch && "gpsrStatus" in patch ? patch.gpsrStatus : current?.gpsrStatus;
+  if (!apiToken && !shopId && !shopTitle && !gpsrStatus) return current;
+  return { apiToken, shopId, shopTitle, gpsrStatus };
 }
 
 export async function saveCredentials(next: StoredCredentials) {

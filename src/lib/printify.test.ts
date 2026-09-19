@@ -3,6 +3,10 @@ import { test } from "node:test";
 import {
   formatPrintifySafetyInformation,
   pickPrintifyShop,
+  printifyGpsrHeadline,
+  printifyGpsrIsUnavailable,
+  printifyGpsrModeFromProbe,
+  printifyGpsrNotes,
   safetyInformationNeedsGpsr,
 } from "./printify-gpsr.ts";
 
@@ -28,4 +32,51 @@ test("Fernora-titled Printify shop is preferred", () => {
     { id: 2, title: "Fernora" },
   ]);
   assert.equal(shop?.id, 2);
+});
+
+test("GPSR 404 is treated as Non-EU, not a per-product failure", () => {
+  assert.equal(printifyGpsrIsUnavailable("Not found"), true);
+  assert.equal(printifyGpsrIsUnavailable("Printify API 404"), false);
+  assert.equal(
+    printifyGpsrModeFromProbe({
+      shopId: 28911657,
+      productCount: 5,
+      updated: 0,
+      gpsrUnavailable: true,
+    }),
+    "non-eu",
+  );
+  const notes = printifyGpsrNotes("non-eu", 5, 0);
+  assert.equal(notes.length, 1);
+  assert.match(notes[0], /Non-EU/);
+  assert.match(notes[0], /Wellington 6012 is not valid/);
+  assert.match(notes[0], /Gelato/);
+  assert.doesNotMatch(notes[0], /Leave EU/);
+  assert.equal(printifyGpsrHeadline("non-eu"), "Non-EU hold · GPSR off until a real EU/NI contact is saved");
+});
+
+test("EU GPSR probe without stamps is available; stamps mark applied", () => {
+  assert.equal(
+    printifyGpsrModeFromProbe({ shopId: 1, productCount: 3, updated: 2, gpsrUnavailable: false }),
+    "stamped",
+  );
+  assert.equal(
+    printifyGpsrModeFromProbe({
+      shopId: 1,
+      productCount: 3,
+      updated: 0,
+      gpsrUnavailable: false,
+      alreadyStamped: 3,
+    }),
+    "stamped",
+  );
+  assert.equal(
+    printifyGpsrModeFromProbe({ shopId: 1, productCount: 3, updated: 0, gpsrUnavailable: false }),
+    "available",
+  );
+  assert.equal(printifyGpsrModeFromProbe({ productCount: 0, updated: 0, gpsrUnavailable: false }), "no-shop");
+  assert.equal(
+    printifyGpsrModeFromProbe({ shopId: 1, productCount: 0, updated: 0, gpsrUnavailable: false }),
+    "empty",
+  );
 });

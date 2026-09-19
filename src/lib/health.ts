@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { pingEtsy } from "@/lib/etsy";
 import { pingGelato } from "@/lib/gelato";
+import { getCredentials } from "@/lib/credentials";
 import { pingPrintify } from "@/lib/printify";
 import { pingShopify } from "@/lib/shopify";
 import { isEtsyCallbackHost } from "@/lib/origin";
@@ -50,6 +51,7 @@ export async function probePublicCallback(origin: string) {
 }
 
 export async function vendorHealth() {
+  const creds = await getCredentials();
   const [etsy, gelato, shopify, printify] = await Promise.allSettled([
     pingEtsy(),
     pingGelato(),
@@ -71,7 +73,12 @@ export async function vendorHealth() {
         : { ok: false as const, error: (shopify.reason as Error).message },
     printify:
       printify.status === "fulfilled"
-        ? { ok: true as const, shopTitle: printify.value.shopTitle, shopId: printify.value.shopId }
+        ? {
+            ok: true as const,
+            shopTitle: printify.value.shopTitle,
+            shopId: printify.value.shopId,
+            gpsrStatus: creds.printify?.gpsrStatus,
+          }
         : { ok: false as const, error: (printify.reason as Error).message },
   };
 }

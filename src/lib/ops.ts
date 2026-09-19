@@ -70,6 +70,7 @@ export async function connectionStatus(): Promise<Connections> {
       mode: creds.printify?.apiToken ? "live" : "demo",
       shopId: creds.printify?.shopId,
       shopTitle: creds.printify?.shopTitle,
+      gpsrStatus: creds.printify?.gpsrStatus,
     },
   };
 }
@@ -182,8 +183,17 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
       severity: "info",
       title: "Printify is not connected",
       detail:
-        "Paste a Printify personal access token on Connections. Keep EU selected in Printify store settings so GPSR can sit on EU/UK listings.",
+        "Paste a Printify personal access token on Connections. Non-EU is a valid hold if Printify will not save EU without Add my details. fernora.nz still ships EU/UK through Gelato.",
       action: { label: "Connect Printify", href: "/connections", kind: "connect" },
+    });
+  } else if (connections.printify.gpsrStatus === "non-eu") {
+    issues.push({
+      id: "printify-gpsr-noneu",
+      severity: "info",
+      title: "Printify GPSR is off (Non-EU)",
+      detail:
+        "Printify will not save EU unless Add my details is filled with a real EU or Northern Ireland address. Wellington 6012 is not valid, so Non-EU is the right temporary save. fernora.nz still ships EU/UK through Gelato. When Printify lets you save EU with its default affiliate contact, switch the radio, then Save Printify on Connections.",
+      action: { label: "Printify GPSR", href: "/connections", kind: "connect" },
     });
   }
   if (!connections.meta.authorized) {

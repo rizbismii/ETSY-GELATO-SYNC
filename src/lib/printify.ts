@@ -2,12 +2,26 @@ import { getCredentials } from "@/lib/credentials";
 import {
   formatPrintifySafetyInformation,
   pickPrintifyShop,
-  PRINTIFY_EU_GPSR_NOTE,
+  printifyGpsrIsUnavailable,
+  printifyGpsrModeFromProbe,
+  printifyGpsrNotes,
   safetyInformationNeedsGpsr,
   type PrintifyGpsrBlock,
+  type PrintifyGpsrStatus,
 } from "@/lib/printify-gpsr";
 
-export { formatPrintifySafetyInformation, pickPrintifyShop, PRINTIFY_EU_GPSR_NOTE, safetyInformationNeedsGpsr };
+export {
+  formatPrintifySafetyInformation,
+  pickPrintifyShop,
+  printifyGpsrHeadline,
+  printifyGpsrIsUnavailable,
+  printifyGpsrModeFromProbe,
+  printifyGpsrNotes,
+  PRINTIFY_EU_GPSR_NOTE,
+  PRINTIFY_NON_EU_NOTE,
+  safetyInformationNeedsGpsr,
+} from "@/lib/printify-gpsr";
+export type { PrintifyGpsrStatus } from "@/lib/printify-gpsr";
 
 const API = "https://api.printify.com/v1";
 
@@ -92,18 +106,21 @@ async function listShopProducts(shopId: number) {
 export async function applyPrintifyGpsr(input?: { shopId?: number; token?: string }) {
   const ping = await pingPrintify(input?.token);
   const shopId = input?.shopId || ping.shopId;
+  const shopTitle = ping.shops.find((shop) => shop.id === shopId)?.title || ping.shopTitle;
   if (!shopId) {
     return {
       shopId: undefined,
       shopTitle: undefined,
       scanned: 0,
       updated: 0,
-      notes: [PRINTIFY_EU_GPSR_NOTE, "No Printify shop on this token yet. Create the store, keep EU selected, then Save again."],
+      gpsrStatus: "no-shop" as PrintifyGpsrStatus,
+      notes: printifyGpsrNotes("no-shop", 0, 0),
     };
   }
   const products = await listShopProducts(shopId);
   let updated = 0;
-  const notes: string[] = [PRINTIFY_EU_GPSR_NOTE];
+  let gpsrUnavailable = false;
+  const extraNotes: string[] = [];
   for (const product of products) {
     if (!safetyInformationNeedsGpsr(product.safety_information)) continue;
     let blocks: PrintifyGpsrBlock[] = [];
@@ -112,7 +129,12 @@ export async function applyPrintifyGpsr(input?: { shopId?: number; token?: strin
         token: input?.token,
       });
     } catch (error) {
-      notes.push(`${product.title || product.id}: ${(error as Error).message}`);
+      const message = (error as Error).message;
+      if (printifyGpsrIsUnavailable(message)) {
+        gpsrUnavailable = true;
+        break;
+      }
+      extraNotes.push(`${product.title || product.id}: ${message}`);
       continue;
     }
     const safety = formatPrintifySafetyInformation(blocks);
@@ -124,16 +146,20 @@ export async function applyPrintifyGpsr(input?: { shopId?: number; token?: strin
     });
     updated += 1;
   }
-  notes.push(
-    products.length
-      ? `GPSR safety text checked on ${products.length} product${products.length === 1 ? "" : "s"}; updated ${updated}.`
-      : "Shop is empty. Add products in Printify, then Save again to stamp GPSR.",
-  );
+  const alreadyStamped = products.filter((product) => !safetyInformationNeedsGpsr(product.safety_information)).length;
+  const gpsrStatus = printifyGpsrModeFromProbe({
+    shopId,
+    productCount: products.length,
+    updated,
+    gpsrUnavailable,
+    alreadyStamped,
+  });
   return {
     shopId,
-    shopTitle: ping.shopTitle,
+    shopTitle,
     scanned: products.length,
     updated,
-    notes,
+    gpsrStatus,
+    notes: [...printifyGpsrNotes(gpsrStatus, products.length, updated), ...extraNotes],
   };
 }
