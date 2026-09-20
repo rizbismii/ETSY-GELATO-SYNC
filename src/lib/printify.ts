@@ -22,10 +22,11 @@ import {
   type PrintifyStarterSpec,
 } from "@/lib/printify-products";
 import { restoreLiveCatalogInShop } from "@/lib/drop";
-import { syncEtsyCatalogSections } from "@/lib/etsy";
+import { inactivateOlderEtsyListings, syncEtsyCatalogSections } from "@/lib/etsy";
+import { deleteOlderGelatoProducts } from "@/lib/gelato-store";
+import { deleteOlderShopifyProducts, syncFernoraCatalogToShopify } from "@/lib/shopify";
 import { syncShopifyCatalogMenu } from "@/lib/shopify-horizon";
 import { updateShop } from "@/lib/store";
-import { clearDeletedListings } from "@/lib/tombstones";
 
 export {
   formatPrintifySafetyInformation,
@@ -170,6 +171,40 @@ async function deletePrintifyProduct(shopId: number, productId: string, token?: 
   await printify(`/shops/${shopId}/products/${productId}.json`, { method: "DELETE", token });
 }
 
+export async function deletePrintifyProductByTitle(title: string, token?: string) {
+  const ping = await pingPrintify(token);
+  const shopId = ping.shopId;
+  if (!shopId) return { deleted: false, note: "No Printify shop on this token" };
+  const existing = await listShopProducts(shopId);
+  const id = existingPrintifyProductId(existing, title);
+  if (!id) return { deleted: false, note: "Not found on Printify" };
+  await deletePrintifyProduct(shopId, id, token);
+  return { deleted: true, id };
+}
+
+async function publishPrintifyProduct(shopId: number, productId: string, token?: string) {
+  const body = {
+    title: true,
+    description: true,
+    images: true,
+    variants: true,
+    tags: true,
+    keyFeatures: true,
+    shipping_template: true,
+  };
+  try {
+    await printify(`/shops/${shopId}/products/${productId}/publish.json`, { method: "POST", token, body });
+  } catch (error) {
+    const message = (error as Error).message;
+    if (!/shipping/i.test(message)) throw error;
+    await printify(`/shops/${shopId}/products/${productId}/publish.json`, {
+      method: "POST",
+      token,
+      body: { ...body, shipping_template: false },
+    });
+  }
+}
+
 function wantedVariantIds(spec: PrintifyStarterSpec) {
   return spec.variants.filter((variant) => variant.is_enabled).map((variant) => variant.id);
 }
@@ -219,10 +254,54 @@ export async function createFernoraPrintifyProducts(input?: { shopId?: number; t
       replaced: Boolean(already),
     });
   }
-  clearDeletedListings();
+  const extras = existing.filter((row) => row.id && !claimed.has(row.id));
+  let removedPrintify = 0;
+  for (const extra of extras) {
+    if (!extra.id) continue;
+    try {
+      await deletePrintifyProduct(shopId, extra.id, input?.token);
+      removedPrintify += 1;
+    } catch (error) {
+      extraNotes.push(`Printify extra ${extra.title || extra.id}: ${(error as Error).message}`);
+    }
+  }
+  if (removedPrintify) {
+    extraNotes.push(
+      `Deleted ${removedPrintify} older Printify product${removedPrintify === 1 ? "" : "s"} from ${shopId}.`,
+    );
+  }
   await updateShop((shop) => {
     restoreLiveCatalogInShop(shop);
   });
+  try {
+    extraNotes.push(...(await deleteOlderGelatoProducts()).notes);
+  } catch (error) {
+    extraNotes.push(`Gelato cleanup: ${(error as Error).message}`);
+  }
+  try {
+    extraNotes.push(...(await inactivateOlderEtsyListings()).notes);
+  } catch (error) {
+    extraNotes.push(`Etsy cleanup: ${(error as Error).message}`);
+  }
+  try {
+    extraNotes.push(...(await deleteOlderShopifyProducts()).notes);
+  } catch (error) {
+    extraNotes.push(`Shopify cleanup: ${(error as Error).message}`);
+  }
+  let publishedCount = 0;
+  for (const product of products) {
+    try {
+      await publishPrintifyProduct(shopId, product.id, input?.token);
+      publishedCount += 1;
+    } catch (error) {
+      extraNotes.push(`Printify publish ${product.title}: ${(error as Error).message}`);
+    }
+  }
+  try {
+    extraNotes.push(...(await syncFernoraCatalogToShopify()).notes);
+  } catch (error) {
+    extraNotes.push(`Shopify catalog: ${(error as Error).message}`);
+  }
   try {
     extraNotes.push(...(await syncEtsyCatalogSections()));
   } catch (error) {
@@ -246,17 +325,19 @@ export async function createFernoraPrintifyProducts(input?: { shopId?: number; t
     },
   });
   const createdCount = products.filter((row) => !row.skipped).length;
+  const published = publishedCount === products.length && products.length > 0;
   return {
     shopId,
     shopTitle: gpsr.shopTitle || ping.shopTitle,
-    published: false,
+    published,
     products,
     gpsr,
     fullyConnected: gpsr.fullyConnected,
     notes: [
-      `Created ${createdCount} Printify product${createdCount === 1 ? "" : "s"} on ${
+      `Catalog is five products (one per mix) on ${
         gpsr.shopTitle || "Fernora Trends"
-      } (${shopId}), one enabled variant each. Left unpublished — not migrated from Gelato.`,
+      } (${shopId}), one enabled variant each. Created ${createdCount}, published ${publishedCount} to the Etsy sales channel. Not migrated from Gelato.`,
+      "Older catalog products were removed from Printify, Etsy, Shopify, Gelato, and Pressroom.",
       "Catalog dropdowns match Printify: All, Quotes, Botanical, Scenic, Home décor, Original fern.",
       ...extraNotes,
       ...gpsr.notes,

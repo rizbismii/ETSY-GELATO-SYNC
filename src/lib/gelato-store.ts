@@ -1,7 +1,7 @@
 import { getCredentials } from "@/lib/credentials";
 import { versionedAssetUrl } from "@/lib/origin";
 import { clothingVariants, defaultClothingVariant, isClothingCategory, matchClothingVariant } from "@/lib/clothing";
-import { ETSY_KNOWN_LISTINGS, liveProductById } from "@/lib/live-catalog";
+import { STALE_ETSY_LISTINGS, liveProductById } from "@/lib/live-catalog";
 import type { Listing } from "@/lib/types";
 
 const ECOM_API = "https://ecommerce.gelatoapis.com/v1";
@@ -172,8 +172,31 @@ export async function deleteGelatoStoreProduct(storeId: string, productId: strin
   }
 }
 
+export async function deleteOlderGelatoProducts(keepTitles: string[] = []) {
+  const notes: string[] = [];
+  const store = await getGelatoEtsyStore();
+  const keep = new Set(keepTitles.map((title) => title.trim().toLowerCase()).filter(Boolean));
+  const products = await listGelatoStoreProducts(store.id);
+  let deleted = 0;
+  for (const product of products) {
+    if (keep.has((product.title || "").trim().toLowerCase())) continue;
+    try {
+      await deleteGelatoStoreProduct(store.id, product.id);
+      deleted += 1;
+    } catch (error) {
+      notes.push(`${product.title || product.id}: ${(error as Error).message}`);
+    }
+  }
+  notes.unshift(
+    deleted
+      ? `Deleted ${deleted} older Gelato store product${deleted === 1 ? "" : "s"}.`
+      : "No older Gelato store products to delete.",
+  );
+  return { storeId: store.id, deleted, notes };
+}
+
 export function findStoreProductForListing(products: GelatoStoreProduct[], listing: Listing) {
-  const etsyId = listing.etsyListingId || ETSY_KNOWN_LISTINGS[listing.id]?.id;
+  const etsyId = listing.etsyListingId || STALE_ETSY_LISTINGS[listing.id]?.id;
   if (etsyId) {
     const byExternal = products.find((row) => String(row.externalId) === String(etsyId));
     if (byExternal) return byExternal;

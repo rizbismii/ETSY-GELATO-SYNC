@@ -353,8 +353,8 @@ export function ConnectionsClient() {
       const created = (result.products || []).filter((row) => !row.skipped);
       const skipped = (result.products || []).filter((row) => row.skipped);
       toast.success(
-        created.length
-          ? `Created ${created.length} Printify product${created.length === 1 ? "" : "s"} on ${result.shopTitle || "Printify"} · unpublished · 1 variant each`
+          created.length
+          ? `Created ${created.length} Printify product${created.length === 1 ? "" : "s"} on ${result.shopTitle || "Printify"} · 1 variant each`
           : skipped.length
             ? `${skipped.map((row) => row.title).join(" and ")} already on ${result.shopTitle || "Printify"}`
             : "Printify products unchanged",
@@ -1054,9 +1054,9 @@ export function ConnectionsClient() {
           <CardContent className="space-y-4">
             <p className="text-sm leading-6 text-muted-foreground">
               Printify is the main print supplier except the United Kingdom and the European Union.
-              Keep the token and the Etsy-connected Fernora Trends shop. Create one unpublished
-              Printify product per catalog item (one variant). Do not migrate leftover External
-              products, and do not republish the old Gelato mix.
+              Keep the token and the Etsy-connected Fernora Trends shop. Keep five catalog products
+              (one per mix, one variant) and publish them to Etsy, Shopify, and fernora.nz. Do not
+              migrate leftover External products, and do not republish the old Gelato mix.
             </p>
             <p className="text-sm leading-6 text-muted-foreground">
               Keep <strong className="font-medium text-foreground">Non-EU</strong> on Printify.
@@ -1067,7 +1067,8 @@ export function ConnectionsClient() {
               <li>Leave the dropdown on Fernora Trends · Etsy · Connected.</li>
               <li>Do not click Migrate product on leftover External products.</li>
               <li>
-                Recreate products on Printify. They land unpublished in{" "}
+                Recreate the five catalog products on Printify, then publish them to Etsy, Shopify,
+                and the website. They land in{" "}
                 <strong className="font-medium text-foreground">My products</strong>.
               </li>
               <li>Save Printify below so this desk refreshes shop names. Do not change the other connections.</li>
@@ -1106,7 +1107,7 @@ export function ConnectionsClient() {
                 disabled={!printifyToken || Boolean(busy)}
               >
                 {busy === "printify-products" ? <Loader2 className="animate-spin" /> : null}
-                Create Printify catalog · 1 variant each
+                Create 5-product catalog · publish to shops
               </Button>
             </div>
           </CardContent>
@@ -1298,9 +1299,9 @@ export function ConnectionsClient() {
         </CardHeader>
         <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-xl text-sm text-muted-foreground">
-            Pull live Etsy listings and receipts. Printify holds one unpublished product per catalog
-            item. Catalog dropdowns match Printify. Etsy shop sections need shops_w — Authorize with
-            Etsy once so Quotes, Botanical, Scenic, Home décor, and Original fern can be created.
+            Pull live Etsy listings and receipts. Printify holds five catalog products, one per mix.
+            Catalog dropdowns match Printify. Etsy shop sections need shops_w — Authorize with Etsy
+            once so Quotes, Botanical, Scenic, Home décor, and Original fern can be created.
           </p>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => void resetDemo()} disabled={Boolean(busy)}>
