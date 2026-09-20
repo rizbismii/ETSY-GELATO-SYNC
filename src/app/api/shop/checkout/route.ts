@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   };
   try {
     if (!isFernoraCountry(body.country || "")) {
-      return Response.json({ error: "Fernora only ships to countries Gelato delivers to" }, { status: 400 });
+      return Response.json({ error: "Fernora only ships to the countries we deliver to" }, { status: 400 });
     }
     if (!body.firstName?.trim() || !body.lastName?.trim() || !body.email?.trim() || !body.addressLine1?.trim() || !body.city?.trim() || !body.postCode?.trim()) {
       return Response.json({ error: "Name, email, street, city and postcode are required" }, { status: 400 });

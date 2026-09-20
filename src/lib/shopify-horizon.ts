@@ -522,7 +522,7 @@ async function upsertHorizonJson(themeId: string, heroRef: string) {
         wrap: "nowrap",
         text_color: PALETTE.background,
       }),
-      line_print: textBlock("<p>Printed to order by Gelato</p>", {
+      line_print: textBlock("<p>Printed to order</p>", {
         type_preset: "custom",
         font_size: "var(--font-size--h4)",
         wrap: "nowrap",
@@ -653,7 +653,7 @@ async function upsertHorizonJson(themeId: string, heroRef: string) {
           caption: textBlock("<p>The studio</p>", { type_preset: "h6" }),
           heading: textBlock("<h3>Made to order.<br>Never warehoused.</h3>", { type_preset: "h3", width: "100%" }),
           print: textBlock(
-            "<p>Every piece is printed by Gelato in your region after you pay. Nothing is stored in a warehouse.</p>",
+            "<p>Every piece is printed in your region after you pay. Nothing is stored in a warehouse.</p>",
             { type_preset: "rte", width: "100%", max_width: "normal" },
           ),
           price: textBlock(
@@ -731,7 +731,7 @@ async function upsertHorizonJson(themeId: string, heroRef: string) {
         }
         for (const block of Object.values(section.blocks || {})) {
           if (block.settings && "text" in block.settings) {
-            block.settings.text = "Printed to order · Gelato quality guarantee · Prices in your local currency";
+            block.settings.text = "Printed to order · Quality guarantee · Prices in your local currency";
           }
         }
       }
@@ -936,7 +936,7 @@ export async function publishGelatoLegalPages() {
   if (updatedMenu.menuUpdate.userErrors.length) {
     notes.push(`Footer menu: ${updatedMenu.menuUpdate.userErrors.map((row) => row.message).join("; ")}`);
   } else {
-    notes.push("Footer menu links to Gelato privacy, returns, and shipping pages.");
+    notes.push("Footer menu links to privacy, returns, and shipping pages.");
   }
   return notes;
 }
