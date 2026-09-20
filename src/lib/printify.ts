@@ -17,6 +17,7 @@ import {
   buildPrintifyProductPayload,
   existingPrintifyProductId,
   FERNORA_PRINTIFY_STARTERS,
+  printAreasForExistingVariants,
   printifyCatalogFile,
   printifyEnabledVariantIds,
   printifyImageFileName,
@@ -163,12 +164,13 @@ async function refreshPrintifyPrintFile(
   spec: PrintifyStarterSpec,
   token?: string,
 ) {
+  const current = await getPrintifyProduct(shopId, productId, token);
   const image = await uploadPrintifyImage(spec.printFile, token);
-  const payload = buildPrintifyProductPayload(spec, image.id);
+  const variantIds = (current.variants || []).map((variant) => variant.id).filter((id): id is number => Boolean(id));
   await printify(`/shops/${shopId}/products/${productId}.json`, {
     method: "PUT",
     token,
-    body: { print_areas: payload.print_areas },
+    body: { print_areas: printAreasForExistingVariants(spec, image.id, variantIds) },
   });
   return image.id;
 }

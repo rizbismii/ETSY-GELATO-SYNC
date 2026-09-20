@@ -17,6 +17,7 @@ import {
   buildPrintifyProductPayload,
   existingPrintifyProductId,
   FERNORA_PRINTIFY_STARTERS,
+  printAreasForExistingVariants,
   printifyEnabledVariantIds,
   printifyImageFileName,
 } from "./printify-products.ts";
@@ -183,6 +184,10 @@ test("Fernora Printify catalog is five products, one enabled variant each", () =
   assert.equal(payload.print_areas[0].placeholders[0].position, "front");
   assert.equal(payload.print_areas[0].placeholders[0].images[0].id, "img_poster");
   assert.deepEqual(payload.print_areas[0].variant_ids, [43138]);
+  assert.deepEqual(printAreasForExistingVariants(poster!, "img_poster", [43138, 43139])[0].variant_ids, [
+    43138,
+    43139,
+  ]);
   assert.equal(
     existingPrintifyProductId([{ id: "abc", title: "Fern Arc Poster" }], "Fern Arc Poster · A3 Semi-Gloss", [
       "Fern Arc Poster",

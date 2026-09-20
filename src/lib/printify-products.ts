@@ -153,3 +153,9 @@ export function existingPrintifyProductId(
 export function printifyEnabledVariantIds(product?: { variants?: Array<{ id?: number; is_enabled?: boolean }> }) {
   return (product?.variants || []).filter((variant) => variant.is_enabled).map((variant) => variant.id).filter(Boolean);
 }
+
+export function printAreasForExistingVariants(spec: PrintifyStarterSpec, imageId: string, variantIds: number[]) {
+  const areas = buildPrintifyProductPayload(spec, imageId).print_areas;
+  if (!variantIds.length) return areas;
+  return areas.map((area) => ({ ...area, variant_ids: variantIds }));
+}
