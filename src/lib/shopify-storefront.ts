@@ -140,6 +140,9 @@ export async function configureShopifyMarkets() {
         (already.conditions?.regionsCondition?.regions?.nodes || []).map((row) => row.code).filter(Boolean) as string[],
       );
       const missing = spec.countries.filter((code) => !have.has(code));
+      const extraIds = (already.conditions?.regionsCondition?.regions?.nodes || [])
+        .filter((row) => row.code && !spec.countries.includes(row.code))
+        .map((row) => row.id);
       if (missing.length) {
         const added = await updateMarket(already.id, {
           conditions: {
@@ -148,6 +151,18 @@ export async function configureShopifyMarkets() {
         });
         if (added.marketUpdate.userErrors.length) {
           notes.push(`${spec.name} regions: ${added.marketUpdate.userErrors.map((row) => row.message).join("; ")}`);
+        }
+      }
+      if (extraIds.length) {
+        const removedExtras = await updateMarket(already.id, {
+          conditions: { conditionsToDelete: { regionsCondition: { regionIds: extraIds } } },
+        });
+        if (removedExtras.marketUpdate.userErrors.length) {
+          notes.push(
+            `${spec.name} drop: ${removedExtras.marketUpdate.userErrors.map((row) => row.message).join("; ")}`,
+          );
+        } else {
+          notes.push(`${spec.name}: removed ${extraIds.length} country${extraIds.length === 1 ? "" : "ies"} no longer on the shop.`);
         }
       }
       resolved.push({ id: already.id, spec });

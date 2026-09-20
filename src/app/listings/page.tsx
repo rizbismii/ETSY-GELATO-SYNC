@@ -266,7 +266,8 @@ export default function ListingsPage() {
           Buyers in{" "}
           {(data.ads?.countries ?? []).map((country) => country.label).join(", ") ||
             "New Zealand, Australia, United States, United Kingdom, European Union"}{" "}
-          and other destinations we print for see destination shipping at checkout. Advertising is a{" "}
+          plus Canada, Ireland, and the selected Americas / Asia / Middle East countries enabled at
+          checkout. Japan, Korea, India, Indonesia, the Philippines, and Vietnam stay off. Advertising is a{" "}
           <strong>Meta campaign from Pressroom</strong> to fernora.nz with a low daily cap. Etsy
           Offsite Ads ({adsRate}% of an attributed sale) and on-site CPC Etsy Ads stay off so spend
           does not stack.

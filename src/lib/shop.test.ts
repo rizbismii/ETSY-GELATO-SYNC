@@ -22,7 +22,9 @@ test("Gelato destinations include AU, NZ, and other print countries", () => {
   assert.equal(isGelatoCountry("GB"), true);
   assert.equal(isGelatoCountry("FR"), true);
   assert.equal(isGelatoCountry("DE"), true);
-  assert.equal(isGelatoCountry("JP"), true);
+  assert.equal(isGelatoCountry("JP"), false);
+  assert.equal(isGelatoCountry("IN"), false);
+  assert.equal(isGelatoCountry("SG"), true);
   assert.equal(isGelatoCountry("AUS"), true);
   assert.equal(isGelatoCountry("XX"), false);
   assert.equal(isGelatoCountry("IE"), true);
@@ -66,6 +68,17 @@ test("Shopify carrier callback quotes Gelato destination rates in cents", () => 
   });
   assert.equal(payload.rates[0].total_price, "1276");
   assert.equal(payload.rates[0].service_code, "gelato-AU");
+});
+
+test("ship blurb matches the live country set and does not name Gelato", () => {
+  const source = readFileSync(new URL("./gelato-countries.ts", import.meta.url), "utf8");
+  assert.match(source, /selected countries in the Americas, Asia, and the Middle East/);
+  assert.doesNotMatch(source, /other countries Gelato delivers to/);
+  assert.doesNotMatch(source, /Printed near the buyer by Gelato/);
+  assert.equal(isGelatoCountry("KR"), false);
+  assert.equal(isGelatoCountry("PH"), false);
+  assert.equal(isGelatoCountry("ID"), false);
+  assert.equal(isGelatoCountry("VN"), false);
 });
 
 test("returns policy follows Gelato made-to-order rules", () => {

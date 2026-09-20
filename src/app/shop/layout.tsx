@@ -7,7 +7,7 @@ import { POLICY_PATHS, FERNORA_CONTACT_EMAIL } from "@/lib/shop-policies";
 export const metadata: Metadata = {
   title: "Fernora — botanical print shop",
   description:
-    "Made-to-order prints, apparel and home décor from Aotearoa. Ships to New Zealand, Australia, and other countries Gelato delivers to. Pay with Shopify Payments.",
+    "Made-to-order prints, apparel and home décor from Aotearoa. Ships to New Zealand, Australia, the United States, the United Kingdom, the European Union, and selected countries at checkout. Pay with Shopify Payments.",
   alternates: { canonical: "https://fernora.nz/shop" },
 };
 
@@ -35,9 +35,9 @@ export default function ShopLayout({ children }: { children: React.ReactNode }) 
             <div>
               <p className="font-heading text-3xl">Fernora</p>
               <p className="mt-2 max-w-sm text-xs leading-6 text-muted-foreground">
-                Quiet work for the house. Printed near you by Gelato. Ships from in-region studios to
-                New Zealand, Australia, the United States, the United Kingdom, Europe, and other
-                Gelato destinations. Studio Wellington 6012 is not the parcel origin.
+                Quiet work for the house. Printed near you. Ships from in-region studios to New
+                Zealand, Australia, the United States, the United Kingdom, Europe, and the countries
+                listed at checkout. Studio Wellington 6012 is not the parcel origin.
               </p>
             </div>
             <nav className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">

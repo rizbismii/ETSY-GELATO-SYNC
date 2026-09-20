@@ -173,8 +173,8 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
           </table>
         </div>
         <p className="text-xs leading-6 text-muted-foreground">
-          Buyer pays destination shipping. Other Gelato countries use the matching lane (Americas and
-          Asia on the US rate, Ireland on the UK rate, Switzerland and Norway on the EU rate).{" "}
+          Buyer pays destination shipping. Americas and selected Asia / Middle East destinations use
+          the US rate, Ireland the UK rate, Switzerland and Norway the EU rate.{" "}
           <Link className="underline" href={POLICY_PATHS.shipping}>
             Shipping policy
           </Link>

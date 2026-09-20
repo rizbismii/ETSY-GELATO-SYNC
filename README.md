@@ -1,6 +1,6 @@
 # Pressroom
 
-Operations desk for **FERNORATRENDS** on Etsy and the **Fernora** shop (New Zealand, Australia, and other countries Gelato delivers to), both fulfilled by Gelato. It connects the accounts, publishes the live catalog, maps listings to print products, sends paid receipts to production, and shows net profit after marketplace fees and print cost.
+Operations desk for **FERNORATRENDS** on Etsy and the **Fernora** shop (New Zealand, Australia, the United States, the United Kingdom, the European Union, and selected countries at checkout), both fulfilled by Gelato. It connects the accounts, publishes the live catalog, maps listings to print products, sends paid receipts to production, and shows net profit after marketplace fees and print cost.
 
 There is no sample shop. The desk opens on the **20 live Fernora products** in NZD.
 
