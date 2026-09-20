@@ -1,4 +1,4 @@
-import { shipLaneForCountry, type ShipLaneCode } from "./gelato-countries.ts";
+import { shipLaneForCountry, type ShipLaneCode } from "@/lib/gelato-countries";
 
 export type PrintSupplier = "printify" | "gelato";
 

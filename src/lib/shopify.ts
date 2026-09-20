@@ -10,6 +10,7 @@ import {
 import { policyHtml } from "@/lib/shop-policies";
 import { absoluteAssetUrl } from "@/lib/origin";
 import { getShop, updateShop } from "@/lib/store";
+import { getDeletedListingIds } from "@/lib/tombstones";
 import type { ShopifyCatalogMap } from "@/lib/types";
 
 const API_VERSION = "2025-10";
@@ -278,7 +279,7 @@ function escapeHtml(value: string) {
 export async function syncFernoraCatalogToShopify(request?: Request) {
   const notes: string[] = [];
   const catalog: ShopifyCatalogMap = {};
-  const products = fernoraCatalog();
+  const products = fernoraCatalog().filter((product) => !getDeletedListingIds().includes(product.id));
   if (!products.length) {
     notes.push(
       "Catalog is cleared. Not publishing Gelato products to Shopify. Recreate on Printify first; Gelato stays for EU/UK only.",
