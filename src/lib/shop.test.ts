@@ -109,8 +109,7 @@ test("Horizon branding shows country · currency and made-to-order homepage copy
   assert.match(source, /Nothing is stored in a warehouse/);
   assert.match(source, /Printed to order/);
   assert.match(source, /Quality guarantee/);
-  assert.match(source, /title: "Botanical"/);
-  assert.match(source, /title: "Original fern"/);
+  assert.match(source, /title: series\.label/);
   assert.match(source, /CATALOG_SERIES/);
   assert.match(source, /All, Quotes, Botanical, Scenic, Home décor, and Original fern/);
   assert.doesNotMatch(source, /by Gelato/);
