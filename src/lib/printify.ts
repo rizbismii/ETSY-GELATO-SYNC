@@ -139,6 +139,7 @@ export type CreatedPrintifyProduct = {
   title: string;
   skipped: boolean;
   replaced?: boolean;
+  printRefreshed?: boolean;
 };
 
 export async function uploadPrintifyImage(fileName: string, token?: string) {
@@ -154,6 +155,22 @@ export async function uploadPrintifyImage(fileName: string, token?: string) {
   });
   if (!uploaded.id) throw new Error(`Printify did not return an image id for ${uploadName}`);
   return uploaded;
+}
+
+async function refreshPrintifyPrintFile(
+  shopId: number,
+  productId: string,
+  spec: PrintifyStarterSpec,
+  token?: string,
+) {
+  const image = await uploadPrintifyImage(spec.printFile, token);
+  const payload = buildPrintifyProductPayload(spec, image.id);
+  await printify(`/shops/${shopId}/products/${productId}.json`, {
+    method: "PUT",
+    token,
+    body: { print_areas: payload.print_areas },
+  });
+  return image.id;
 }
 
 async function createPrintifyProduct(shopId: number, spec: PrintifyStarterSpec, imageId: string, token?: string) {
@@ -317,8 +334,20 @@ export async function createFernoraPrintifyProducts(input?: { shopId?: number; t
       const current = await getPrintifyProduct(shopId, already, input?.token);
       if (sameOneVariant(spec, current, spec.title)) {
         claimed.add(already);
-        products.push({ key: spec.key, id: already, title: spec.title, skipped: true });
-        continue;
+        try {
+          await refreshPrintifyPrintFile(shopId, already, spec, input?.token);
+          products.push({
+            key: spec.key,
+            id: already,
+            title: spec.title,
+            skipped: true,
+            printRefreshed: true,
+          });
+          extraNotes.push(`Refreshed the ${spec.title} print file so it matches the listing photo.`);
+          continue;
+        } catch (error) {
+          extraNotes.push(`Print refresh ${spec.title}: ${(error as Error).message}`);
+        }
       }
       await deletePrintifyProduct(shopId, already, input?.token);
       const idx = existing.findIndex((row) => row.id === already);

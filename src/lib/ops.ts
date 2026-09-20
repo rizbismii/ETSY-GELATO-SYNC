@@ -15,7 +15,8 @@ import {
   updateEtsyListingPrice,
   uploadEtsyListingImage,
 } from "@/lib/etsy";
-import { PRINT_FILE, HARVEST_DROP_ID, HARVEST_DROP_NAME } from "@/lib/constants";
+import { HARVEST_DROP_ID, HARVEST_DROP_NAME } from "@/lib/constants";
+import { printFileForListing } from "@/lib/print-file";
 import { applyHarvestDrop } from "@/lib/drop";
 import { ETSY_KNOWN_LISTINGS, etsyListingUrl, liveProductById, resolveLiveSku, READINESS_STATE_ID } from "@/lib/live-catalog";
 import { absoluteAssetUrl } from "@/lib/origin";
@@ -476,7 +477,7 @@ export async function mapListing(id: string, gelatoProductUid: string, printFile
     listing.gelatoProductUid = gelatoProductUid;
     listing.gelatoProductName = template.name;
     listing.gelatoUnitCost = template.unitCost;
-    listing.printFileUrl = printFileUrl || listing.printFileUrl || PRINT_FILE;
+    listing.printFileUrl = printFileForListing(listing.id, printFileUrl || listing.printFileUrl);
     listing.issues = enrichListing(listing).issues;
     for (const order of state.orders) {
       Object.assign(order, enrichOrder(order, state.listings));
@@ -495,7 +496,7 @@ export async function autoMapUnmapped() {
       listing.gelatoProductUid = template.uid;
       listing.gelatoProductName = template.name;
       listing.gelatoUnitCost = template.unitCost;
-      listing.printFileUrl = listing.printFileUrl || PRINT_FILE;
+      listing.printFileUrl = printFileForListing(listing.id, listing.printFileUrl);
       mapped.push(listing.id);
     }
     state.listings = state.listings.map(enrichListing);

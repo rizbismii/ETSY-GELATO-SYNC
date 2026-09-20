@@ -1,0 +1,54 @@
+{
+  "pairs": [
+    {
+      "key": "live_poster",
+      "mockup": "catalog-poster.png",
+      "print": "print-poster-fern-arc.png",
+      "rebuilt": true,
+      "width": 2480,
+      "height": 3508,
+      "ok": true,
+      "error": null
+    },
+    {
+      "key": "live_quote_breathe",
+      "mockup": "catalog-breathe-here.png",
+      "print": "print-breathe-here.png",
+      "rebuilt": false,
+      "width": 1152,
+      "height": 864,
+      "ok": true,
+      "error": null
+    },
+    {
+      "key": "live_botanical_kowhai",
+      "mockup": "catalog-kowhai-botanical.png",
+      "print": "print-kowhai-botanical.png",
+      "rebuilt": false,
+      "width": 864,
+      "height": 1152,
+      "ok": true,
+      "error": null
+    },
+    {
+      "key": "live_canvas_harbour",
+      "mockup": "catalog-harbour-morning.png",
+      "print": "print-harbour-morning.png",
+      "rebuilt": false,
+      "width": 1024,
+      "height": 1024,
+      "ok": true,
+      "error": null
+    },
+    {
+      "key": "live_frame_kind",
+      "mockup": "catalog-kind-light.png",
+      "print": "print-kind-light.png",
+      "rebuilt": false,
+      "width": 864,
+      "height": 1152,
+      "ok": true,
+      "error": null
+    }
+  ]
+}

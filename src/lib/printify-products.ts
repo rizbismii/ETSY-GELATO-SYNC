@@ -13,6 +13,7 @@ export type PrintifyStarterSpec = {
   description: string;
   tags: string[];
   printFile: string;
+  mockupFile: string;
   blueprintId: number;
   printProviderId: number;
   variants: PrintifyVariantInput[];
@@ -36,6 +37,7 @@ export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
       "A tall botanical study of a New Zealand fern, printed to order on premium matte paper. Unframed. Made to order.",
     tags: ["fern", "poster", "botanical", "nz art", "wall print", "Original fern"],
     printFile: "print-poster-fern-arc.png",
+    mockupFile: "catalog-poster.png",
     blueprintId: 282,
     printProviderId: 99,
     variants: one(43138, 5699),
@@ -49,6 +51,7 @@ export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
       "Landscape matte print with a botanical border and the line “Breathe. You are here.” Unframed. Made to order.",
     tags: ["breathe", "quote", "kind", "poster", "positive", "Quotes"],
     printFile: "print-breathe-here.png",
+    mockupFile: "catalog-breathe-here.png",
     blueprintId: 284,
     printProviderId: 99,
     variants: one(43166, 5699),
@@ -60,6 +63,7 @@ export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
     description: "Large 18×24 in painterly study of New Zealand kōwhai bells on cream. Unframed. Made to order.",
     tags: ["kowhai", "botanical", "flowers", "poster", "yellow", "Botanical"],
     printFile: "print-kowhai-botanical.png",
+    mockupFile: "catalog-kowhai-botanical.png",
     blueprintId: 282,
     printProviderId: 99,
     variants: one(43144, 7399),
@@ -71,6 +75,7 @@ export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
     description: "Square slim-wrap canvas of a quiet New Zealand harbour at first light. Made to order.",
     tags: ["harbour", "canvas", "landscape", "morning", "home", "Scenic"],
     printFile: "print-harbour-morning.png",
+    mockupFile: "catalog-harbour-morning.png",
     blueprintId: 937,
     printProviderId: 99,
     variants: one(102204, 11899),
@@ -83,6 +88,7 @@ export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
       "Walnut-framed 12×16 print: botanicals and “Home is a kind light.” Ready to hang. Made to order.",
     tags: ["home", "framed", "kind", "quote", "homedecor", "Home décor"],
     printFile: "print-kind-light.png",
+    mockupFile: "catalog-kind-light.png",
     blueprintId: 540,
     printProviderId: 99,
     variants: one(69671, 18499),
