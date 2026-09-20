@@ -8,6 +8,7 @@ import {
 } from "@/lib/money";
 import { templateByUid } from "@/lib/catalog";
 import { etsyListingUrl, liveProductById, SHIP_COUNTRIES } from "@/lib/live-catalog";
+import { META_ADS_DAILY_BUDGET_DEFAULT, META_ADS_LANDING_URL } from "@/lib/meta-budget";
 import { getShop } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -67,8 +68,10 @@ export async function GET() {
     etsyAuthorized: connections.etsy.authorized,
     gelatoLive: connections.gelato.configured,
     ads: {
-      mode: "offsite_percent",
+      mode: "meta_daily_cap",
       rate: OFFSITE_ADS_RATE,
+      dailyBudget: META_ADS_DAILY_BUDGET_DEFAULT,
+      landingUrl: META_ADS_LANDING_URL,
       targetAfterAds: TARGET_AFTER_ADS_MARGIN,
       cpcEnabled: ETSY_CPC_ADS_ENABLED,
       countries: SHIP_COUNTRIES,

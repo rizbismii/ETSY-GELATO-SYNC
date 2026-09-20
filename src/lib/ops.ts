@@ -33,6 +33,7 @@ import { FERNORA_SHOPIFY_SHOP } from "@/lib/shopify-shop";
 import { createShopifyDraftInvoice, deleteShopifyProduct } from "@/lib/shopify";
 import { isGelatoCountry } from "@/lib/gelato-countries";
 import { checkoutToOrder, quoteFernoraCart, type CartLine } from "@/lib/shop";
+import { sendMetaPurchase } from "@/lib/meta-ads";
 
 export async function connectionStatus(): Promise<Connections> {
   const creds = await getCredentials();
@@ -55,6 +56,24 @@ export async function connectionStatus(): Promise<Connections> {
       mode: creds.shopify?.accessToken ? "live" : "demo",
       shop: creds.shopify?.shop,
       storefrontStatus: creds.shopify?.storefrontStatus,
+    },
+    meta: {
+      configured: Boolean(creds.meta?.accessToken || creds.meta?.pixelId),
+      authorized: Boolean(creds.meta?.accessToken && creds.meta?.adAccountId),
+      mode: creds.meta?.accessToken ? "live" : "demo",
+      adAccountId: creds.meta?.adAccountId,
+      pixelId: creds.meta?.pixelId,
+    },
+    printify: {
+      configured: Boolean(creds.printify?.apiToken),
+      authorized: Boolean(creds.printify?.apiToken && creds.printify.shopId),
+      mode: creds.printify?.apiToken ? "live" : "demo",
+      shopId: creds.printify?.shopId,
+      shopTitle: creds.printify?.shopTitle,
+      gpsrStatus: creds.printify?.gpsrStatus,
+      salesChannel: creds.printify?.salesChannel,
+      fullyConnected: creds.printify?.fullyConnected,
+      shops: creds.printify?.shops,
     },
   };
 }
@@ -161,6 +180,66 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
       action: { label: "Connect Shopify", href: "/connections", kind: "connect" },
     });
   }
+  if (!connections.printify.configured) {
+    issues.push({
+      id: "printify-connect",
+      severity: "info",
+      title: "Printify is not connected",
+      detail:
+        "Paste a Printify personal access token on Connections. Printify is for other sales channels only. Gelato stays the live printer for fernora.nz.",
+      action: { label: "Connect Printify", href: "/connections", kind: "connect" },
+    });
+  } else if (!connections.printify.fullyConnected) {
+    const shops = connections.printify.shops || [];
+    const etsyShop = connections.etsy.shopName || "FERNORATRENDS";
+    const channel = shops.find((shop) => (shop.salesChannel || "").toLowerCase() === "etsy");
+    const showsEtsy =
+      Boolean(channel) &&
+      (channel?.title || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "")
+        .includes(etsyShop.toLowerCase().replace(/[^a-z0-9]/g, ""));
+    const shopLines = shops
+      .map((shop) => `${shop.title || shop.id}: ${shop.salesChannel || "disconnected"}, ${shop.productCount} products`)
+      .join(" ");
+    if (showsEtsy) {
+      issues.push({
+        id: "printify-etsy-external",
+        severity: "info",
+        title: "Printify Etsy is connected — do not migrate Gelato listings",
+        detail:
+          `Printify now shows ${channel?.title || "Fernora Trends"} as the Etsy store. The External products tab is existing Etsy listings (Dusk Hills, Tui on Kōwhai, Be Brave in the Small Hours). Do not click Migrate product — that would move those listings off Gelato. Stay on the Etsy-connected Fernora Trends shop. Create new Printify products only for items you want Printify to print. Keep Gelato for fernora.nz. Keep Non-EU.`,
+        action: { label: "Printify shops", href: "/connections", kind: "connect" },
+      });
+    } else {
+      issues.push({
+        id: "printify-not-fully-connected",
+        severity: "info",
+        title: "Printify does not show the Etsy shop",
+        detail:
+          `Etsy is already connected to Pressroom as ${etsyShop}. That does not connect Printify. Printify still lists ${shopLines || "My Etsy Store with 0 products"} — not ${etsyShop}. In Printify: store menu → Manage my stores → Connect → Etsy, then Grant access as the ${etsyShop} owner. Keep Gelato for fernora.nz. Keep Non-EU, then Save Printify on Connections.`,
+        action: { label: "Printify shops", href: "/connections", kind: "connect" },
+      });
+    }
+  } else if (connections.printify.gpsrStatus === "non-eu") {
+    issues.push({
+      id: "printify-gpsr-noneu",
+      severity: "info",
+      title: "Printify cannot replace Gelato (Non-EU)",
+      detail:
+        "Printify’s EU radio will not save unless Add business information is filled with a real EU or Northern Ireland address. Wellington is not valid, so Non-EU is required. Paid fernora.nz orders stay on Gelato. Printify stays for other sales channels only. Do not click Migrate product on existing Gelato/Etsy listings.",
+      action: { label: "Printify GPSR", href: "/connections", kind: "connect" },
+    });
+  }
+  if (!connections.meta.authorized) {
+    issues.push({
+      id: "meta-ads",
+      severity: "info",
+      title: "Meta ads are not running",
+      detail: "Pressroom can send a low daily-budget campaign to fernora.nz. On Ads, create a Meta app, generate a Graph API Explorer token, and paste ad account, Pixel, and Page IDs. Leave Etsy Offsite Ads off so spend stays on that cap.",
+      action: { label: "Open Ads", href: "/ads", kind: "connect" },
+    });
+  }
   const pending = shop.orders.filter((o) => o.status === "pending");
   if (pending.length) {
     issues.push({
@@ -255,6 +334,7 @@ export function opsScore(shop: ShopState, connections: Connections) {
   else score += 8;
   if (connections.shopify.authorized) score += 8;
   else score += 4;
+  if (connections.meta.authorized) score += 3;
   const active = shop.listings.filter((l) => l.state === "active");
   const mapped = active.filter((l) => l.gelatoProductUid && l.printFileUrl);
   score += active.length ? Math.round((mapped.length / active.length) * 30) : 30;
@@ -1047,7 +1127,14 @@ export async function ingestShopifyPaidOrder(payload: {
   await updateShop((state) => {
     state.orders.unshift(order);
   });
-  return markOrderPaid(id, true);
+  const paid = await markOrderPaid(id, true);
+  void sendMetaPurchase({
+    eventId: shopifyOrderId || id,
+    email: payload.email,
+    value: order.subtotal + order.shippingPaid,
+    currency: order.currency,
+  }).catch(() => undefined);
+  return paid;
 }
 
 export { GELATO_CATALOG };

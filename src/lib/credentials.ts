@@ -1,6 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { DESK_CREDENTIALS, usableGelatoKey } from "@/lib/desk-credentials";
+import type { PrintifyGpsrStatus, PrintifyShopSummary } from "@/lib/printify-gpsr";
 import { FERNORA_SHOPIFY_SHOP } from "@/lib/shopify-shop";
 
 export type EtsyCredentials = {
@@ -24,10 +25,29 @@ export type ShopifyCredentials = {
   storefrontStatus?: "live" | "frozen" | "missing" | "unknown";
 };
 
+export type MetaCredentials = {
+  accessToken: string;
+  adAccountId: string;
+  pixelId?: string;
+  pageId?: string;
+};
+
+export type PrintifyCredentials = {
+  apiToken: string;
+  shopId?: string;
+  shopTitle?: string;
+  gpsrStatus?: PrintifyGpsrStatus;
+  salesChannel?: string;
+  fullyConnected?: boolean;
+  shops?: PrintifyShopSummary[];
+};
+
 export type StoredCredentials = {
   etsy?: EtsyCredentials;
   gelatoApiKey?: string;
   shopify?: ShopifyCredentials;
+  meta?: MetaCredentials;
+  printify?: PrintifyCredentials;
 };
 
 const FILE = path.join(process.cwd(), "data", "credentials.json");
@@ -149,9 +169,26 @@ function hydrate(disk: StoredCredentials): StoredCredentials {
     shop: pickSecret(process.env.SHOPIFY_SHOP, disk.shopify?.shop, DESK_CREDENTIALS.shopify?.shop),
     accessToken: pickSecret(process.env.SHOPIFY_ACCESS_TOKEN, disk.shopify?.accessToken),
   });
-  const next: StoredCredentials = { gelatoApiKey, etsy, shopify };
+  const meta = mergeMeta(disk.meta, {
+    accessToken: pickSecret(process.env.META_ACCESS_TOKEN, disk.meta?.accessToken),
+    adAccountId: pickSecret(process.env.META_AD_ACCOUNT_ID, disk.meta?.adAccountId),
+    pixelId: pickSecret(process.env.META_PIXEL_ID, disk.meta?.pixelId),
+    pageId: pickSecret(process.env.META_PAGE_ID, disk.meta?.pageId),
+  });
+  const printify = mergePrintify(disk.printify, {
+    apiToken: pickSecret(process.env.PRINTIFY_API_TOKEN, disk.printify?.apiToken),
+    shopId: pickSecret(process.env.PRINTIFY_SHOP_ID, disk.printify?.shopId),
+    shopTitle: pickSecret(process.env.PRINTIFY_SHOP_TITLE, disk.printify?.shopTitle),
+    gpsrStatus: disk.printify?.gpsrStatus,
+    salesChannel: disk.printify?.salesChannel,
+    fullyConnected: disk.printify?.fullyConnected,
+    shops: disk.printify?.shops,
+  });
+  const next: StoredCredentials = { gelatoApiKey, etsy, shopify, meta, printify };
   if (next.etsy && !next.etsy.apiKey) delete next.etsy;
   if (next.shopify && !next.shopify.clientId) delete next.shopify;
+  if (next.meta && !next.meta.accessToken && !next.meta.pixelId && !next.meta.adAccountId) delete next.meta;
+  if (next.printify && !next.printify.apiToken) delete next.printify;
   return next;
 }
 
@@ -161,11 +198,39 @@ export async function getCredentials(): Promise<StoredCredentials> {
   return hydrate(disk);
 }
 
+function mergeMeta(current?: MetaCredentials, patch?: Partial<MetaCredentials>): MetaCredentials | undefined {
+  if (!current && !patch) return undefined;
+  const accessToken = pickSecret(patch?.accessToken, current?.accessToken) || "";
+  const adAccountId = pickSecret(patch?.adAccountId, current?.adAccountId) || "";
+  const pixelId = pickSecret(patch?.pixelId, current?.pixelId);
+  const pageId = pickSecret(patch?.pageId, current?.pageId);
+  if (!accessToken && !adAccountId && !pixelId && !pageId) return current;
+  return { accessToken, adAccountId, pixelId, pageId };
+}
+
+function mergePrintify(
+  current?: PrintifyCredentials,
+  patch?: Partial<PrintifyCredentials>,
+): PrintifyCredentials | undefined {
+  if (!current && !patch) return undefined;
+  const apiToken = pickSecret(patch?.apiToken, current?.apiToken) || "";
+  const shopId = pickSecret(patch?.shopId, current?.shopId);
+  const shopTitle = pickSecret(patch?.shopTitle, current?.shopTitle);
+  const gpsrStatus = patch && "gpsrStatus" in patch ? patch.gpsrStatus : current?.gpsrStatus;
+  const salesChannel = patch && "salesChannel" in patch ? patch.salesChannel : current?.salesChannel;
+  const fullyConnected = patch && "fullyConnected" in patch ? patch.fullyConnected : current?.fullyConnected;
+  const shops = patch && "shops" in patch ? patch.shops : current?.shops;
+  if (!apiToken && !shopId && !shopTitle && !gpsrStatus && !salesChannel && !shops) return current;
+  return { apiToken, shopId, shopTitle, gpsrStatus, salesChannel, fullyConnected, shops };
+}
+
 export async function saveCredentials(next: StoredCredentials) {
   const persisted: StoredCredentials = {
     gelatoApiKey: usableGelatoKey(next.gelatoApiKey),
     etsy: next.etsy,
     shopify: next.shopify,
+    meta: next.meta,
+    printify: next.printify,
   };
   cache = persisted;
   await writeDisk(persisted);
@@ -180,6 +245,8 @@ export async function patchCredentials(patch: StoredCredentials) {
       usableGelatoKey(DESK_CREDENTIALS.gelatoApiKey),
     etsy: mergeEtsy(disk.etsy, patch.etsy),
     shopify: mergeShopify(disk.shopify, patch.shopify),
+    meta: mergeMeta(disk.meta, patch.meta),
+    printify: mergePrintify(disk.printify, patch.printify),
   };
   await saveCredentials(next);
   return hydrate(next);

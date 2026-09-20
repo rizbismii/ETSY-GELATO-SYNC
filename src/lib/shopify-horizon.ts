@@ -2,6 +2,8 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { shopifyGraphql } from "@/lib/shopify";
 import { policyHtml } from "@/lib/shop-policies";
+import { getCredentials } from "@/lib/credentials";
+import { normalizePixelId, withMetaPixelInTheme } from "@/lib/meta-budget";
 
 const HERO_FILE = "fernora-hero.png";
 const COUNTRY_CURRENCY_MARK = "localization.country.name }} · {{ localization.country.currency.iso_code";
@@ -37,6 +39,7 @@ export async function brandHorizonStorefront(themeId: string, origin?: string) {
     notes.push(`Theme rename: ${(error as Error).message}`);
   }
   notes.push(...(await patchHorizonLocalization(themeId)));
+  notes.push(...(await installFernoraMetaPixel(themeId)));
   const heroRef = await uploadFernoraHero(origin).catch((error: Error) => {
     notes.push(`Hero image: ${error.message}`);
     return "";
@@ -76,6 +79,25 @@ async function upsertThemeText(themeId: string, filename: string, value: string)
     { themeId, files: [{ filename, body: { type: "TEXT", value } }] },
   );
   return upserted.themeFilesUpsert.userErrors.map((row) => row.message);
+}
+
+export async function installFernoraMetaPixel(themeId: string) {
+  const notes: string[] = [];
+  const pixelId = normalizePixelId((await getCredentials()).meta?.pixelId);
+  if (!pixelId) return notes;
+  const raw = await themeFileText(themeId, "layout/theme.liquid");
+  if (!raw) {
+    notes.push("Theme layout could not be read for the Meta Pixel.");
+    return notes;
+  }
+  const next = withMetaPixelInTheme(raw, pixelId);
+  if (next === raw && raw.includes("fernora-meta-pixel") && raw.includes(pixelId)) {
+    notes.push("Meta Pixel is already on fernora.nz.");
+    return notes;
+  }
+  const errors = await upsertThemeText(themeId, "layout/theme.liquid", next);
+  notes.push(errors.length ? `Meta Pixel: ${errors.join("; ")}` : "Meta Pixel is on fernora.nz PageView.");
+  return notes;
 }
 
 function withCountryCurrencyLabel(source: string) {

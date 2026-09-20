@@ -11,6 +11,7 @@ import {
   Plug,
   Menu,
   Store,
+  Megaphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +26,7 @@ const links = [
   { href: "/", label: "Desk", icon: LayoutDashboard },
   { href: "/orders", label: "Orders", icon: ShoppingBag },
   { href: "/listings", label: "Catalog", icon: Package },
+  { href: "/ads", label: "Ads", icon: Megaphone },
   { href: "/revenue", label: "Revenue", icon: Wallet },
   { href: "/connections", label: "Connections", icon: Plug },
   { href: "/shop", label: "Fernora shop", icon: Store },
@@ -71,7 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Link href="/" className="mb-8 px-2">
           <p className="font-heading text-2xl leading-none tracking-tight">Pressroom</p>
           <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-sidebar-foreground/55">
-            Etsy × Shopify × Gelato
+            Etsy × Shopify × Gelato × Printify
           </p>
         </Link>
         <Nav />
