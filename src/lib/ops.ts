@@ -215,7 +215,7 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
         severity: "info",
         title: "Printify Etsy is connected — catalog on Printify",
         detail:
-          `Printify shows ${channel?.title || "Fernora Trends"} as the Etsy store. Keep five catalog products (one per mix, one variant). Do not click Migrate product on leftover External products. Printify is the main supplier except EU/UK. Gelato stays connected for those destinations only. Keep Non-EU.`,
+          `Printify shows ${channel?.title || "Fernora Trends"} as the Etsy store. Open that Etsy-connected shop in Printify My products — not the disconnected Fernora Trends shop. The five catalog products with print templates are on the Etsy shop. Do not click Migrate product on leftover External products. Printify is the main supplier except EU/UK. Gelato stays connected for those destinations only. Keep Non-EU.`,
         action: { label: "Printify shops", href: "/connections", kind: "connect" },
       });
     } else {

@@ -3,6 +3,7 @@ import { getCredentials, patchCredentials } from "@/lib/credentials";
 import {
   formatPrintifySafetyInformation,
   pickPrintifyShop,
+  printifyChannelKey,
   printifyGpsrIsUnavailable,
   printifyGpsrModeFromProbe,
   printifyGpsrNotes,
@@ -267,6 +268,37 @@ function sameOneVariant(spec: PrintifyStarterSpec, product: PrintifyProduct, tit
   return enabled.length === 1 && wanted.length === 1 && enabled[0] === wanted[0];
 }
 
+async function deleteLeftoverDisconnectedPrintifyProducts(token?: string) {
+  const shops = await listPrintifyShops(token);
+  const keep = new Set(
+    FERNORA_PRINTIFY_STARTERS.flatMap((spec) => [spec.title, ...(spec.aliases || [])]).map((title) =>
+      title.trim().toLowerCase(),
+    ),
+  );
+  const notes: string[] = [];
+  for (const shop of shops) {
+    if (printifyChannelKey(shop.sales_channel) !== "disconnected") continue;
+    const existing = await listShopProducts(shop.id);
+    let deleted = 0;
+    for (const product of existing) {
+      if (!product.id) continue;
+      if (keep.has((product.title || "").trim().toLowerCase())) continue;
+      try {
+        await deletePrintifyProduct(shop.id, product.id, token);
+        deleted += 1;
+      } catch (error) {
+        notes.push(`${product.title || product.id}: ${(error as Error).message}`);
+      }
+    }
+    if (deleted) {
+      notes.push(
+        `Deleted ${deleted} leftover product${deleted === 1 ? "" : "s"} from disconnected ${shop.title || "shop"} (${shop.id}). Catalog with print templates is on the Etsy-connected Fernora Trends shop.`,
+      );
+    }
+  }
+  return notes;
+}
+
 export async function createFernoraPrintifyProducts(input?: { shopId?: number; token?: string }) {
   const ping = await pingPrintify(input?.token);
   const shopId = input?.shopId || ping.shopId;
@@ -320,6 +352,11 @@ export async function createFernoraPrintifyProducts(input?: { shopId?: number; t
     extraNotes.push(
       `Deleted ${removedPrintify} older Printify product${removedPrintify === 1 ? "" : "s"} from ${shopId}.`,
     );
+  }
+  try {
+    extraNotes.push(...(await deleteLeftoverDisconnectedPrintifyProducts(input?.token)));
+  } catch (error) {
+    extraNotes.push(`Disconnected Printify shop: ${(error as Error).message}`);
   }
   await updateShop((shop) => {
     restoreLiveCatalogInShop(shop);

@@ -109,6 +109,8 @@ test("Printify is fully connected only with products on a sales channel", () => 
     /Etsy connected as Fernora Trends/,
   );
   assert.match(printifyShopLine(connected[1], "FERNORATRENDS"), /Etsy connected/);
+  assert.match(printifyShopLine(connected[1], "FERNORATRENDS"), /open this store in Printify My products/);
+  assert.match(printifyShopLine(connected[0], "FERNORATRENDS"), /leftover store, not the catalog/);
   assert.doesNotMatch(printifyShopLine(connected[1], "FERNORATRENDS"), /not FERNORATRENDS/);
   assert.equal(printifyIsFullyConnected([{ id: 1, title: "Etsy", salesChannel: "etsy", productCount: 2 }]), true);
 });

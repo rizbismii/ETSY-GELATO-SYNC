@@ -140,15 +140,18 @@ export function printifyShopLine(shop: PrintifyShopSummary, etsyShopName?: strin
   const title = shop.title || "Printify shop";
   const products = `${shop.productCount} product${shop.productCount === 1 ? "" : "s"}`;
   const etsy = (etsyShopName || "").trim();
+  const channel = printifyChannelKey(shop.salesChannel);
   const mismatch =
-    printifyChannelKey(shop.salesChannel) === "etsy" && etsy && !printifyShopNamesMatch(title, etsy)
-      ? ` · not ${etsy}`
-      : "";
+    channel === "etsy" && etsy && !printifyShopNamesMatch(title, etsy) ? ` · not ${etsy}` : "";
   const connected =
-    printifyChannelKey(shop.salesChannel) === "etsy" && printifyShopNamesMatch(title, etsy || title)
-      ? " · Etsy connected"
-      : "";
-  return `${title} · ${shop.id} · ${printifySalesChannelLabel(shop.salesChannel)} · ${products}${connected}${mismatch}`;
+    channel === "etsy" && printifyShopNamesMatch(title, etsy || title) ? " · Etsy connected" : "";
+  const catalogHint =
+    channel === "etsy" && printifyShopNamesMatch(title, etsy || "Fernora Trends")
+      ? " · open this store in Printify My products (print templates)"
+      : channel === "disconnected" && /fernora/i.test(title)
+        ? " · leftover store, not the catalog"
+        : "";
+  return `${title} · ${shop.id} · ${printifySalesChannelLabel(shop.salesChannel)} · ${products}${connected}${mismatch}${catalogHint}`;
 }
 
 export function pickPrintifyShop<

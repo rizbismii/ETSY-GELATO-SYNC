@@ -1064,12 +1064,18 @@ export function ConnectionsClient() {
               Gelato connection saved. Shopify and website Gelato shipping stay as they are for later.
             </p>
             <ol className="list-decimal space-y-2 pl-4 text-sm leading-6 text-muted-foreground">
-              <li>Leave the dropdown on Fernora Trends · Etsy · Connected.</li>
+              <li>
+                Printify has two shops named Fernora Trends. In the left store dropdown, open the one
+                that is <strong className="font-medium text-foreground">connected to Etsy</strong>{" "}
+                (shop 28911689). The five catalog products with print templates are there. The
+                disconnected Fernora Trends shop is not the catalog.
+              </li>
               <li>Do not click Migrate product on leftover External products.</li>
               <li>
                 Recreate the five catalog products on Printify, then publish them to Etsy, Shopify,
                 and the website. They land in{" "}
-                <strong className="font-medium text-foreground">My products</strong>.
+                <strong className="font-medium text-foreground">My products</strong> on the
+                Etsy-connected shop.
               </li>
               <li>Save Printify below so this desk refreshes shop names. Do not change the other connections.</li>
             </ol>
