@@ -22,8 +22,9 @@ import {
   type PrintifyStarterSpec,
 } from "@/lib/printify-products";
 import { restoreLiveCatalogInShop } from "@/lib/drop";
-import { inactivateOlderEtsyListings, syncEtsyCatalogSections } from "@/lib/etsy";
+import { inactivateOlderEtsyListings, listEtsyShopListings, syncEtsyCatalogSections } from "@/lib/etsy";
 import { deleteOlderGelatoProducts } from "@/lib/gelato-store";
+import { etsyListingUrl } from "@/lib/live-catalog";
 import { deleteOlderShopifyProducts, syncFernoraCatalogToShopify } from "@/lib/shopify";
 import { syncShopifyCatalogMenu } from "@/lib/shopify-horizon";
 import { updateShop } from "@/lib/store";
@@ -58,6 +59,7 @@ type PrintifyProduct = {
   title?: string;
   safety_information?: string;
   variants?: Array<{ id?: number; is_enabled?: boolean }>;
+  external?: { id?: string; handle?: string };
 };
 
 type PrintifyProductPage = {
@@ -205,6 +207,55 @@ async function publishPrintifyProduct(shopId: number, productId: string, token?:
   }
 }
 
+async function attachPrintifyEtsyIds(
+  shopId: number,
+  products: CreatedPrintifyProduct[],
+  token?: string,
+) {
+  const notes: string[] = [];
+  let etsyByTitle = new Map<string, string>();
+  try {
+    const listings = await listEtsyShopListings(["active", "draft"]);
+    etsyByTitle = new Map(
+      listings
+        .filter((row) => row.listing_id && row.title)
+        .map((row) => [(row.title || "").trim().toLowerCase(), String(row.listing_id)]),
+    );
+  } catch (error) {
+    notes.push(`Etsy listing match: ${(error as Error).message}`);
+  }
+  let attached = 0;
+  for (const product of products) {
+    let listingId = "";
+    let url: string | undefined;
+    try {
+      const current = await getPrintifyProduct(shopId, product.id, token);
+      listingId = String(current.external?.id || "");
+      url = current.external?.handle;
+    } catch (error) {
+      notes.push(`Printify ${product.title}: ${(error as Error).message}`);
+    }
+    if (!listingId) listingId = etsyByTitle.get(product.title.trim().toLowerCase()) || "";
+    if (!listingId) continue;
+    url = url || etsyListingUrl(listingId);
+    await updateShop((shop) => {
+      const row = shop.listings.find((item) => item.id === product.key || item.title === product.title);
+      if (!row) return;
+      row.etsyListingId = listingId;
+      row.etsyUrl = url;
+      row.publishState = "live";
+      row.state = "active";
+    });
+    attached += 1;
+  }
+  notes.unshift(
+    attached
+      ? `Pressroom Catalog now shows ${attached} live Etsy listing${attached === 1 ? "" : "s"}.`
+      : "Printify published, but Etsy listing IDs are not on Catalog yet.",
+  );
+  return notes;
+}
+
 function wantedVariantIds(spec: PrintifyStarterSpec) {
   return spec.variants.filter((variant) => variant.is_enabled).map((variant) => variant.id);
 }
@@ -296,6 +347,11 @@ export async function createFernoraPrintifyProducts(input?: { shopId?: number; t
     } catch (error) {
       extraNotes.push(`Printify publish ${product.title}: ${(error as Error).message}`);
     }
+  }
+  try {
+    extraNotes.push(...(await attachPrintifyEtsyIds(shopId, products, input?.token)));
+  } catch (error) {
+    extraNotes.push(`Catalog Etsy IDs: ${(error as Error).message}`);
   }
   try {
     extraNotes.push(...(await syncFernoraCatalogToShopify()).notes);
