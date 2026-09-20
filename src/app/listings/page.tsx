@@ -343,34 +343,36 @@ export default function ListingsPage() {
           {visible.map((listing) => {
             const status = listing.publishState || "ready";
             return (
-              <Card key={listing.id}>
-                <CardContent className="grid gap-4 p-4 lg:grid-cols-[200px_180px_1fr]">
-                  <ProductArt
-                    id={listing.id}
-                    title={listing.title}
-                    category={listing.category}
-                    imageUrl={listing.imageUrl}
-                    fit="contain"
-                    className="h-56 w-full rounded-lg lg:h-full min-h-52"
-                  />
-                  {listing.printFileUrl ? (
-                    <div className="space-y-2">
-                      <ProductArt
-                        id={`${listing.id}-print`}
-                        title={`${listing.title} print file`}
-                        category={listing.category}
-                        imageUrl={listing.printFileUrl}
-                        kind="print"
-                        fit="contain"
-                        className="h-56 w-full rounded-lg lg:h-full min-h-52"
-                      />
-                      <p className="text-[11px] leading-4 text-muted-foreground">
-                        {printTemplateLabel(listing.category, listing.id)}
-                      </p>
-                    </div>
-                  ) : (
-                    <p className="self-center text-xs text-muted-foreground">No print file saved yet.</p>
-                  )}
+              <Card key={listing.id} className="overflow-hidden">
+                <CardContent className="grid items-start gap-5 p-4 lg:grid-cols-[minmax(16rem,32rem)_minmax(0,1fr)]">
+                  <div className="grid grid-cols-2 items-start gap-3">
+                    <ProductArt
+                      id={listing.id}
+                      title={listing.title}
+                      category={listing.category}
+                      imageUrl={listing.imageUrl}
+                      fit="contain"
+                      className="aspect-[4/5] w-full rounded-lg"
+                    />
+                    {listing.printFileUrl ? (
+                      <div className="min-w-0 space-y-2">
+                        <ProductArt
+                          id={`${listing.id}-print`}
+                          title={`${listing.title} print file`}
+                          category={listing.category}
+                          imageUrl={listing.printFileUrl}
+                          kind="print"
+                          fit="contain"
+                          className="aspect-[4/5] w-full rounded-lg"
+                        />
+                        <p className="text-[11px] leading-4 text-muted-foreground">
+                          {printTemplateLabel(listing.category, listing.id)}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="self-center text-xs text-muted-foreground">No print file saved yet.</p>
+                    )}
+                  </div>
                   <div className="min-w-0 space-y-4">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div>

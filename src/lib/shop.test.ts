@@ -118,6 +118,8 @@ test("Catalog dropdown order is All, Quotes, Botanical, Scenic, Home décor, Ori
   const listings = readFileSync(new URL("../app/listings/page.tsx", import.meta.url), "utf8");
   assert.match(shop, /CATALOG_MENU/);
   assert.match(listings, /CATALOG_MENU/);
+  assert.match(listings, /aspect-\[4\/5\]/);
+  assert.doesNotMatch(listings, /lg:h-full/);
 });
 
 test("markets pin countries without presentment currency to USD", () => {
