@@ -1,10 +1,13 @@
 export const ETSY_TRANSACTION_RATE = 0.065;
 export const ETSY_PAYMENT_RATE = 0.03;
 export const ETSY_PAYMENT_FIXED = 0.25;
-/** Etsy Offsite Ads: 15% of an attributed sale. Keep this off — Pressroom runs a capped Meta daily budget instead. */
+/** Etsy Offsite Ads: 15% of an attributed sale. Opted out 19 September 2026 — keep off. Pressroom runs a capped Meta daily budget instead. Prices still survive a leftover Offsite hit. */
 export const OFFSITE_ADS_RATE = 0.15;
 /** Keep at least this share of listing price after marketplace fees, print, and a worst-case Offsite hit. */
 export const TARGET_AFTER_ADS_MARGIN = 0.4;
+/** Shop Manager → Marketing → Offsite Ads. Opted out 19 September 2026. Do not turn back on. */
+export const ETSY_OFFSITE_ADS_ENABLED = false;
+export const ETSY_OFFSITE_OPTED_OUT_ON = "19 September 2026";
 /** On-site Etsy Ads are CPC. Keep them off so spend never runs without a sale. */
 export const ETSY_CPC_ADS_ENABLED = false;
 

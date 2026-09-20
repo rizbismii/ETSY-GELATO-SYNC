@@ -12,7 +12,7 @@ There is no sample shop. The Catalog page stays empty while the deleted mix is h
 - **Map listings** to Gelato product UIDs and print files so orders are not blocked.
 - **Fulfill** paid Etsy receipts as Gelato v4 orders.
 - **Push tracking** from Gelato onto the Etsy receipt (Star Seller / case protection).
-- **Price for profit** using Etsy 6.5% transaction + 3% + $0.25 payment fees against Gelato unit cost. Listings stay priced so a worst-case Etsy Offsite hit still leaves **40%**. Paid traffic to [fernora.nz](https://fernora.nz) is a **Meta campaign from Ads** with a low daily cap (default 5, max 15 in the ad-account currency). Leave Etsy Offsite Ads and CPC Ads off.
+- **Price for profit** using Etsy 6.5% transaction + 3% + $0.25 payment fees against Gelato unit cost. Listings stay priced so a worst-case Etsy Offsite hit still leaves **40%**. Paid traffic to [fernora.nz](https://fernora.nz) is a **Meta campaign from Ads** with a low daily cap (default 5, max 15 in the ad-account currency). Etsy Offsite Ads were opted out on 19 September 2026. Leave on-site CPC Etsy Ads off.
 - **Fix store operations** in one pass: auto-map, reprice thin listings, send ready orders, push missing tracking.
 
 Gelato already offers a native Etsy channel. Pressroom is the control plane around it: catalog publish, blocked orders, margin math, and tracking gaps in one desk.
@@ -95,7 +95,7 @@ PRINTIFY_API_TOKEN=
 
 ## Live catalog
 
-The catalog in this repo is the Fernora mix in NZD: **20 listing templates**, currently **cleared**. Recreate on Printify for non-EU/UK destinations; keep Gelato for UK and EU. Shop origin on Etsy is Wellington 6012. Advertising is a **Meta campaign** from Pressroom **Ads** to fernora.nz (daily cap 5, max 15). Leave Etsy Offsite Ads and on-site CPC Etsy Ads off.
+The catalog in this repo is the Fernora mix in NZD: **20 listing templates**, currently **cleared**. Recreate on Printify for non-EU/UK destinations; keep Gelato for UK and EU. Shop origin on Etsy is Wellington 6012. Advertising is a **Meta campaign** from Pressroom **Ads** to fernora.nz (daily cap 5, max 15). Etsy Offsite Ads were opted out on 19 September 2026. Leave on-site CPC Etsy Ads off.
 
 ### Printify
 

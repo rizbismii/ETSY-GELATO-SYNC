@@ -8,7 +8,7 @@ import {
   pingMetaAds,
   readMetaCampaign,
 } from "@/lib/meta-ads";
-import { ETSY_CPC_ADS_ENABLED, OFFSITE_ADS_RATE } from "@/lib/money";
+import { ETSY_CPC_ADS_ENABLED, ETSY_OFFSITE_ADS_ENABLED, ETSY_OFFSITE_OPTED_OUT_ON, OFFSITE_ADS_RATE } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +34,8 @@ export async function GET() {
     dailyBudgetMax: META_ADS_DAILY_BUDGET_MAX,
     dailyBudgetDefault: META_ADS_DAILY_BUDGET_DEFAULT,
     offsiteRate: OFFSITE_ADS_RATE,
+    offsiteEnabled: ETSY_OFFSITE_ADS_ENABLED,
+    offsiteOptedOutOn: ETSY_OFFSITE_OPTED_OUT_ON,
     etsyCpcEnabled: ETSY_CPC_ADS_ENABLED,
     campaign,
     ping,

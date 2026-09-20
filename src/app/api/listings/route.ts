@@ -2,6 +2,8 @@ import { connectionStatus, enrichListing, GELATO_CATALOG } from "@/lib/ops";
 import {
   destinationEconomics,
   ETSY_CPC_ADS_ENABLED,
+  ETSY_OFFSITE_ADS_ENABLED,
+  ETSY_OFFSITE_OPTED_OUT_ON,
   OFFSITE_ADS_RATE,
   recommendedPrice,
   TARGET_AFTER_ADS_MARGIN,
@@ -73,6 +75,8 @@ export async function GET() {
       dailyBudget: META_ADS_DAILY_BUDGET_DEFAULT,
       landingUrl: META_ADS_LANDING_URL,
       targetAfterAds: TARGET_AFTER_ADS_MARGIN,
+      offsiteEnabled: ETSY_OFFSITE_ADS_ENABLED,
+      offsiteOptedOutOn: ETSY_OFFSITE_OPTED_OUT_ON,
       cpcEnabled: ETSY_CPC_ADS_ENABLED,
       countries: SHIP_COUNTRIES,
     },

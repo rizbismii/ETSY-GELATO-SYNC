@@ -18,6 +18,11 @@ import {
   normalizePixelId,
   withMetaPixelInTheme,
 } from "./meta-budget.ts";
+import {
+  ETSY_CPC_ADS_ENABLED,
+  ETSY_OFFSITE_ADS_ENABLED,
+  ETSY_OFFSITE_OPTED_OUT_ON,
+} from "./money.ts";
 
 test("Meta daily budget stays on a low cap", () => {
   assert.equal(clampMetaDailyBudget(5), META_ADS_DAILY_BUDGET_DEFAULT);
@@ -25,6 +30,12 @@ test("Meta daily budget stays on a low cap", () => {
   assert.equal(clampMetaDailyBudget(99), META_ADS_DAILY_BUDGET_MAX);
   assert.equal(dailyBudgetToMinor(5), 500);
   assert.equal(META_ADS_LANDING_URL, "https://fernora.nz");
+});
+
+test("Etsy Offsite Ads stay opted out", () => {
+  assert.equal(ETSY_OFFSITE_ADS_ENABLED, false);
+  assert.equal(ETSY_CPC_ADS_ENABLED, false);
+  assert.equal(ETSY_OFFSITE_OPTED_OUT_ON, "19 September 2026");
 });
 
 test("ad account and pixel IDs normalize", () => {

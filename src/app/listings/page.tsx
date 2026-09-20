@@ -62,6 +62,8 @@ type Payload = {
     mode: string;
     rate: number;
     cpcEnabled: boolean;
+    offsiteEnabled?: boolean;
+    offsiteOptedOutOn?: string;
     countries: Array<{ region: string; label: string }>;
   };
 };
@@ -270,16 +272,17 @@ export default function ListingsPage() {
           plus Canada, Ireland, and the selected Americas / Asia / Middle East countries enabled at
           checkout. Japan, Korea, India, Indonesia, the Philippines, and Vietnam stay off. Advertising is a{" "}
           <strong>Meta campaign from Pressroom</strong> to fernora.nz with a low daily cap. Etsy
-          Offsite Ads ({adsRate}% of an attributed sale) and on-site CPC Etsy Ads stay off so spend
-          does not stack.
+          Offsite Ads were opted out on {data.ads?.offsiteOptedOutOn || "19 September 2026"} (
+          {adsRate}% of an attributed sale if a leftover ad still hits). On-site CPC Etsy Ads stay
+          off so spend does not stack.
         </p>
         <p className="mt-2 text-xs text-muted-foreground">
           Set the daily cap on{" "}
           <a className="underline" href="/ads">
             Ads
           </a>
-          . In Etsy Shop Manager → Marketing leave Offsite Ads and Etsy Ads (CPC) off — the Open API
-          cannot flip those switches.
+          . Do not click Turn on Offsite Ads in Etsy Shop Manager → Marketing. Leave Etsy Ads (CPC)
+          off — the Open API cannot flip those switches.
         </p>
       </div>
 
