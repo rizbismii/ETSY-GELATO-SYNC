@@ -12,6 +12,7 @@ const SCOPES = [
   "listings_r",
   "listings_w",
   "shops_r",
+  "shops_w",
   "transactions_r",
   "transactions_w",
   "email_r",

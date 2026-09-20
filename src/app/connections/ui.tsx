@@ -963,6 +963,11 @@ export function ConnectionsClient() {
                 Authorize with Etsy
               </a>
             </div>
+            <p className="text-xs leading-5 text-muted-foreground">
+              Catalog shop sections (Quotes, Botanical, Scenic, Home décor, Original fern) need the
+              shops_w scope. Authorize once more when you want those Etsy dropdowns created. Do not
+              disconnect the saved keys.
+            </p>
           </CardContent>
         </Card>
 
@@ -1293,8 +1298,9 @@ export function ConnectionsClient() {
         </CardHeader>
         <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-xl text-sm text-muted-foreground">
-            Pull live Etsy listings and receipts. Deleted catalog products stay cleared — Printify is
-            the main supplier except EU/UK.
+            Pull live Etsy listings and receipts. Printify holds one unpublished product per catalog
+            item. Catalog dropdowns match Printify. Etsy shop sections need shops_w — Authorize with
+            Etsy once so Quotes, Botanical, Scenic, Home décor, and Original fern can be created.
           </p>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => void resetDemo()} disabled={Boolean(busy)}>
