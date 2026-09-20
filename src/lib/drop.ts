@@ -92,3 +92,9 @@ export function applyLiveCatalog(shop: ShopState) {
 export function applyHarvestDrop(shop: ShopState) {
   return applyLiveCatalog(shop);
 }
+
+/** Bring the 20-item mix back after tombstones. Used when Printify products are recreated. */
+export function restoreLiveCatalogInShop(shop: ShopState) {
+  shop.deletedListingIds = [];
+  return applyLiveCatalog(shop);
+}

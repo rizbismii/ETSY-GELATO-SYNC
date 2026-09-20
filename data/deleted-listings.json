@@ -1,24 +1,3 @@
 {
-  "ids": [
-    "live_poster",
-    "live_hoodie",
-    "live_mug",
-    "live_canvas",
-    "live_metal_dusk",
-    "live_acrylic_brave",
-    "live_wood_tui",
-    "live_frame_coast",
-    "live_frame_kind",
-    "live_poster_pohutukawa",
-    "live_case_belong",
-    "live_canvas_harbour",
-    "live_sweat_soft",
-    "live_mug_morning",
-    "live_tote_grow",
-    "live_tee_kind",
-    "live_botanical_kowhai",
-    "live_quote_light",
-    "live_quote_breathe",
-    "live_tote"
-  ]
+  "ids": []
 }

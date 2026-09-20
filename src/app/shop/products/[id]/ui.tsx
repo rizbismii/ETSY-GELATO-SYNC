@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ProductArt } from "@/components/product-art";
 import { formatMoney } from "@/lib/money";
-import { CLOTHING_COLORS, CLOTHING_SIZES, findClothingVariant } from "@/lib/clothing";
+import { findClothingVariant } from "@/lib/clothing";
 import { shopLane } from "@/lib/shop";
 import { gelatoCountryName } from "@/lib/gelato-countries";
 import { POLICY_PATHS } from "@/lib/shop-policies";
@@ -26,9 +26,11 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
   const { add } = useCart();
   const router = useRouter();
   const clothing = Boolean(product.variants?.length);
+  const clothingColors = [...new Map((product.variants || []).map((row) => [row.colorUid, row])).values()];
+  const clothingSizes = [...new Map((product.variants || []).map((row) => [row.sizeUid, row])).values()];
   const [country, setCountry] = useState("NZ");
-  const [color, setColor] = useState("black");
-  const [size, setSize] = useState("m");
+  const [color, setColor] = useState(clothingColors[0]?.colorUid || "black");
+  const [size, setSize] = useState(clothingSizes[0]?.sizeUid || "m");
   const [view, setView] = useState<"mockup" | "print">("mockup");
   useEffect(() => {
     const saved = readProfile().country;
@@ -93,15 +95,15 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
             <div>
               <p className="mb-2 text-xs uppercase tracking-[0.16em] text-muted-foreground">Colour</p>
               <div className="flex flex-wrap gap-2">
-                {CLOTHING_COLORS.map((option) => (
+                {clothingColors.map((option) => (
                   <Button
-                    key={option.uid}
+                    key={option.colorUid}
                     size="sm"
-                    variant={color === option.uid ? "default" : "outline"}
-                    onClick={() => setColor(option.uid)}
+                    variant={color === option.colorUid ? "default" : "outline"}
+                    onClick={() => setColor(option.colorUid)}
                   >
-                    <span className={`mr-2 inline-block size-3 rounded-full border border-black/10 ${COLOR_SWATCH[option.uid]}`} />
-                    {option.name}
+                    <span className={`mr-2 inline-block size-3 rounded-full border border-black/10 ${COLOR_SWATCH[option.colorUid] || "bg-zinc-900"}`} />
+                    {option.color}
                   </Button>
                 ))}
               </div>
@@ -109,14 +111,14 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
             <div>
               <p className="mb-2 text-xs uppercase tracking-[0.16em] text-muted-foreground">Size</p>
               <div className="flex flex-wrap gap-2">
-                {CLOTHING_SIZES.map((option) => (
+                {clothingSizes.map((option) => (
                   <Button
-                    key={option.uid}
+                    key={option.sizeUid}
                     size="sm"
-                    variant={size === option.uid ? "default" : "outline"}
-                    onClick={() => setSize(option.uid)}
+                    variant={size === option.sizeUid ? "default" : "outline"}
+                    onClick={() => setSize(option.sizeUid)}
                   >
-                    {option.name}
+                    {option.size}
                   </Button>
                 ))}
               </div>

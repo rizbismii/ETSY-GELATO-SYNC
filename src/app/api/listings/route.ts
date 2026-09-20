@@ -2,6 +2,9 @@ import { connectionStatus, enrichListing, GELATO_CATALOG } from "@/lib/ops";
 import {
   destinationEconomics,
   ETSY_CPC_ADS_ENABLED,
+  ETSY_CPC_WAIT_DAYS_LEFT,
+  ETSY_CPC_WAIT_NOTE,
+  ETSY_CPC_WAIT_NOTED_ON,
   ETSY_OFFSITE_ADS_ENABLED,
   ETSY_OFFSITE_OPTED_OUT_ON,
   OFFSITE_ADS_RATE,
@@ -78,6 +81,9 @@ export async function GET() {
       offsiteEnabled: ETSY_OFFSITE_ADS_ENABLED,
       offsiteOptedOutOn: ETSY_OFFSITE_OPTED_OUT_ON,
       cpcEnabled: ETSY_CPC_ADS_ENABLED,
+      cpcWaitDaysLeft: ETSY_CPC_WAIT_DAYS_LEFT,
+      cpcWaitNotedOn: ETSY_CPC_WAIT_NOTED_ON,
+      cpcWaitNote: ETSY_CPC_WAIT_NOTE,
       countries: SHIP_COUNTRIES,
     },
   });

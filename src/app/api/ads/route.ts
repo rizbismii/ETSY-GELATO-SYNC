@@ -8,7 +8,7 @@ import {
   pingMetaAds,
   readMetaCampaign,
 } from "@/lib/meta-ads";
-import { ETSY_CPC_ADS_ENABLED, ETSY_OFFSITE_ADS_ENABLED, ETSY_OFFSITE_OPTED_OUT_ON, OFFSITE_ADS_RATE } from "@/lib/money";
+import { ETSY_CPC_ADS_ENABLED, ETSY_CPC_WAIT_DAYS_LEFT, ETSY_CPC_WAIT_NOTE, ETSY_CPC_WAIT_NOTED_ON, ETSY_OFFSITE_ADS_ENABLED, ETSY_OFFSITE_OPTED_OUT_ON, OFFSITE_ADS_RATE } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +37,9 @@ export async function GET() {
     offsiteEnabled: ETSY_OFFSITE_ADS_ENABLED,
     offsiteOptedOutOn: ETSY_OFFSITE_OPTED_OUT_ON,
     etsyCpcEnabled: ETSY_CPC_ADS_ENABLED,
+    etsyCpcWaitDaysLeft: ETSY_CPC_WAIT_DAYS_LEFT,
+    etsyCpcWaitNotedOn: ETSY_CPC_WAIT_NOTED_ON,
+    etsyCpcWaitNote: ETSY_CPC_WAIT_NOTE,
     campaign,
     ping,
     pingError,

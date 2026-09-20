@@ -36,6 +36,7 @@ import { checkoutToOrder, quoteFernoraCart, type CartLine } from "@/lib/shop";
 import { sendMetaPurchase } from "@/lib/meta-ads";
 import {
   CATALOG_CLEARED_NOTE,
+  CATALOG_PRINTIFY_NOTE,
   GELATO_EU_UK_HOLD_NOTE,
   PRINTIFY_MAIN_NOTE,
   printSupplierForCountry,
@@ -211,9 +212,9 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
       issues.push({
         id: "printify-etsy-external",
         severity: "info",
-        title: "Printify Etsy is connected — catalog is cleared",
+        title: "Printify Etsy is connected — catalog on Printify",
         detail:
-          `Printify now shows ${channel?.title || "Fernora Trends"} as the Etsy store. The catalog is cleared. Do not click Migrate product on leftover External products. Recreate on Printify when ready. Printify is the main supplier except EU/UK. Gelato stays connected for those destinations only. Keep Non-EU.`,
+          `Printify shows ${channel?.title || "Fernora Trends"} as the Etsy store. Create one unpublished product per catalog item (one variant). Do not click Migrate product on leftover External products. Printify is the main supplier except EU/UK. Gelato stays connected for those destinations only. Keep Non-EU.`,
         action: { label: "Printify shops", href: "/connections", kind: "connect" },
       });
     } else {
@@ -243,13 +244,21 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
       detail: CATALOG_CLEARED_NOTE,
       action: { label: "Open catalog", href: "/listings", kind: "price" },
     });
+  } else if (shop.listings.length) {
+    issues.push({
+      id: "catalog-printify-one",
+      severity: "info",
+      title: "Catalog is one Printify product per item",
+      detail: CATALOG_PRINTIFY_NOTE,
+      action: { label: "Open catalog", href: "/listings", kind: "price" },
+    });
   }
   if (!connections.meta.authorized) {
     issues.push({
       id: "meta-ads",
       severity: "info",
       title: "Meta ads are not running",
-      detail: "Pressroom can send a low daily-budget campaign to fernora.nz. On Ads, create a Meta app, generate a Graph API Explorer token, and paste ad account, Pixel, and Page IDs. Etsy Offsite Ads were opted out on 19 September 2026 — leave them off, and leave Etsy CPC Ads off.",
+      detail: "Pressroom can send a low daily-budget campaign to fernora.nz. On Ads, create a Meta app, generate a Graph API Explorer token, and paste ad account, Pixel, and Page IDs. Etsy Offsite Ads were opted out on 19 September 2026 — leave them off. Etsy Ads (CPC) are not activated (15-day new-shop wait).",
       action: { label: "Open Ads", href: "/ads", kind: "connect" },
     });
   }
@@ -562,7 +571,7 @@ export async function fulfillOrder(id: string) {
     const supplier = printSupplierForCountry(order.shippingAddress.country);
     if (supplier === "printify") {
       throw new Error(
-        "This destination prints on Printify. The catalog is cleared — do not send it to Gelato. Recreate the product on Printify first. Gelato is only for the United Kingdom and the European Union.",
+        "This destination prints on Printify. Do not send it to Gelato. Gelato is only for the United Kingdom and the European Union.",
       );
     }
     const ready = enrichOrder(order, state.listings);

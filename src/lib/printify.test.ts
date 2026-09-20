@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
   formatPrintifySafetyInformation,
@@ -16,6 +17,7 @@ import {
   buildPrintifyProductPayload,
   existingPrintifyProductId,
   FERNORA_PRINTIFY_STARTERS,
+  printifyEnabledVariantIds,
   printifyImageFileName,
 } from "./printify-products.ts";
 
@@ -137,31 +139,49 @@ test("EU GPSR probe without stamps is available; stamps mark applied", () => {
   );
 });
 
-test("Fernora Printify starters are a poster and a tote, unpublished payload", () => {
-  assert.equal(FERNORA_PRINTIFY_STARTERS.length, 2);
-  const [poster, tote] = FERNORA_PRINTIFY_STARTERS;
-  assert.equal(poster.title, "Fern Arc Poster");
-  assert.equal(poster.blueprintId, 282);
-  assert.equal(poster.printProviderId, 99);
+test("Fernora Printify catalog is one enabled variant per live product", () => {
+  assert.equal(FERNORA_PRINTIFY_STARTERS.length, 20);
+  const keys = FERNORA_PRINTIFY_STARTERS.map((row) => row.key);
+  assert.equal(new Set(keys).size, 20);
+  const catalog = readFileSync(new URL("./live-catalog.ts", import.meta.url), "utf8");
+  const liveIds = [...catalog.matchAll(/^\s+id: "(live_[^"]+)"/gm)].map((row) => row[1]);
+  assert.deepEqual([...keys].sort(), [...new Set(liveIds)].sort());
+  for (const spec of FERNORA_PRINTIFY_STARTERS) {
+    assert.equal(spec.variants.length, 1);
+    assert.equal(spec.variants[0].is_enabled, true);
+    assert.equal(spec.variants[0].is_default, true);
+    assert.ok(spec.printFile.startsWith("print-"));
+  }
+  const poster = FERNORA_PRINTIFY_STARTERS.find((row) => row.key === "live_poster");
+  const tote = FERNORA_PRINTIFY_STARTERS.find((row) => row.key === "live_tote");
+  assert.equal(poster?.blueprintId, 282);
+  assert.equal(poster?.printProviderId, 99);
   assert.deepEqual(
-    poster.variants.map((row) => row.id),
-    [43138, 43141, 43144],
+    poster?.variants.map((row) => row.id),
+    [43138],
   );
-  assert.equal(tote.title, "Fern Spray Canvas Tote");
-  assert.equal(tote.blueprintId, 553);
-  assert.equal(tote.printProviderId, 34);
+  assert.equal(tote?.blueprintId, 553);
+  assert.equal(tote?.printProviderId, 34);
   assert.deepEqual(
-    tote.variants.map((row) => row.id),
-    [70646, 70603],
+    tote?.variants.map((row) => row.id),
+    [70646],
   );
-  const payload = buildPrintifyProductPayload(poster, "img_poster");
+  const payload = buildPrintifyProductPayload(poster!, "img_poster");
   assert.equal(payload.visible, true);
   assert.equal("publish_details" in payload, false);
   assert.equal(payload.print_areas[0].placeholders[0].position, "front");
   assert.equal(payload.print_areas[0].placeholders[0].images[0].id, "img_poster");
-  assert.deepEqual(payload.print_areas[0].variant_ids, [43138, 43141, 43144]);
-  assert.equal(existingPrintifyProductId([{ id: "abc", title: "Fern Arc Poster" }], "Fern Arc Poster"), "abc");
+  assert.deepEqual(payload.print_areas[0].variant_ids, [43138]);
+  assert.equal(
+    existingPrintifyProductId([{ id: "abc", title: "Fern Arc Poster" }], "Fern Arc Poster · A3 Semi-Gloss", [
+      "Fern Arc Poster",
+    ]),
+    "abc",
+  );
   assert.equal(existingPrintifyProductId([{ id: "abc", title: "Other" }], "Fern Arc Poster"), undefined);
+  assert.deepEqual(printifyEnabledVariantIds({ variants: [{ id: 1, is_enabled: true }, { id: 2, is_enabled: false }] }), [
+    1,
+  ]);
   const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
   assert.equal(printifyImageFileName("print-poster-fern-arc.png", jpeg), "print-poster-fern-arc.jpg");
   const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);

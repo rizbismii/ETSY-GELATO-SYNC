@@ -104,8 +104,20 @@ test("Horizon branding shows country · currency and Gelato homepage copy", () =
   assert.match(source, /page_width = "normal"/);
   assert.match(source, /story_fernora/);
   assert.match(source, /Nothing is stored in a warehouse/);
-  assert.match(source, /title: "Botanical"/);
-  assert.match(source, /title: "Original fern"/);
+  assert.match(source, /CATALOG_SERIES/);
+  assert.match(source, /All, Quotes, Botanical, Scenic, Home décor, and Original fern/);
+});
+
+test("Catalog dropdown order is All, Quotes, Botanical, Scenic, Home décor, Original fern", () => {
+  const menu = readFileSync(new URL("./catalog-menu.ts", import.meta.url), "utf8");
+  assert.match(
+    menu,
+    /id: "all"[\s\S]*id: "quote"[\s\S]*id: "botanical"[\s\S]*id: "scenic"[\s\S]*id: "home"[\s\S]*id: "original"/,
+  );
+  const shop = readFileSync(new URL("../app/shop/page.tsx", import.meta.url), "utf8");
+  const listings = readFileSync(new URL("../app/listings/page.tsx", import.meta.url), "utf8");
+  assert.match(shop, /CATALOG_MENU/);
+  assert.match(listings, /CATALOG_MENU/);
 });
 
 test("markets pin countries without presentment currency to USD", () => {

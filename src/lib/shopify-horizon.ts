@@ -1,3 +1,4 @@
+import { CATALOG_MENU, CATALOG_SERIES } from "@/lib/catalog-menu";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { shopifyGraphql } from "@/lib/shopify";
@@ -10,14 +11,11 @@ const COUNTRY_CURRENCY_MARK = "localization.country.name }} · {{ localization.c
 const PICKER_CSS_MARK = "/* fernora-country-currency */";
 const MOBILE_LAYOUT_MARK = "/* fernora-mobile-layout */";
 const STUDIO_LAYOUT_MARK = "/* fernora-studio-layout */";
-const COLLECTION_HANDLES = ["botanical", "scenic", "quotes", "home-decor"] as const;
-const SERIES_COLLECTIONS = [
-  { handle: "botanical", title: "Botanical" },
-  { handle: "scenic", title: "Scenic" },
-  { handle: "quotes", title: "Quotes" },
-  { handle: "home-decor", title: "Home décor" },
-  { handle: "original-fern", title: "Original fern" },
-] as const;
+const COLLECTION_HANDLES = CATALOG_SERIES.map((series) => series.handle);
+const SERIES_COLLECTIONS = CATALOG_SERIES.map((series) => ({
+  handle: series.handle,
+  title: series.label,
+}));
 
 const PALETTE = {
   background: "#FBF6EC",
@@ -46,6 +44,7 @@ export async function brandHorizonStorefront(themeId: string, origin?: string) {
   });
   notes.push(...(await upsertHorizonJson(themeId, heroRef)));
   notes.push(...(await assignCollectionImages()));
+  notes.push(...(await ensureSeriesCollections()));
   notes.push(...(await patchMainCatalogMenu()));
   notes.push(...(await publishGelatoLegalPages()));
   return notes;
@@ -615,11 +614,11 @@ async function upsertHorizonJson(themeId: string, heroRef: string) {
     settings: {
       collection_list: [...COLLECTION_HANDLES],
       layout_type: "grid",
-      columns: 4,
+      columns: 5,
       mobile_columns: "2",
       columns_gap: 12,
       rows_gap: 16,
-      max_collections: 4,
+      max_collections: 5,
       section_width: "page-width",
       background_color: "#F3E7C8",
       "padding-block-start": 48,
@@ -804,13 +803,11 @@ async function patchMainCatalogMenu() {
   }
   const collections = new Map(data.collections.nodes.map((row) => [row.handle, row.id]));
   const contact = data.pages.nodes.find((row) => row.handle === "contact")?.id;
-  const catalogItems = [
-    { title: "All", type: "CATALOG" },
-    ...SERIES_COLLECTIONS.flatMap((series) => {
-      const resourceId = collections.get(series.handle);
-      return resourceId ? [{ title: series.title, type: "COLLECTION", resourceId }] : [];
-    }),
-  ];
+  const catalogItems = CATALOG_MENU.map((item) => {
+    if (item.id === "all") return { title: item.label, type: "CATALOG" };
+    const resourceId = collections.get(item.handle);
+    return resourceId ? { title: item.label, type: "COLLECTION", resourceId } : undefined;
+  }).filter(Boolean) as Array<{ title: string; type: string; resourceId?: string }>;
   const items: Array<{ title: string; type: string; resourceId?: string; items?: typeof catalogItems }> = [
     { title: "Home", type: "FRONTPAGE" },
     { title: "Catalog", type: "CATALOG", items: catalogItems },
@@ -827,8 +824,47 @@ async function patchMainCatalogMenu() {
   if (updated.menuUpdate.userErrors.length) {
     notes.push(`Catalog menu: ${updated.menuUpdate.userErrors.map((row) => row.message).join("; ")}`);
   } else {
-    notes.push("Catalog is a dropdown of All, Botanical, Scenic, Quotes, Home décor, and Original fern.");
+    notes.push("Catalog is a dropdown of All, Quotes, Botanical, Scenic, Home décor, and Original fern.");
   }
+  return notes;
+}
+
+async function ensureSeriesCollections() {
+  const notes: string[] = [];
+  const listed = await shopifyGraphql<{
+    collections: { nodes: Array<{ id: string; handle: string }> };
+  }>(`{ collections(first: 30) { nodes { id handle } } }`);
+  const existing = new Map(listed.collections.nodes.map((row) => [row.handle, row.id]));
+  for (const series of SERIES_COLLECTIONS) {
+    if (existing.has(series.handle)) continue;
+    const created = await shopifyGraphql<{
+      collectionCreate: {
+        collection?: { id: string; handle?: string };
+        userErrors: Array<{ message: string }>;
+      };
+    }>(
+      `mutation ($input: CollectionInput!) {
+        collectionCreate(input: $input) {
+          collection { id handle }
+          userErrors { field message }
+        }
+      }`,
+      { input: { title: series.title, handle: series.handle } },
+    );
+    if (created.collectionCreate.userErrors.length) {
+      notes.push(
+        `${series.title}: ${created.collectionCreate.userErrors.map((row) => row.message).join("; ")}`,
+      );
+      continue;
+    }
+    notes.push(`Created collection ${series.title}.`);
+  }
+  return notes;
+}
+
+export async function syncShopifyCatalogMenu() {
+  const notes = await ensureSeriesCollections();
+  notes.push(...(await patchMainCatalogMenu()));
   return notes;
 }
 

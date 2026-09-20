@@ -18,6 +18,7 @@ import { StatusPill } from "@/components/status-pill";
 import { ProductArt } from "@/components/product-art";
 import { api } from "@/lib/api";
 import { formatMoney, formatPercent } from "@/lib/money";
+import { CATALOG_MENU } from "@/lib/catalog-menu";
 import { ETSY_SHOP_URL, etsyListingUrl } from "@/lib/live-catalog";
 import { printFileName, printTemplateLabel, printSurface } from "@/lib/print-file";
 import type { Listing } from "@/lib/types";
@@ -62,20 +63,16 @@ type Payload = {
     mode: string;
     rate: number;
     cpcEnabled: boolean;
+    cpcWaitDaysLeft?: number;
+    cpcWaitNotedOn?: string;
+    cpcWaitNote?: string;
     offsiteEnabled?: boolean;
     offsiteOptedOutOn?: string;
     countries: Array<{ region: string; label: string }>;
   };
 };
 
-const MIX = [
-  { id: "all", label: "All" },
-  { id: "quote", label: "Quotes" },
-  { id: "botanical", label: "Botanical" },
-  { id: "scenic", label: "Scenic" },
-  { id: "home", label: "Home décor" },
-  { id: "original", label: "Original fern" },
-] as const;
+const MIX = CATALOG_MENU;
 
 export default function ListingsPage() {
   const [data, setData] = useState<Payload | null>(null);
@@ -218,9 +215,11 @@ export default function ListingsPage() {
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
             Mixed Fernora shop: positive quote prints, botanicals, scenic work and five home-décor
             pieces — not an all-abstract wall. Prices in {currency}. Printify is the main supplier
-            except the United Kingdom and the European Union. The catalog is cleared until products
-            are recreated on Printify. Listings stay priced so a worst-case Etsy Offsite sale still
-            leaves 40% after print and fees. Actual ad spend is the Meta daily cap on Ads.
+            except the United Kingdom and the European Union. One Printify product per catalog item,
+            one variant each. Catalog dropdowns on Etsy, Shopify, and this desk match Printify: All,
+            Quotes, Botanical, Scenic, Home décor, Original fern. Listings stay priced so a
+            worst-case Etsy Offsite sale still leaves 40% after print and fees. Actual ad spend is
+            the Meta daily cap on Ads. Etsy Ads (CPC) are not activated.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -273,25 +272,29 @@ export default function ListingsPage() {
           checkout. Japan, Korea, India, Indonesia, the Philippines, and Vietnam stay off. Advertising is a{" "}
           <strong>Meta campaign from Pressroom</strong> to fernora.nz with a low daily cap. Etsy
           Offsite Ads were opted out on {data.ads?.offsiteOptedOutOn || "19 September 2026"} (
-          {adsRate}% of an attributed sale if a leftover ad still hits). On-site CPC Etsy Ads stay
-          off so spend does not stack.
+          {adsRate}% of an attributed sale if a leftover ad still hits). On-site CPC Etsy Ads are
+          not activated — new shop 15-day wait
+          {data.ads?.cpcWaitDaysLeft
+            ? ` (~${data.ads.cpcWaitDaysLeft} days left as of ${data.ads.cpcWaitNotedOn || "20 September 2026"})`
+            : ""}
+          . Do not turn them on.
         </p>
         <p className="mt-2 text-xs text-muted-foreground">
           Set the daily cap on{" "}
           <a className="underline" href="/ads">
             Ads
           </a>
-          . Do not click Turn on Offsite Ads in Etsy Shop Manager → Marketing. Leave Etsy Ads (CPC)
-          off — the Open API cannot flip those switches.
+          . Do not click Turn on Offsite Ads in Etsy Shop Manager → Marketing. Etsy Ads (CPC) are
+          not activated — leave the wait as it is. The Open API cannot flip those switches.
         </p>
       </div>
 
       <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm leading-6">
         <p className="font-medium">Print file templates</p>
         <p className="mt-1 text-muted-foreground">
-          Each product stores its print file in this catalog. Recreate on Printify for non-EU/UK
-          destinations; Gelato stays for UK and EU only. Download the template for the current mix
-          when you add products again.
+          Each product stores its print file in this catalog. Printify holds one unpublished product
+          per item (one variant). Gelato stays for UK and EU only. Download the template for the
+          current mix.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {visible
@@ -333,8 +336,7 @@ export default function ListingsPage() {
       {visible.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            Nothing in this mix yet. The live catalog is cleared. Recreate on Printify (except EU/UK,
-            which stay on Gelato). Leave the saved connections as they are.
+            Nothing in this mix yet.
           </CardContent>
         </Card>
       ) : (

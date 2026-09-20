@@ -1,8 +1,8 @@
 # Pressroom
 
-Operations desk for **FERNORATRENDS** on Etsy and the **Fernora** shop (New Zealand, Australia, the United States, the United Kingdom, the European Union, and selected countries at checkout). **Printify** is the main print supplier except the United Kingdom and the European Union, where **Gelato** stays connected for GPSR. Saved connections stay as they are. The live catalog is cleared until products are recreated on Printify.
+Operations desk for **FERNORATRENDS** on Etsy and the **Fernora** shop (New Zealand, Australia, the United States, the United Kingdom, the European Union, and selected countries at checkout). **Printify** is the main print supplier except the United Kingdom and the European Union, where **Gelato** stays connected for GPSR. Saved connections stay as they are. The catalog is **one Printify product per item**, one enabled variant each. Etsy, Shopify, and website Catalog dropdowns match: All, Quotes, Botanical, Scenic, Home décor, Original fern.
 
-There is no sample shop. The Catalog page stays empty while the deleted mix is held.
+There is no sample shop. Catalog is the 20-item Fernora mix.
 
 ## What it does
 
@@ -12,7 +12,7 @@ There is no sample shop. The Catalog page stays empty while the deleted mix is h
 - **Map listings** to Gelato product UIDs and print files so orders are not blocked.
 - **Fulfill** paid Etsy receipts as Gelato v4 orders.
 - **Push tracking** from Gelato onto the Etsy receipt (Star Seller / case protection).
-- **Price for profit** using Etsy 6.5% transaction + 3% + $0.25 payment fees against Gelato unit cost. Listings stay priced so a worst-case Etsy Offsite hit still leaves **40%**. Paid traffic to [fernora.nz](https://fernora.nz) is a **Meta campaign from Ads** with a low daily cap (default 5, max 15 in the ad-account currency). Etsy Offsite Ads were opted out on 19 September 2026. Leave on-site CPC Etsy Ads off.
+- **Price for profit** using Etsy 6.5% transaction + 3% + $0.25 payment fees against Gelato unit cost. Listings stay priced so a worst-case Etsy Offsite hit still leaves **40%**. Paid traffic to [fernora.nz](https://fernora.nz) is a **Meta campaign from Ads** with a low daily cap (default 5, max 15 in the ad-account currency). Etsy Offsite Ads were opted out on 19 September 2026. Etsy Ads (CPC) are not activated (new-shop 15-day wait).
 - **Fix store operations** in one pass: auto-map, reprice thin listings, send ready orders, push missing tracking.
 
 Gelato already offers a native Etsy channel. Pressroom is the control plane around it: catalog publish, blocked orders, margin math, and tracking gaps in one desk.
@@ -95,11 +95,11 @@ PRINTIFY_API_TOKEN=
 
 ## Live catalog
 
-The catalog in this repo is the Fernora mix in NZD: **20 listing templates**, currently **cleared**. Recreate on Printify for non-EU/UK destinations; keep Gelato for UK and EU. Shop origin on Etsy is Wellington 6012. Advertising is a **Meta campaign** from Pressroom **Ads** to fernora.nz (daily cap 5, max 15). Etsy Offsite Ads were opted out on 19 September 2026. Leave on-site CPC Etsy Ads off.
+The catalog in this repo is the Fernora mix in NZD: **20 listing templates**, **one Printify product per item** (one enabled variant). Printify is the main printer for non-EU/UK destinations; keep Gelato for UK and EU. Shop origin on Etsy is Wellington 6012. Advertising is a **Meta campaign** from Pressroom **Ads** to fernora.nz (daily cap 5, max 15). Etsy Offsite Ads were opted out on 19 September 2026. Etsy Ads (CPC) are not activated (15-day new-shop wait as of 20 September 2026). Catalog dropdowns on Etsy, Shopify, and the website match Printify: All, Quotes, Botanical, Scenic, Home décor, Original fern.
 
 ### Printify
 
-On **Connections**, paste a Printify personal access token from [printify.com/app/account/api](https://printify.com/app/account/api). **Printify is the main supplier except EU/UK.** Keep **Non-EU** — Printify will not save EU without a real EU or Northern Ireland address, and Wellington 6012 is not valid. **Gelato** stays connected for those destinations only. Leave Etsy, Shopify, Printify, and Gelato keys as they are. Do not rebuild Shopify or the website around Gelato yet. External products with Migrate product are leftover listings — do not migrate them. The live catalog is cleared; recreate on Printify when ready.
+On **Connections**, paste a Printify personal access token from [printify.com/app/account/api](https://printify.com/app/account/api). **Printify is the main supplier except EU/UK.** Keep **Non-EU** — Printify will not save EU without a real EU or Northern Ireland address, and Wellington 6012 is not valid. **Gelato** stays connected for those destinations only. Leave Etsy, Shopify, Printify, and Gelato keys as they are. Do not rebuild Shopify or the website around Gelato yet. External products with Migrate product are leftover listings — do not migrate them. **Create Printify catalog · 1 variant each** makes 20 unpublished products and aligns Catalog dropdowns.
 
 ### Meta ads
 
@@ -108,17 +108,17 @@ On **Ads**, create a Business app at [developers.facebook.com](https://developer
 | Product | Mix | Price (NZD) |
 | --- | --- | --- |
 | Fern Arc Poster · A3 | original | 56.99 |
-| Fern Mark Hoodie · Black, White, Navy · S–L | original | 125.99 |
+| Fern Mark Hoodie · Black · M | original | 125.99 |
 | Fern Spray Tote · Natural | original | 71.99 |
 | Fern Band Mug · 11 oz | original | 49.99 |
 | Bush Light Canvas · 16×20 | original | 176.99 |
 | Breathe. You are here. · A3 | quote | 56.99 |
 | Light finds a way · A2 | quote | 71.99 |
 | Kowhai Bells · 18×24 | botanical | 73.99 |
-| Be kind anyway Tee · Black, White, Navy · S–L | quote | 102.99 |
+| Be kind anyway Tee · Black · M | quote | 102.99 |
 | Grow anyway Tote · Black | quote | 71.99 |
 | Good morning, love Mug | quote | 59.99 |
-| Soft days ahead Sweatshirt · Black, White, Navy · S–L | quote | 109.99 |
+| Soft days ahead Sweatshirt · Black · M | quote | 109.99 |
 | Harbour Morning Canvas · 12×12 | scenic | 118.99 |
 | You belong here · iPhone 15 | quote | 67.99 |
 | Pōhutukawa Coast · 12×16 | botanical | 53.99 |

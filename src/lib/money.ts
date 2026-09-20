@@ -8,8 +8,13 @@ export const TARGET_AFTER_ADS_MARGIN = 0.4;
 /** Shop Manager → Marketing → Offsite Ads. Opted out 19 September 2026. Do not turn back on. */
 export const ETSY_OFFSITE_ADS_ENABLED = false;
 export const ETSY_OFFSITE_OPTED_OUT_ON = "19 September 2026";
-/** On-site Etsy Ads are CPC. Keep them off so spend never runs without a sale. */
+/** On-site Etsy Ads are CPC. They are not activated — new shop 15-day wait. Do not turn them on. */
 export const ETSY_CPC_ADS_ENABLED = false;
+/** Shop Manager showed about 6 days left on 20 September 2026. */
+export const ETSY_CPC_WAIT_DAYS_LEFT = 6;
+export const ETSY_CPC_WAIT_NOTED_ON = "20 September 2026";
+export const ETSY_CPC_WAIT_NOTE =
+  "Etsy Ads (CPC) are not activated. The shop is new to Etsy and must wait 15 days before ads can start. About 6 days were left as of 20 September 2026. Do not turn them on when the wait ends unless we decide to.";
 
 export const SHOPIFY_PAYMENT_RATE = 0.029;
 export const SHOPIFY_PAYMENT_FIXED = 0.3;

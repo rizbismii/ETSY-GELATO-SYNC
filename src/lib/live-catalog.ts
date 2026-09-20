@@ -1,4 +1,4 @@
-import { clothingVariants, defaultClothingVariant, resolveCatalogLine } from "@/lib/clothing";
+import { singleClothingVariant, resolveCatalogLine } from "@/lib/clothing";
 import { GELATO_SHIP_BLURB } from "@/lib/gelato-countries";
 import { OFFSITE_ADS_RATE, TARGET_AFTER_ADS_MARGIN, recommendedPrice } from "@/lib/money";
 import type { Listing } from "@/lib/types";
@@ -202,7 +202,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     etsyListingId: "",
     title: "Fern Mark Unisex Hoodie",
     description:
-      "Heavyweight unisex pullover hoodie with a chest fern emblem. Best-selling colours Black, White and Navy in S, M and L. Made to order.",
+      "Heavyweight unisex pullover hoodie with a chest fern emblem. Black / M. Made to order.",
     state: "active",
     price: priceFor(hoodiePrint, shipHoodie),
     currency: "NZD",
@@ -212,9 +212,8 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     tags: ["hoodie", "fern", "unisex", "botanical", "nz"],
     category: "hoodie",
     collection: "original",
-    gelatoProductUid:
-      defaultClothingVariant(clothingVariants("live_hoodie", "hoodie"))?.gelatoProductUid,
-    gelatoProductName: "Unisex pullover hoodie · Black, White, Navy · S–L",
+    gelatoProductUid: singleClothingVariant("live_hoodie", "hoodie")[0]?.gelatoProductUid,
+    gelatoProductName: "Unisex pullover hoodie · Black · M",
     printFileUrl: "/catalog/print-hoodie-fern-mark.png", // RGBA DTG: sage filled fern emblem, transparent ground
     imageUrl: "/catalog/catalog-hoodie.png",
     gelatoUnitCost: Math.max(...Object.values(hoodiePrint)),
@@ -225,7 +224,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     returnPolicyId: RETURN_POLICY_ID,
     publishState: "ready",
     lanes: lanes(hoodiePrint, shipHoodie),
-    variants: clothingVariants("live_hoodie", "hoodie"),
+    variants: singleClothingVariant("live_hoodie", "hoodie"),
   }),
   item({
     id: "live_tote",
@@ -401,7 +400,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     etsyListingId: "",
     title: "Be Kind Anyway Tee",
     description:
-      "Unisex tee with a small chest line: “Be kind anyway.” Best-selling colours Black, White and Navy in S, M and L.",
+      "Unisex tee with a small chest line: “Be kind anyway.” Black / M.",
     quote: "Be kind anyway.",
     state: "active",
     price: priceFor(teePrint, shipTee),
@@ -412,9 +411,8 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     tags: ["kindness", "quote", "tshirt", "positive", "unisex"],
     category: "tee",
     collection: "quote",
-    gelatoProductUid:
-      defaultClothingVariant(clothingVariants("live_tee_kind", "tee"))?.gelatoProductUid,
-    gelatoProductName: "Unisex tee · Black, White, Navy · S–L",
+    gelatoProductUid: singleClothingVariant("live_tee_kind", "tee")[0]?.gelatoProductUid,
+    gelatoProductName: "Unisex tee · Black · M",
     printFileUrl: "/catalog/print-be-kind.png", // RGBA DTG: dark type + fern, cream paper knocked out
     imageUrl: "/catalog/catalog-be-kind.png",
     gelatoUnitCost: Math.max(...Object.values(teePrint)),
@@ -425,7 +423,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     returnPolicyId: RETURN_POLICY_ID,
     publishState: "ready",
     lanes: lanes(teePrint, shipTee),
-    variants: clothingVariants("live_tee_kind", "tee"),
+    variants: singleClothingVariant("live_tee_kind", "tee"),
   }),
   item({
     id: "live_tote_grow",
@@ -490,7 +488,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     etsyListingId: "",
     title: "Soft Days Ahead Sweatshirt",
     description:
-      "Crewneck with cream lettering: “Soft days ahead.” Best-selling colours Black, White and Navy in S, M and L.",
+      "Crewneck with cream lettering: “Soft days ahead.” Black / M.",
     quote: "Soft days ahead.",
     state: "active",
     price: priceFor(sweatPrint, shipHoodie),
@@ -501,9 +499,8 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     tags: ["calm", "sweatshirt", "quote", "hope", "unisex"],
     category: "sweatshirt",
     collection: "quote",
-    gelatoProductUid:
-      defaultClothingVariant(clothingVariants("live_sweat_soft", "sweatshirt"))?.gelatoProductUid,
-    gelatoProductName: "Unisex sweatshirt · Black, White, Navy · S–L",
+    gelatoProductUid: singleClothingVariant("live_sweat_soft", "sweatshirt")[0]?.gelatoProductUid,
+    gelatoProductName: "Unisex sweatshirt · Black · M",
     printFileUrl: "/catalog/print-soft-days.png", // RGBA DTG: cream type + sunburst, black paper knocked out
     imageUrl: "/catalog/catalog-soft-days.png",
     gelatoUnitCost: Math.max(...Object.values(sweatPrint)),
@@ -514,7 +511,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     returnPolicyId: RETURN_POLICY_ID,
     publishState: "ready",
     lanes: lanes(sweatPrint, shipHoodie),
-    variants: clothingVariants("live_sweat_soft", "sweatshirt"),
+    variants: singleClothingVariant("live_sweat_soft", "sweatshirt"),
   }),
   item({
     id: "live_canvas_harbour",

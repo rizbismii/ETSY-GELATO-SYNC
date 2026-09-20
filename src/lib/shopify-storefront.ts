@@ -1,3 +1,4 @@
+import { CATALOG_SERIES } from "@/lib/catalog-menu";
 import { fernoraCatalog, FERNORA_NAME, FERNORA_SHIP_BLURB } from "@/lib/shop";
 import { gelatoCodesForLane, SHIP_LANES } from "@/lib/gelato-countries";
 import {
@@ -270,13 +271,11 @@ export async function fillShopifyCollections() {
   }
 
   const publicationId = await onlineStorePublicationId();
-  const mixTitles: Array<{ handle: string; title: string; ids: string[] }> = [
-    { handle: "quotes", title: "Quotes", ids: groups.quote },
-    { handle: "botanical", title: "Botanical", ids: groups.botanical },
-    { handle: "scenic", title: "Scenic", ids: groups.scenic },
-    { handle: "home-decor", title: "Home décor", ids: groups.home },
-    { handle: "original-fern", title: "Original fern", ids: groups.original },
-  ];
+  const mixTitles = CATALOG_SERIES.map((series) => ({
+    handle: series.handle,
+    title: series.label,
+    ids: groups[series.id] || [],
+  }));
   const listed = await shopifyGraphql<{
     collections: { nodes: Array<{ id: string; handle: string }> };
   }>(`{ collections(first: 30) { nodes { id handle } } }`);

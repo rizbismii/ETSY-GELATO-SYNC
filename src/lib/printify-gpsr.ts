@@ -64,7 +64,7 @@ export function printifyGpsrNotes(status: PrintifyGpsrStatus, scanned: number, u
   if (status === "empty") {
     return [
       PRINTIFY_EU_GPSR_NOTE,
-      "Shop is empty. Catalog is cleared — recreate on Printify when ready. Do not migrate leftover External products.",
+      "Shop is empty. Create the 20-item Printify catalog (one variant each). Do not migrate leftover External products.",
     ];
   }
   return [

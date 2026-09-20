@@ -354,7 +354,7 @@ export function ConnectionsClient() {
       const skipped = (result.products || []).filter((row) => row.skipped);
       toast.success(
         created.length
-          ? `Created ${created.map((row) => row.title).join(" and ")} on ${result.shopTitle || "Printify"} · unpublished`
+          ? `Created ${created.length} Printify product${created.length === 1 ? "" : "s"} on ${result.shopTitle || "Printify"} · unpublished · 1 variant each`
           : skipped.length
             ? `${skipped.map((row) => row.title).join(" and ")} already on ${result.shopTitle || "Printify"}`
             : "Printify products unchanged",
@@ -548,8 +548,7 @@ export function ConnectionsClient() {
           <a className="underline" href="https://fernora.nz">
             fernora.nz
           </a>
-          . /shop on this desk is the catalog preview. The live catalog is cleared until products are
-          recreated on Printify.
+          . /shop on this desk is the catalog preview. Catalog is one Printify product per item.
         </p>
       </div>
 
@@ -730,8 +729,8 @@ export function ConnectionsClient() {
         <CardContent className="space-y-3 text-sm leading-6">
           <p className="text-muted-foreground">
             {live?.readyToSell
-              ? "Printify is the main printer except EU/UK. Gelato stays connected for those destinations. Catalog is cleared — do not republish onto Gelato."
-              : "Printify is the main printer except EU/UK. Leave Etsy, Shopify, Printify, and Gelato connections as they are. Catalog is cleared."}
+              ? "Printify is the main printer except EU/UK. Gelato stays connected for those destinations. One Printify product per catalog item — do not republish onto Gelato."
+              : "Printify is the main printer except EU/UK. Leave Etsy, Shopify, Printify, and Gelato connections as they are."}
           </p>
           <ul className="space-y-2">
             <li className="flex flex-wrap items-center gap-2">
@@ -1050,8 +1049,9 @@ export function ConnectionsClient() {
           <CardContent className="space-y-4">
             <p className="text-sm leading-6 text-muted-foreground">
               Printify is the main print supplier except the United Kingdom and the European Union.
-              Keep the token and the Etsy-connected Fernora Trends shop. Catalog is cleared — do not
-              migrate leftover External products, and do not republish the old Gelato mix.
+              Keep the token and the Etsy-connected Fernora Trends shop. Create one unpublished
+              Printify product per catalog item (one variant). Do not migrate leftover External
+              products, and do not republish the old Gelato mix.
             </p>
             <p className="text-sm leading-6 text-muted-foreground">
               Keep <strong className="font-medium text-foreground">Non-EU</strong> on Printify.
@@ -1062,7 +1062,7 @@ export function ConnectionsClient() {
               <li>Leave the dropdown on Fernora Trends · Etsy · Connected.</li>
               <li>Do not click Migrate product on leftover External products.</li>
               <li>
-                Recreate products on Printify when you are ready. They land unpublished in{" "}
+                Recreate products on Printify. They land unpublished in{" "}
                 <strong className="font-medium text-foreground">My products</strong>.
               </li>
               <li>Save Printify below so this desk refreshes shop names. Do not change the other connections.</li>
@@ -1101,7 +1101,7 @@ export function ConnectionsClient() {
                 disabled={!printifyToken || Boolean(busy)}
               >
                 {busy === "printify-products" ? <Loader2 className="animate-spin" /> : null}
-                Recreate Fern Arc Poster and Fern Spray tote later
+                Create Printify catalog · 1 variant each
               </Button>
             </div>
           </CardContent>
@@ -1127,8 +1127,8 @@ export function ConnectionsClient() {
                 fernora.nz
               </a>
               ): native checkout, Shop Pay, accounts, markets, and destination shipping. Leave this
-              connection as it is. Do not click Publish catalog while the mix is cleared — that would
-              put the old Gelato products back on fernora.nz.{" "}
+              connection as it is. Do not click Publish catalog to push the old Gelato 9-pack clothing
+              mix back onto fernora.nz. Catalog dropdowns already match Printify.{" "}
               <a className="underline" href="/shop">
                 /shop
               </a>{" "}
