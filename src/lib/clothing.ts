@@ -77,6 +77,12 @@ export function defaultClothingVariant(variants: ClothingVariant[] | undefined) 
   );
 }
 
+/** One enabled clothing SKU per catalog product (Black · M). */
+export function singleClothingVariant(productId: string, category: string): ClothingVariant[] {
+  const one = defaultClothingVariant(clothingVariants(productId, category));
+  return one ? [one] : [];
+}
+
 export function findClothingVariant(variants: ClothingVariant[] | undefined, variantId?: string | null) {
   if (!variants?.length) return undefined;
   if (variantId) {

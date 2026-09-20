@@ -20,6 +20,12 @@ type Payload = {
   dailyBudgetMax: number;
   dailyBudgetDefault: number;
   offsiteRate: number;
+  offsiteEnabled?: boolean;
+  offsiteOptedOutOn?: string;
+  etsyCpcEnabled?: boolean;
+  etsyCpcWaitDaysLeft?: number;
+  etsyCpcWaitNotedOn?: string;
+  etsyCpcWaitNote?: string;
   campaign: MetaAdsCampaign;
   ping?: { user?: string; accountName?: string; currency?: string };
   pingError?: string;
@@ -132,18 +138,46 @@ export default function AdsPage() {
             fernora.nz
           </a>
           . Daily spend is capped — default {data.dailyBudgetDefault} {currency}, never above{" "}
-          {data.dailyBudgetMax}. Leave Etsy Offsite Ads ({Math.round(data.offsiteRate * 100)}% of a
-          sale) and Etsy CPC Ads off so the shop is not charged twice.
+          {data.dailyBudgetMax}. Etsy Offsite Ads were opted out on {data.offsiteOptedOutOn || "19 September 2026"}
+          — do not click Turn on Offsite Ads. Etsy Ads (CPC) are not activated
+          {data.etsyCpcWaitDaysLeft
+            ? ` — about ${data.etsyCpcWaitDaysLeft} days left in the 15-day new-shop wait as of ${
+                data.etsyCpcWaitNotedOn || "20 September 2026"
+              }`
+            : ""}
+          . Do not turn them on.
         </p>
       </div>
 
       <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm leading-6">
-        <p className="font-medium">Lower spend</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusPill value={data.offsiteEnabled ? "warning" : "live"} />
+          <p className="font-medium">Etsy Offsite Ads opted out</p>
+        </div>
         <p className="mt-1 text-muted-foreground">
-          Etsy Offsite Ads take {Math.round(data.offsiteRate * 100)}% of an attributed order. A{" "}
-          {data.dailyBudgetDefault}/{currency} Meta cap is the cheaper path for fernora.nz. In{" "}
-          <strong>Etsy Shop Manager → Marketing</strong> keep Offsite Ads off and Etsy Ads (CPC) off.
-          Pressroom cannot flip those Etsy switches.
+          Shop Manager shows Offsite Ads off since {data.offsiteOptedOutOn || "19 September 2026"}. Etsy
+          can take a few days to drop leftover Offsite placements. Do not turn them back on. Etsy Ads
+          (CPC) are not activated
+          {data.etsyCpcWaitDaysLeft
+            ? ` (new shop 15-day wait, ~${data.etsyCpcWaitDaysLeft} days left as of ${
+                data.etsyCpcWaitNotedOn || "20 September 2026"
+              })`
+            : ""}
+          . Do not click Start advertising when the wait ends unless we decide to. Paid traffic to
+          fernora.nz is the Meta daily cap below ({data.dailyBudgetDefault}–{data.dailyBudgetMax}{" "}
+          {currency}). Listing prices still survive a {Math.round(data.offsiteRate * 100)}% Offsite
+          hit if a leftover ad attributes a sale.
+        </p>
+      </div>
+
+      <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm leading-6">
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusPill value={data.etsyCpcEnabled ? "warning" : "live"} />
+          <p className="font-medium">Etsy Ads (CPC) not activated</p>
+        </div>
+        <p className="mt-1 text-muted-foreground">
+          {data.etsyCpcWaitNote ||
+            "The shop is new to Etsy and must wait 15 days before on-site ads. Do not turn them on."}
         </p>
       </div>
 

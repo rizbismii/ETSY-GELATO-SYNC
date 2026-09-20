@@ -329,7 +329,7 @@ export function ConnectionsClient() {
         );
       } else toast.warning(result.warning || "Token saved, but Printify did not confirm it yet");
       if (result.gpsrStatus === "non-eu") {
-        toast.message("Non-EU hold. Printify is for other platforms only — Gelato stays the live printer for fernora.nz.");
+        toast.message("Non-EU hold. Printify is the main supplier except EU/UK — Gelato stays connected for those destinations only.");
       }
       for (const note of result.notes || []) toast.message(note);
       dirty.current.printifyToken = false;
@@ -353,8 +353,8 @@ export function ConnectionsClient() {
       const created = (result.products || []).filter((row) => !row.skipped);
       const skipped = (result.products || []).filter((row) => row.skipped);
       toast.success(
-        created.length
-          ? `Created ${created.map((row) => row.title).join(" and ")} on ${result.shopTitle || "Printify"} · unpublished`
+          created.length
+          ? `Created ${created.length} Printify product${created.length === 1 ? "" : "s"} on ${result.shopTitle || "Printify"} · 1 variant each`
           : skipped.length
             ? `${skipped.map((row) => row.title).join(" and ")} already on ${result.shopTitle || "Printify"}`
             : "Printify products unchanged",
@@ -390,7 +390,7 @@ export function ConnectionsClient() {
     setBusy("reset");
     try {
       await api("/api/demo/reset", { method: "POST" });
-      toast.success("Sample orders removed. Live Fernora catalog restored.");
+      toast.success("Sample orders removed. Deleted catalog products stay cleared.");
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
@@ -541,12 +541,14 @@ export function ConnectionsClient() {
       <div>
         <h1 className="font-heading text-4xl tracking-tight">Connections</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Pressroom talks to Etsy Open API v3, Shopify Admin API, and Gelato Order API v4.
-          FERNORATRENDS stays on Etsy. The customer website is the Shopify Online Store at{" "}
+          Pressroom talks to Etsy Open API v3, Shopify Admin API, Printify, and Gelato Order API v4.
+          FERNORATRENDS stays on Etsy. Printify is the main print supplier except the United Kingdom
+          and the European Union. Gelato stays connected for those destinations only — leave every
+          saved connection as it is. The customer website is the Shopify Online Store at{" "}
           <a className="underline" href="https://fernora.nz">
             fernora.nz
-          </a>{" "}
-          (Horizon theme, native checkout, markets, and Gelato shipping). /shop on this desk is the catalog preview.
+          </a>
+          . /shop on this desk is the catalog preview. Catalog is one Printify product per item.
         </p>
       </div>
 
@@ -727,8 +729,8 @@ export function ConnectionsClient() {
         <CardContent className="space-y-3 text-sm leading-6">
           <p className="text-muted-foreground">
             {live?.readyToSell
-              ? "Gelato can print. Paid Etsy and Fernora/Shopify orders go to production."
-              : "Gelato can print. Connect Etsy or Shopify. Customers buy on fernora.nz (Shopify Online Store)."}
+              ? "Printify is the main printer except EU/UK. Gelato stays connected for those destinations. One Printify product per catalog item — do not republish onto Gelato."
+              : "Printify is the main printer except EU/UK. Leave Etsy, Shopify, Printify, and Gelato connections as they are."}
           </p>
           <ul className="space-y-2">
             <li className="flex flex-wrap items-center gap-2">
@@ -794,7 +796,7 @@ export function ConnectionsClient() {
                 Printify
                 {live?.printify?.ok
                   ? ` · ${live.printify.shopTitle || data.printify?.shopTitle || "shop connected"} · ${printifyHeadlineFrom(data)}`
-                  : " · paste a personal access token below · Printify is for other platforms; Gelato stays live"}
+                  : " · paste a personal access token below · Printify is the main supplier except EU/UK"}
               </span>
             </li>
             <li className="flex flex-wrap items-center gap-2">
@@ -809,7 +811,7 @@ export function ConnectionsClient() {
             <li className="flex flex-wrap items-center gap-2">
               <StatusPill value="live" />
               <span>
-                Fernora website · Shopify Online Store · Gelato destinations ·{" "}
+                Fernora website · Shopify Online Store · same country set as Etsy ·{" "}
                 <a className="underline" href="https://fernora.nz" target="_blank" rel="noreferrer">
                   Open fernora.nz
                 </a>
@@ -961,14 +963,24 @@ export function ConnectionsClient() {
                 Authorize with Etsy
               </a>
             </div>
+            <p className="text-xs leading-5 text-muted-foreground">
+              Catalog shop sections (Quotes, Botanical, Scenic, Home décor, Original fern) need the
+              shops_w scope. Authorize once more when you want those Etsy dropdowns created. Do not
+              disconnect the saved keys.
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Gelato</CardTitle>
+            <CardTitle>Gelato · EU/UK hold</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <p className="text-sm leading-6 text-muted-foreground">
+              Gelato stays connected for the United Kingdom and the European Union (GPSR). Leave this
+              key saved. Do not rebuild Shopify or the website around Gelato right now — that work stays
+              in draft. Printify is the main supplier everywhere else.
+            </p>
             <ol className="list-decimal space-y-2 pl-4 text-sm leading-6 text-muted-foreground">
               <li>
                 Open the{" "}
@@ -1041,27 +1053,31 @@ export function ConnectionsClient() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm leading-6 text-muted-foreground">
-              Printify now has two shops named Fernora Trends. The one with the{" "}
-              <strong className="font-medium text-foreground">Etsy · Connected</strong> badge is the live
-              FERNORATRENDS shop. The other is <strong className="font-medium text-foreground">Not Connected</strong>{" "}
-              (the old disconnected store with 5 tees). Stay on the Etsy-connected shop.
+              Printify is the main print supplier except the United Kingdom and the European Union.
+              Keep the token and the Etsy-connected Fernora Trends shop. Keep five catalog products
+              (one per mix, one variant) and publish them to Etsy, Shopify, and fernora.nz. Do not
+              migrate leftover External products, and do not republish the old Gelato mix.
             </p>
             <p className="text-sm leading-6 text-muted-foreground">
-              <strong className="font-medium text-foreground">External products</strong> with{" "}
-              <strong className="font-medium text-foreground">Migrate product</strong> are existing Etsy
-              listings (Dusk Hills, Tui on Kōwhai, Be Brave in the Small Hours). Those already print through
-              Gelato. Do not migrate them. Create new Printify products only for items you want Printify to
-              print on other channels. Keep Gelato for fernora.nz. Keep Non-EU.
+              Keep <strong className="font-medium text-foreground">Non-EU</strong> on Printify.
+              Wellington 6012 is not a valid GPSR address, so EU/UK orders stay on Gelato. Leave the
+              Gelato connection saved. Shopify and website Gelato shipping stay as they are for later.
             </p>
             <ol className="list-decimal space-y-2 pl-4 text-sm leading-6 text-muted-foreground">
-              <li>Leave the dropdown on Fernora Trends · Etsy · Connected.</li>
-              <li>Do not click Migrate product on the current Fernora catalog.</li>
               <li>
-                Create Fern Arc Poster and Fern Spray tote here. They land in{" "}
-                <strong className="font-medium text-foreground">My products</strong> unpublished. Do not publish
-                them onto the existing Gelato Etsy listings.
+                Printify has two shops named Fernora Trends. In the left store dropdown, open the one
+                that is <strong className="font-medium text-foreground">connected to Etsy</strong>{" "}
+                (shop 28911689). The five catalog products with print templates are there. The
+                disconnected Fernora Trends shop is not the catalog.
               </li>
-              <li>Save Printify below so this desk refreshes shop names and the Etsy channel.</li>
+              <li>Do not click Migrate product on leftover External products.</li>
+              <li>
+                Recreate the five catalog products on Printify, then publish them to Etsy, Shopify,
+                and the website. They land in{" "}
+                <strong className="font-medium text-foreground">My products</strong> on the
+                Etsy-connected shop.
+              </li>
+              <li>Save Printify below so this desk refreshes shop names. Do not change the other connections.</li>
             </ol>
             {secretField(
               "printify-key",
@@ -1097,7 +1113,7 @@ export function ConnectionsClient() {
                 disabled={!printifyToken || Boolean(busy)}
               >
                 {busy === "printify-products" ? <Loader2 className="animate-spin" /> : null}
-                Create Fern Arc Poster and Fern Spray tote
+                Create 5-product catalog · publish to shops
               </Button>
             </div>
           </CardContent>
@@ -1122,11 +1138,13 @@ export function ConnectionsClient() {
               <a className="underline" href="https://fernora.nz" target="_blank" rel="noreferrer">
                 fernora.nz
               </a>
-              ): native checkout, Shop Pay, accounts, markets, and Gelato shipping.{" "}
+              ): native checkout, Shop Pay, accounts, markets, and destination shipping. Leave this
+              connection as it is. Do not click Publish catalog to push the old Gelato 9-pack clothing
+              mix back onto fernora.nz. Catalog dropdowns already match Printify.{" "}
               <a className="underline" href="/shop">
                 /shop
               </a>{" "}
-              on this desk is the catalog preview. Publish catalog also pushes products onto the Online Store channel so Horizon stops showing placeholder tees.
+              on this desk is the catalog preview.
             </p>
             <div
               id="shopify-admin-token"
@@ -1274,7 +1292,7 @@ export function ConnectionsClient() {
                 disabled={!data.connections.shopify.authorized || busy === "shopify-sync"}
               >
                 {busy === "shopify-sync" ? <Loader2 className="animate-spin" /> : null}
-                Publish catalog · Gelato shipping
+                Leave Shopify catalog unchanged
               </Button>
             </div>
           </CardContent>
@@ -1287,8 +1305,9 @@ export function ConnectionsClient() {
         </CardHeader>
         <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-xl text-sm text-muted-foreground">
-            Pull live Etsy listings and receipts. Restore the Fernora mix (quotes, botanicals,
-            home décor) if the desk was still on leftover demo data.
+            Pull live Etsy listings and receipts. Printify holds five catalog products, one per mix.
+            Catalog dropdowns match Printify. Etsy shop sections need shops_w — Authorize with Etsy
+            once so Quotes, Botanical, Scenic, Home décor, and Original fern can be created.
           </p>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => void resetDemo()} disabled={Boolean(busy)}>

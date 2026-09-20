@@ -17,38 +17,75 @@ export type PrintifyStarterSpec = {
   printProviderId: number;
   variants: PrintifyVariantInput[];
   positions: string[];
+  aliases?: string[];
 };
 
-/** Fernora starters for the Etsy-connected Printify shop. Not Gelato catalog migrations. */
+function one(id: number, price: number): PrintifyVariantInput[] {
+  return [{ id, price, is_enabled: true, is_default: true }];
+}
+
+/**
+ * Five Fernora catalog products, one per mix, one enabled variant each.
+ * Not Gelato External migrations. Closest Printify size when A-series is not on the blueprint.
+ */
 export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
   {
-    key: "fern-arc-poster",
-    title: "Fern Arc Poster",
+    key: "live_poster",
+    title: "Fern Arc Poster · A3 Semi-Gloss",
     description:
       "A tall botanical study of a New Zealand fern, printed to order on premium matte paper. Unframed. Made to order.",
-    tags: ["fern", "poster", "botanical", "nz art", "wall print"],
+    tags: ["fern", "poster", "botanical", "nz art", "wall print", "Original fern"],
     printFile: "print-poster-fern-arc.png",
     blueprintId: 282,
     printProviderId: 99,
-    variants: [
-      { id: 43138, price: 2800, is_enabled: true },
-      { id: 43141, price: 3400, is_enabled: true },
-      { id: 43144, price: 3999, is_enabled: true, is_default: true },
-    ],
+    variants: one(43138, 5699),
+    positions: ["front"],
+    aliases: ["Fern Arc Poster"],
+  },
+  {
+    key: "live_quote_breathe",
+    title: "Breathe You Are Here · A3 Quote Poster",
+    description:
+      "Landscape matte print with a botanical border and the line “Breathe. You are here.” Unframed. Made to order.",
+    tags: ["breathe", "quote", "kind", "poster", "positive", "Quotes"],
+    printFile: "print-breathe-here.png",
+    blueprintId: 284,
+    printProviderId: 99,
+    variants: one(43166, 5699),
     positions: ["front"],
   },
   {
-    key: "fern-spray-tote",
-    title: "Fern Spray Canvas Tote",
-    description: "Classic cotton canvas tote with a large fern spray print. Everyday bag, made to order.",
-    tags: ["tote", "canvas bag", "fern", "market bag", "nz"],
-    printFile: "print-tote-fern-spray.png",
-    blueprintId: 553,
-    printProviderId: 34,
-    variants: [
-      { id: 70646, price: 3200, is_enabled: true, is_default: true },
-      { id: 70603, price: 3200, is_enabled: true },
-    ],
+    key: "live_botanical_kowhai",
+    title: "Kowhai Bells · 18×24 Botanical Print",
+    description: "Large 18×24 in painterly study of New Zealand kōwhai bells on cream. Unframed. Made to order.",
+    tags: ["kowhai", "botanical", "flowers", "poster", "yellow", "Botanical"],
+    printFile: "print-kowhai-botanical.png",
+    blueprintId: 282,
+    printProviderId: 99,
+    variants: one(43144, 7399),
+    positions: ["front"],
+  },
+  {
+    key: "live_canvas_harbour",
+    title: "Harbour Morning Canvas · 12×12",
+    description: "Square slim-wrap canvas of a quiet New Zealand harbour at first light. Made to order.",
+    tags: ["harbour", "canvas", "landscape", "morning", "home", "Scenic"],
+    printFile: "print-harbour-morning.png",
+    blueprintId: 937,
+    printProviderId: 99,
+    variants: one(102204, 11899),
+    positions: ["front"],
+  },
+  {
+    key: "live_frame_kind",
+    title: "Home Is a Kind Light · 12×16 Oak Frame",
+    description:
+      "Walnut-framed 12×16 print: botanicals and “Home is a kind light.” Ready to hang. Made to order.",
+    tags: ["home", "framed", "kind", "quote", "homedecor", "Home décor"],
+    printFile: "print-kind-light.png",
+    blueprintId: 540,
+    printProviderId: 99,
+    variants: one(69671, 18499),
     positions: ["front"],
   },
 ];
@@ -101,7 +138,12 @@ export function buildPrintifyProductPayload(spec: PrintifyStarterSpec, imageId: 
 export function existingPrintifyProductId(
   products: Array<{ id?: string; title?: string }>,
   title: string,
+  aliases: string[] = [],
 ) {
-  const needle = title.trim().toLowerCase();
-  return products.find((product) => (product.title || "").trim().toLowerCase() === needle)?.id;
+  const needles = new Set([title, ...aliases].map((row) => row.trim().toLowerCase()).filter(Boolean));
+  return products.find((product) => needles.has((product.title || "").trim().toLowerCase()))?.id;
+}
+
+export function printifyEnabledVariantIds(product?: { variants?: Array<{ id?: number; is_enabled?: boolean }> }) {
+  return (product?.variants || []).filter((variant) => variant.is_enabled).map((variant) => variant.id).filter(Boolean);
 }

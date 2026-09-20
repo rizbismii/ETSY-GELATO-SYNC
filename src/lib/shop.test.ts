@@ -23,7 +23,9 @@ test("Gelato destinations include AU, NZ, and other print countries", () => {
   assert.equal(isGelatoCountry("GB"), true);
   assert.equal(isGelatoCountry("FR"), true);
   assert.equal(isGelatoCountry("DE"), true);
-  assert.equal(isGelatoCountry("JP"), true);
+  assert.equal(isGelatoCountry("JP"), false);
+  assert.equal(isGelatoCountry("IN"), false);
+  assert.equal(isGelatoCountry("SG"), true);
   assert.equal(isGelatoCountry("AUS"), true);
   assert.equal(isGelatoCountry("XX"), false);
   assert.equal(isGelatoCountry("IE"), true);
@@ -70,6 +72,17 @@ test("Shopify carrier callback quotes destination rates in cents", () => {
   assert.equal(payload.rates[0].service_code, "gelato-AU");
 });
 
+test("ship blurb matches the live country set and does not name Gelato", () => {
+  const source = readFileSync(new URL("./gelato-countries.ts", import.meta.url), "utf8");
+  assert.match(source, /selected countries in the Americas, Asia, and the Middle East/);
+  assert.doesNotMatch(source, /other countries Gelato delivers to/);
+  assert.doesNotMatch(source, /Printed near the buyer by Gelato/);
+  assert.equal(isGelatoCountry("KR"), false);
+  assert.equal(isGelatoCountry("PH"), false);
+  assert.equal(isGelatoCountry("ID"), false);
+  assert.equal(isGelatoCountry("VN"), false);
+});
+
 test("returns policy follows made-to-order rules without naming the printer", () => {
   const source = readFileSync(new URL("./shop-policies.ts", import.meta.url), "utf8");
   assert.match(source, /30 days/);
@@ -98,6 +111,8 @@ test("Horizon branding shows country · currency and made-to-order homepage copy
   assert.match(source, /Quality guarantee/);
   assert.match(source, /title: "Botanical"/);
   assert.match(source, /title: "Original fern"/);
+  assert.match(source, /CATALOG_SERIES/);
+  assert.match(source, /All, Quotes, Botanical, Scenic, Home décor, and Original fern/);
   assert.doesNotMatch(source, /by Gelato/);
   assert.doesNotMatch(source, /Gelato quality/);
 });
@@ -127,6 +142,20 @@ test("customer-facing shop copy does not name Gelato as the supplier", () => {
     const source = readFileSync(new URL(file, import.meta.url), "utf8");
     assert.doesNotMatch(source, /\bGelato\b/, file);
   }
+});
+
+test("Catalog dropdown order is All, Quotes, Botanical, Scenic, Home décor, Original fern", () => {
+  const menu = readFileSync(new URL("./catalog-menu.ts", import.meta.url), "utf8");
+  assert.match(
+    menu,
+    /id: "all"[\s\S]*id: "quote"[\s\S]*id: "botanical"[\s\S]*id: "scenic"[\s\S]*id: "home"[\s\S]*id: "original"/,
+  );
+  const shop = readFileSync(new URL("../app/shop/page.tsx", import.meta.url), "utf8");
+  const listings = readFileSync(new URL("../app/listings/page.tsx", import.meta.url), "utf8");
+  assert.match(shop, /CATALOG_MENU/);
+  assert.match(listings, /CATALOG_MENU/);
+  assert.match(listings, /aspect-\[4\/5\]/);
+  assert.doesNotMatch(listings, /lg:h-full/);
 });
 
 test("markets pin countries without presentment currency to USD", () => {

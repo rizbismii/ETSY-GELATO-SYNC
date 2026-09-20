@@ -116,7 +116,8 @@ export default function CheckoutPage() {
       <div className="mx-auto max-w-lg py-16 text-center">
         <h1 className="font-heading text-4xl">Your bag is empty</h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          The catalog ships to New Zealand, Australia, and the other countries we deliver to.
+          The catalog ships to New Zealand, Australia, the United States, the United Kingdom, the
+          European Union, and the countries listed at checkout.
         </p>
         <Link href="/shop" className={`${buttonVariants()} mt-6`}>
           Back to the shop

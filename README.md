@@ -1,8 +1,8 @@
 # Pressroom
 
-Operations desk for **FERNORATRENDS** on Etsy and the **Fernora** shop (New Zealand, Australia, and other countries Gelato delivers to), both fulfilled by Gelato. It connects the accounts, publishes the live catalog, maps listings to print products, sends paid receipts to production, and shows net profit after marketplace fees and print cost.
+Operations desk for **FERNORATRENDS** on Etsy and the **Fernora** shop (New Zealand, Australia, the United States, the United Kingdom, the European Union, and selected countries at checkout). **Printify** is the main print supplier except the United Kingdom and the European Union, where **Gelato** stays connected for GPSR. Saved connections stay as they are. The catalog is **one Printify product per item**, one enabled variant each. Etsy, Shopify, and website Catalog dropdowns match: All, Quotes, Botanical, Scenic, Home décor, Original fern.
 
-There is no sample shop. The desk opens on the **20 live Fernora products** in NZD.
+There is no sample shop. Catalog is five Fernora products, one per mix.
 
 ## What it does
 
@@ -12,7 +12,7 @@ There is no sample shop. The desk opens on the **20 live Fernora products** in N
 - **Map listings** to Gelato product UIDs and print files so orders are not blocked.
 - **Fulfill** paid Etsy receipts as Gelato v4 orders.
 - **Push tracking** from Gelato onto the Etsy receipt (Star Seller / case protection).
-- **Price for profit** using Etsy 6.5% transaction + 3% + $0.25 payment fees against Gelato unit cost. Listings stay priced so a worst-case Etsy Offsite hit still leaves **40%**. Paid traffic to [fernora.nz](https://fernora.nz) is a **Meta campaign from Ads** with a low daily cap (default 5, max 15 in the ad-account currency). Leave Etsy Offsite Ads and CPC Ads off.
+- **Price for profit** using Etsy 6.5% transaction + 3% + $0.25 payment fees against Gelato unit cost. Listings stay priced so a worst-case Etsy Offsite hit still leaves **40%**. Paid traffic to [fernora.nz](https://fernora.nz) is a **Meta campaign from Ads** with a low daily cap (default 5, max 15 in the ad-account currency). Etsy Offsite Ads were opted out on 19 September 2026. Etsy Ads (CPC) are not activated (new-shop 15-day wait).
 - **Fix store operations** in one pass: auto-map, reprice thin listings, send ready orders, push missing tracking.
 
 Gelato already offers a native Etsy channel. Pressroom is the control plane around it: catalog publish, blocked orders, margin math, and tracking gaps in one desk.
@@ -49,7 +49,7 @@ Shopify cannot create a second store with that name from the app keys. To attach
 2. Or OAuth: click the Active version (**Fernorav1**) → **Create version** → **URLs**. **App URL** must be exactly the live desk origin. **Allowed redirection URL** is `https://your-public-origin/api/shopify/callback`. Release, then **Authorize Shopify**.
 3. Click **Publish catalog · Gelato shipping**.
 
-That publishes the 20 products to the **Online Store** channel (Horizon placeholders disappear once products are on that channel), creates Gelato markets (NZ, AU, US/Americas, UK/Ireland, Europe), writes Shopify legal policies, sets shipping zones and per-product Gelato rate profiles, registers a Gelato carrier callback for mixed-cart destination rates, brands the Horizon homepage, and registers an orders/paid webhook so Gelato can print automatically.
+That publishes the five products to the **Online Store** channel (Horizon placeholders disappear once products are on that channel), creates Gelato markets (NZ, AU, US/Americas, UK/Ireland, Europe), writes Shopify legal policies, sets shipping zones and per-product Gelato rate profiles, registers a Gelato carrier callback for mixed-cart destination rates, brands the Horizon homepage, and registers an orders/paid webhook so Gelato can print automatically.
 
 ## Connect your live shops
 
@@ -95,11 +95,11 @@ PRINTIFY_API_TOKEN=
 
 ## Live catalog
 
-The catalog in this repo is the live Fernora sale: **20 listings**, with Etsy listing IDs and Gelato store product IDs in `src/lib/live-catalog.ts`. Shop origin on Etsy is Wellington 6012; Gelato still prints in-region. Advertising is a **Meta campaign** from Pressroom **Ads** to fernora.nz (daily cap 5, max 15). Leave Etsy Offsite Ads and on-site CPC Etsy Ads off. Listing prices still survive a 15% Offsite hit at **40% after-ads profit**. Push those prices to live Etsy listings from Catalog.
+The catalog in this repo is the Fernora mix in NZD: **five listing templates**, one per mix, **one Printify product per item** (one enabled variant). Printify is the main printer for non-EU/UK destinations; keep Gelato for UK and EU. Shop origin on Etsy is Wellington 6012. Advertising is a **Meta campaign** from Pressroom **Ads** to fernora.nz (daily cap 5, max 15). Etsy Offsite Ads were opted out on 19 September 2026. Etsy Ads (CPC) are not activated (15-day new-shop wait as of 20 September 2026). Catalog dropdowns on Etsy, Shopify, and the website match Printify: All, Quotes, Botanical, Scenic, Home décor, Original fern.
 
 ### Printify
 
-On **Connections**, paste a Printify personal access token from [printify.com/app/account/api](https://printify.com/app/account/api). **Gelato** stays the live printer for fernora.nz. Printify now shows **Fernora Trends** twice: Etsy Connected (the FERNORATRENDS shop) and Not Connected (old disconnected store). External products with Migrate product are existing Gelato/Etsy listings — do not migrate them. **Create Fern Arc Poster and Fern Spray tote** adds two unpublished Printify products on the Etsy-connected shop (matte vertical poster + AS Colour cotton tote). They stay in My products until you publish them in Printify. Keep **Non-EU**.
+On **Connections**, paste a Printify personal access token from [printify.com/app/account/api](https://printify.com/app/account/api). **Printify is the main supplier except EU/UK.** Keep **Non-EU** — Printify will not save EU without a real EU or Northern Ireland address, and Wellington 6012 is not valid. **Gelato** stays connected for those destinations only. Leave Etsy, Shopify, Printify, and Gelato keys as they are. Do not rebuild Shopify or the website around Gelato yet. External products with Migrate product are leftover listings — do not migrate them. **Create 5-product catalog · publish to shops** removes older products, keeps five Printify products, and publishes them to Etsy, Shopify, and fernora.nz.
 
 ### Meta ads
 
@@ -108,27 +108,12 @@ On **Ads**, create a Business app at [developers.facebook.com](https://developer
 | Product | Mix | Price (NZD) |
 | --- | --- | --- |
 | Fern Arc Poster · A3 | original | 56.99 |
-| Fern Mark Hoodie · Black, White, Navy · S–L | original | 125.99 |
-| Fern Spray Tote · Natural | original | 71.99 |
-| Fern Band Mug · 11 oz | original | 49.99 |
-| Bush Light Canvas · 16×20 | original | 176.99 |
 | Breathe. You are here. · A3 | quote | 56.99 |
-| Light finds a way · A2 | quote | 71.99 |
 | Kowhai Bells · 18×24 | botanical | 73.99 |
-| Be kind anyway Tee · Black, White, Navy · S–L | quote | 102.99 |
-| Grow anyway Tote · Black | quote | 71.99 |
-| Good morning, love Mug | quote | 59.99 |
-| Soft days ahead Sweatshirt · Black, White, Navy · S–L | quote | 109.99 |
 | Harbour Morning Canvas · 12×12 | scenic | 118.99 |
-| You belong here · iPhone 15 | quote | 67.99 |
-| Pōhutukawa Coast · 12×16 | botanical | 53.99 |
 | Home is a kind light · oak frame | home | 184.99 |
-| Wild Coast · A3 black frame | home | 197.99 |
-| Tui on Kōwhai · wood print | home | 209.99 |
-| Be brave in the small hours · acrylic | home | 210.99 |
-| Dusk Hills · metallic | home | 153.99 |
 
-Publish options per product: **Save Etsy draft** or **Publish live**. Clothing listings offer Black, White and Navy in S, M and L. **Attach Gelato templates** puts the print file on every Gelato store variant (current and future publishes do this automatically). DTG products (hoodie, tee, sweatshirt, totes) use transparent ink that matches the catalog mockup — not a cream, black, or linen poster square. Mugs use a wrap that matches the listing photo. Rebuild with `npm run print-files`. Bulk-reattach from the live tunnel with `npm run attach-prints` after the desk is up. **Delete** removes the product from Gelato, inactivates it on Etsy, deletes it from Shopify, and takes it out of Pressroom and `/shop`. Print files live at `/catalog/*.png` so Gelato can pull artwork from the public hostname.
+Publish options per product: **Save Etsy draft** or **Publish live**. **Delete** removes the product from Printify, Gelato, inactivates it on Etsy, deletes it from Shopify, and takes it out of Pressroom and `/shop`. Print files live at `/catalog/*.png` so printers can pull artwork from the public hostname.
 
 ## Stack
 

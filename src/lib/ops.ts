@@ -28,12 +28,20 @@ import {
   listGelatoStoreProducts,
   syncGelatoStore,
 } from "@/lib/gelato-store";
-import { rememberDeletedListing } from "@/lib/tombstones";
+import { getDeletedListingIds, rememberDeletedListing } from "@/lib/tombstones";
 import { FERNORA_SHOPIFY_SHOP } from "@/lib/shopify-shop";
 import { createShopifyDraftInvoice, deleteShopifyProduct } from "@/lib/shopify";
+import { deletePrintifyProductByTitle } from "@/lib/printify";
 import { isGelatoCountry } from "@/lib/gelato-countries";
 import { checkoutToOrder, quoteFernoraCart, type CartLine } from "@/lib/shop";
 import { sendMetaPurchase } from "@/lib/meta-ads";
+import {
+  CATALOG_CLEARED_NOTE,
+  CATALOG_PRINTIFY_NOTE,
+  GELATO_EU_UK_HOLD_NOTE,
+  PRINTIFY_MAIN_NOTE,
+  printSupplierForCountry,
+} from "@/lib/print-supplier";
 
 export async function connectionStatus(): Promise<Connections> {
   const creds = await getCredentials();
@@ -159,9 +167,9 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
   if (!connections.gelato.configured) {
     issues.push({
       id: "gelato-connect",
-      severity: "critical",
-      title: "Gelato is not connected",
-      detail: "Add your Gelato API key so paid Etsy orders can be printed and shipped.",
+      severity: connections.printify.configured ? "warning" : "critical",
+      title: "Gelato is not connected for EU/UK",
+      detail: GELATO_EU_UK_HOLD_NOTE,
       action: { label: "Connect Gelato", href: "/connections", kind: "connect" },
     });
   }
@@ -175,7 +183,7 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
           : "Shopify Fernora is not authorized",
       detail:
         connections.shopify.storefrontStatus === "frozen"
-          ? `${connections.shopify.shop || FERNORA_SHOPIFY_SHOP} exists but Shopify has paused the storefront (unpaid plan). Unfreeze it, then authorize the app. The Fernora website at /shop still sells Gelato destinations (AU, NZ, and other print countries) and prints through Gelato.`
+          ? `${connections.shopify.shop || FERNORA_SHOPIFY_SHOP} exists but Shopify has paused the storefront (unpaid plan). Unfreeze it, then authorize the app. Leave the Shopify connection as it is. Do not republish the deleted catalog.`
           : "Authorize the Fernora Shopify shop so Pressroom can push the catalog and pull paid checkouts.",
       action: { label: "Connect Shopify", href: "/connections", kind: "connect" },
     });
@@ -183,10 +191,9 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
   if (!connections.printify.configured) {
     issues.push({
       id: "printify-connect",
-      severity: "info",
+      severity: "warning",
       title: "Printify is not connected",
-      detail:
-        "Paste a Printify personal access token on Connections. Printify is for other sales channels only. Gelato stays the live printer for fernora.nz.",
+      detail: PRINTIFY_MAIN_NOTE,
       action: { label: "Connect Printify", href: "/connections", kind: "connect" },
     });
   } else if (!connections.printify.fullyConnected) {
@@ -206,9 +213,9 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
       issues.push({
         id: "printify-etsy-external",
         severity: "info",
-        title: "Printify Etsy is connected — do not migrate Gelato listings",
+        title: "Printify Etsy is connected — catalog on Printify",
         detail:
-          `Printify now shows ${channel?.title || "Fernora Trends"} as the Etsy store. The External products tab is existing Etsy listings (Dusk Hills, Tui on Kōwhai, Be Brave in the Small Hours). Do not click Migrate product — that would move those listings off Gelato. Stay on the Etsy-connected Fernora Trends shop. Create new Printify products only for items you want Printify to print. Keep Gelato for fernora.nz. Keep Non-EU.`,
+          `Printify shows ${channel?.title || "Fernora Trends"} as the Etsy store. Open that Etsy-connected shop in Printify My products — not the disconnected Fernora Trends shop. The five catalog products with print templates are on the Etsy shop. Do not click Migrate product on leftover External products. Printify is the main supplier except EU/UK. Gelato stays connected for those destinations only. Keep Non-EU.`,
         action: { label: "Printify shops", href: "/connections", kind: "connect" },
       });
     } else {
@@ -217,7 +224,7 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
         severity: "info",
         title: "Printify does not show the Etsy shop",
         detail:
-          `Etsy is already connected to Pressroom as ${etsyShop}. That does not connect Printify. Printify still lists ${shopLines || "My Etsy Store with 0 products"} — not ${etsyShop}. In Printify: store menu → Manage my stores → Connect → Etsy, then Grant access as the ${etsyShop} owner. Keep Gelato for fernora.nz. Keep Non-EU, then Save Printify on Connections.`,
+          `Etsy is already connected to Pressroom as ${etsyShop}. That does not connect Printify. Printify still lists ${shopLines || "My Etsy Store with 0 products"} — not ${etsyShop}. In Printify: store menu → Manage my stores → Connect → Etsy, then Grant access as the ${etsyShop} owner. Printify is the main supplier except EU/UK. Keep Non-EU, then Save Printify on Connections.`,
         action: { label: "Printify shops", href: "/connections", kind: "connect" },
       });
     }
@@ -225,10 +232,26 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
     issues.push({
       id: "printify-gpsr-noneu",
       severity: "info",
-      title: "Printify cannot replace Gelato (Non-EU)",
-      detail:
-        "Printify’s EU radio will not save unless Add business information is filled with a real EU or Northern Ireland address. Wellington is not valid, so Non-EU is required. Paid fernora.nz orders stay on Gelato. Printify stays for other sales channels only. Do not click Migrate product on existing Gelato/Etsy listings.",
+      title: "Printify is main except EU/UK (Non-EU hold)",
+      detail: PRINTIFY_MAIN_NOTE,
       action: { label: "Printify GPSR", href: "/connections", kind: "connect" },
+    });
+  }
+  if (shop.listings.length === 0 && getDeletedListingIds().length) {
+    issues.push({
+      id: "catalog-cleared",
+      severity: "info",
+      title: "Catalog is cleared",
+      detail: CATALOG_CLEARED_NOTE,
+      action: { label: "Open catalog", href: "/listings", kind: "price" },
+    });
+  } else if (shop.listings.length) {
+    issues.push({
+      id: "catalog-printify-one",
+      severity: "info",
+      title: "Catalog is five Printify products",
+      detail: CATALOG_PRINTIFY_NOTE,
+      action: { label: "Open catalog", href: "/listings", kind: "price" },
     });
   }
   if (!connections.meta.authorized) {
@@ -236,7 +259,7 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
       id: "meta-ads",
       severity: "info",
       title: "Meta ads are not running",
-      detail: "Pressroom can send a low daily-budget campaign to fernora.nz. On Ads, create a Meta app, generate a Graph API Explorer token, and paste ad account, Pixel, and Page IDs. Leave Etsy Offsite Ads off so spend stays on that cap.",
+      detail: "Pressroom can send a low daily-budget campaign to fernora.nz. On Ads, create a Meta app, generate a Graph API Explorer token, and paste ad account, Pixel, and Page IDs. Etsy Offsite Ads were opted out on 19 September 2026 — leave them off. Etsy Ads (CPC) are not activated (15-day new-shop wait).",
       action: { label: "Open Ads", href: "/ads", kind: "connect" },
     });
   }
@@ -330,8 +353,10 @@ export function opsScore(shop: ShopState, connections: Connections) {
   let score = 0;
   if (connections.etsy.authorized) score += 12;
   else score += 6;
-  if (connections.gelato.configured) score += 15;
-  else score += 8;
+  if (connections.gelato.configured) score += 10;
+  else score += 5;
+  if (connections.printify.configured) score += 10;
+  else score += 5;
   if (connections.shopify.authorized) score += 8;
   else score += 4;
   if (connections.meta.authorized) score += 3;
@@ -543,7 +568,13 @@ export async function fulfillOrder(id: string) {
     const order = state.orders.find((row) => row.id === id);
     if (!order) throw new Error("Order not found");
     if (order.status === "cancelled") throw new Error("Order is cancelled");
-    if (order.status === "pending") throw new Error("Collect payment before sending this order to Gelato");
+    if (order.status === "pending") throw new Error("Collect payment before sending this order to print");
+    const supplier = printSupplierForCountry(order.shippingAddress.country);
+    if (supplier === "printify") {
+      throw new Error(
+        "This destination prints on Printify. Do not send it to Gelato. Gelato is only for the United Kingdom and the European Union.",
+      );
+    }
     const ready = enrichOrder(order, state.listings);
     if (ready.status === "blocked" || ready.items.some((item) => !item.gelatoProductUid || !item.printFileUrl)) {
       throw new Error("Order is blocked until every line is mapped");
@@ -943,6 +974,13 @@ export async function deleteCatalogProduct(id: string) {
     notes.push(shopify.deleted ? "Deleted from Shopify" : shopify.note || "Shopify unchanged");
   } catch (error) {
     notes.push(`Shopify: ${(error as Error).message}`);
+  }
+
+  try {
+    const printify = await deletePrintifyProductByTitle(listing.title);
+    notes.push(printify.deleted ? "Deleted from Printify" : printify.note || "Printify unchanged");
+  } catch (error) {
+    notes.push(`Printify: ${(error as Error).message}`);
   }
 
   rememberDeletedListing(id);

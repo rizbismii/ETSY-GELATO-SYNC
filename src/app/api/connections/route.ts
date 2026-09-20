@@ -37,7 +37,8 @@ export async function GET(request: Request) {
       ...vendors,
       callbackReachable,
       readyToSell: Boolean(
-        (connections.etsy.authorized || connections.shopify.authorized) && vendors.gelato.ok,
+        (connections.etsy.authorized || connections.shopify.authorized) &&
+          (vendors.printify.ok || vendors.gelato.ok),
       ),
     },
     etsy: {

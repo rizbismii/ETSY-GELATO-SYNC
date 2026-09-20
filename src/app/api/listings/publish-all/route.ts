@@ -1,6 +1,7 @@
 import { LIVE_PRODUCTS, SHIP_BLURB } from "@/lib/live-catalog";
 import { updateEtsyShopAnnouncement } from "@/lib/etsy";
 import { publishListing } from "@/lib/ops";
+import { getDeletedListingIds } from "@/lib/tombstones";
 
 export const dynamic = "force-dynamic";
 
@@ -14,8 +15,10 @@ export async function POST(request: Request) {
   } catch {
     /* announcement is optional; listings still publish */
   }
+  const deleted = new Set(getDeletedListingIds());
   const results = [];
   for (const product of LIVE_PRODUCTS) {
+    if (deleted.has(product.id)) continue;
     try {
       results.push(await publishListing(product.id, mode));
     } catch (error) {

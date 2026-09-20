@@ -73,8 +73,8 @@ export function ShopOrderReceipt() {
       </h1>
       <p className="text-sm leading-7 text-muted-foreground">
         {order.invoiceUrl
-          ? "Finish payment on the Shopify invoice. We print in-region for New Zealand, Australia, and the other countries we ship to after Shopify marks it paid."
-          : "We print after payment is confirmed. We ship to New Zealand, Australia, and the other countries we deliver to."}
+          ? "Finish payment on the Shopify invoice. We print in-region for New Zealand, Australia, and the countries listed at checkout after Shopify marks it paid."
+          : "Printing starts after payment is confirmed. We ship to New Zealand, Australia, and the countries listed at checkout."}
       </p>
       <ul className="space-y-2 text-sm">
         {order.items.map((item) => (

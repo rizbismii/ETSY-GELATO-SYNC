@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { CATALOG_SERIES } from "@/lib/catalog-menu";
 import { getCredentials, patchCredentials } from "@/lib/credentials";
 import type { Address, Listing, Order, ShopState } from "@/lib/types";
 
@@ -11,6 +12,7 @@ const SCOPES = [
   "listings_r",
   "listings_w",
   "shops_r",
+  "shops_w",
   "transactions_r",
   "transactions_w",
   "email_r",
@@ -444,6 +446,53 @@ export async function setEtsyListingState(listingId: string, state: "draft" | "a
   return data as { listing_id: number; state: string; url?: string };
 }
 
+export async function listEtsyShopListings(states: Array<"active" | "inactive" | "draft" | "expired"> = [
+  "active",
+  "draft",
+  "inactive",
+]) {
+  const { shopId, etsy } = await loadEtsyShop();
+  const listings: Array<{ listing_id: number; title?: string; state?: string }> = [];
+  for (const state of states) {
+    let offset = 0;
+    for (let page = 0; page < 10; page += 1) {
+      const pack = await etsyFetch(
+        `/shops/${shopId}/listings?state=${state}&limit=100&offset=${offset}`,
+        etsy.accessToken!,
+        etsy.apiKey,
+      );
+      const batch = (pack.results ?? []) as Array<{ listing_id: number; title?: string; state?: string }>;
+      listings.push(...batch);
+      if (batch.length < 100) break;
+      offset += 100;
+    }
+  }
+  return listings;
+}
+
+export async function inactivateOlderEtsyListings(keepTitles: string[] = []) {
+  const notes: string[] = [];
+  const keep = new Set(keepTitles.map((title) => title.trim().toLowerCase()).filter(Boolean));
+  const listings = await listEtsyShopListings(["active", "draft"]);
+  let inactivated = 0;
+  for (const listing of listings) {
+    const title = (listing.title || "").trim().toLowerCase();
+    if (keep.has(title) && listing.state === "active") continue;
+    try {
+      await setEtsyListingState(String(listing.listing_id), "inactive");
+      inactivated += 1;
+    } catch (error) {
+      notes.push(`Etsy #${listing.listing_id}: ${(error as Error).message}`);
+    }
+  }
+  notes.unshift(
+    inactivated
+      ? `Set ${inactivated} older Etsy listing${inactivated === 1 ? "" : "s"} inactive.`
+      : "No older Etsy listings to inactivate.",
+  );
+  return { inactivated, notes };
+}
+
 export async function updateEtsyListingPrice(listingId: string, price: number) {
   return updateEtsyListingFields(listingId, { price: price.toFixed(2) });
 }
@@ -542,4 +591,46 @@ export async function updateEtsyShopAnnouncement(announcement: string) {
     throw new Error(data.error || data.error_description || `Etsy shop ${response.status}`);
   }
   return data;
+}
+
+type EtsyShopSection = { shop_section_id?: number; title?: string };
+
+/** Same Catalog mix as Printify / website / Shopify. Creating sections needs shops_w. */
+export async function syncEtsyCatalogSections() {
+  const { shopId, etsy } = await loadEtsyShop();
+  const notes: string[] = [];
+  const listed = (await etsyFetch(
+    `/shops/${shopId}/sections`,
+    etsy.accessToken!,
+    etsy.apiKey,
+  )) as { results?: EtsyShopSection[] };
+  const sections = listed.results || [];
+  const byTitle = new Map(sections.map((row) => [(row.title || "").trim().toLowerCase(), row]));
+  for (const series of CATALOG_SERIES) {
+    const needle = series.label.trim().toLowerCase();
+    if (byTitle.has(needle)) continue;
+    try {
+      const params = new URLSearchParams({ title: series.label });
+      const created = (await etsyFetch(`/shops/${shopId}/sections`, etsy.accessToken!, etsy.apiKey, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: params,
+      })) as EtsyShopSection;
+      if (created.shop_section_id) {
+        byTitle.set(needle, created);
+        notes.push(`Etsy section ${series.label} created.`);
+      }
+    } catch (error) {
+      notes.push(`Etsy section ${series.label}: ${(error as Error).message}`);
+    }
+  }
+  const have = CATALOG_SERIES.filter((series) => byTitle.has(series.label.trim().toLowerCase())).map(
+    (series) => series.label,
+  );
+  if (have.length === CATALOG_SERIES.length) {
+    notes.push(`Etsy Catalog sections match Printify: ${have.join(", ")}.`);
+  } else if (have.length) {
+    notes.push(`Etsy Catalog sections present: ${have.join(", ")}.`);
+  }
+  return notes;
 }

@@ -58,7 +58,7 @@ export const POLICY_COPY = {
     summary: GELATO_SHIP_BLURB,
     body: [
       "Fernora ships to the countries listed at checkout. Choose your country in the header (country name and currency code). Checkout shipping is the destination rate for that product — printed near you. Wellington 6012 is the studio address, not the parcel origin.",
-      "Typical transit after print: New Zealand 2–8 days, Australia 3–10 days, United States, United Kingdom and Europe 4–12 days. Other destinations follow the United States international lane unless the product page says otherwise.",
+      "Typical transit after print: New Zealand 2–8 days, Australia 3–10 days, United States, United Kingdom and Europe 4–12 days. Selected Americas, Asia, and Middle East destinations follow the United States international lane unless the product page says otherwise.",
       "You pay destination shipping. Duties or import VAT, if a carrier assesses them, are the buyer’s responsibility outside NZ/AU GST-inclusive pricing. Tracking is emailed when the parcel is released.",
       "Lost-in-transit claims follow our quality and delivery process. We need the order number and a reasonable wait after the quoted window before a reprint is raised.",
     ],

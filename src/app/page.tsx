@@ -133,8 +133,8 @@ export default function DeskPage() {
       {sample ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
           Gelato is live. Authorize Etsy on Connections if you have not already, then publish
-          from Catalog. Paid traffic to fernora.nz is a low daily-budget Meta campaign on Ads —
-          leave Etsy Offsite Ads off.
+          from Catalog. Paid traffic to fernora.nz is a low daily-budget Meta campaign on Ads.
+          Etsy Offsite Ads were opted out on 19 September 2026.
         </div>
       ) : null}
 
@@ -213,7 +213,7 @@ export default function DeskPage() {
           <CardContent className="flex flex-col gap-3">
             {data.issues.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Shop is clear. New paid orders can go straight to Gelato.
+                Shop is clear. Printify holds five catalog products, one per mix.
               </p>
             ) : (
               data.issues.map((issue) => (

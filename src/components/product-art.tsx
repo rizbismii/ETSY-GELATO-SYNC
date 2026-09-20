@@ -32,7 +32,14 @@ export function ProductArt({
         <img
           src={imageUrl}
           alt={title}
-          className={cn("size-full", fit === "cover" ? "object-cover" : "object-contain object-center")}
+          className={cn(
+            "size-full",
+            fit === "cover"
+              ? "object-cover"
+              : kind === "print"
+                ? "object-contain object-center p-2"
+                : "object-contain object-center",
+          )}
         />
       </div>
     );

@@ -65,16 +65,10 @@ export const GELATO_DESTINATIONS: GelatoDestination[] = [
   row("IS", "Iceland", "EU", "Europe"),
   row("LI", "Liechtenstein", "EU", "Europe"),
 
-  row("JP", "Japan", "US", "Asia & Middle East"),
   row("SG", "Singapore", "US", "Asia & Middle East"),
   row("HK", "Hong Kong", "US", "Asia & Middle East"),
-  row("KR", "South Korea", "US", "Asia & Middle East"),
   row("MY", "Malaysia", "US", "Asia & Middle East"),
   row("TH", "Thailand", "US", "Asia & Middle East"),
-  row("PH", "Philippines", "US", "Asia & Middle East"),
-  row("IN", "India", "US", "Asia & Middle East"),
-  row("ID", "Indonesia", "US", "Asia & Middle East"),
-  row("VN", "Vietnam", "US", "Asia & Middle East"),
   row("AE", "United Arab Emirates", "US", "Asia & Middle East"),
   row("IL", "Israel", "US", "Asia & Middle East"),
   row("ZA", "South Africa", "US", "Africa"),
@@ -122,4 +116,4 @@ export function gelatoCodesForLane(lane: ShipLaneCode) {
 }
 
 export const GELATO_SHIP_BLURB =
-  "Ships to New Zealand, Australia, the United States, the United Kingdom, the European Union and other countries we deliver to. Printed near you after you order. Checkout shipping is the destination rate — Wellington 6012 is the studio address, not the parcel origin.";
+  "Ships to New Zealand, Australia, the United States, Canada, the United Kingdom, Ireland, the European Union, and selected countries in the Americas, Asia, and the Middle East. Printed near the buyer. Checkout shipping is the destination rate — Wellington 6012 is the studio address, not the parcel origin.";

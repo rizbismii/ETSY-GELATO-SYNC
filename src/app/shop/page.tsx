@@ -1,3 +1,4 @@
+import { CATALOG_MENU } from "@/lib/catalog-menu";
 import Link from "next/link";
 import { fernoraCatalog } from "@/lib/shop";
 import { getDeletedListingIds } from "@/lib/tombstones";
@@ -7,14 +8,7 @@ import { FERNORA_SHIP_BLURB } from "@/lib/shop";
 
 export const dynamic = "force-dynamic";
 
-const MIX = [
-  { id: "all", label: "All" },
-  { id: "quote", label: "Quotes" },
-  { id: "botanical", label: "Botanical" },
-  { id: "scenic", label: "Scenic" },
-  { id: "home", label: "Home décor" },
-  { id: "original", label: "Original fern" },
-] as const;
+const MIX = CATALOG_MENU;
 
 export default async function ShopHomePage({
   searchParams,

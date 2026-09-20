@@ -1,5 +1,13 @@
-import { LIVE_PRODUCTS, liveListings, SHOP_CURRENCY, SHOP_NAME } from "@/lib/live-catalog";
-import { getDeletedListingIds } from "@/lib/tombstones";
+import {
+  LIVE_PRODUCTS,
+  RETIRED_CATALOG_IDS,
+  isStaleEtsyListingId,
+  isStaleGelatoProductId,
+  liveListings,
+  SHOP_CURRENCY,
+  SHOP_NAME,
+} from "@/lib/live-catalog";
+import { getDeletedListingIds, writeDeletedListingIds } from "@/lib/tombstones";
 import type { Listing, ShopState } from "@/lib/types";
 
 const SAMPLE_MARKERS = [
@@ -16,12 +24,38 @@ export function shopLooksLikeSample(shop: ShopState) {
   return SAMPLE_MARKERS.some((marker) => blob.includes(marker));
 }
 
+function catalogDeletedIds(shop: ShopState) {
+  return new Set([
+    ...(shop.deletedListingIds || []),
+    ...getDeletedListingIds(),
+    ...RETIRED_CATALOG_IDS,
+  ]);
+}
+
+function stripStaleMarketplaceIds(listing: Listing): Listing {
+  const etsyListingId = isStaleEtsyListingId(listing.etsyListingId) ? "" : listing.etsyListingId;
+  const gelatoStoreProductId = isStaleGelatoProductId(listing.gelatoStoreProductId)
+    ? undefined
+    : listing.gelatoStoreProductId;
+  const live = Boolean(etsyListingId) && listing.state === "active";
+  return {
+    ...listing,
+    etsyListingId,
+    etsyUrl: etsyListingId ? listing.etsyUrl : undefined,
+    gelatoStoreProductId,
+    gelatoConnectedCount: gelatoStoreProductId ? listing.gelatoConnectedCount : undefined,
+    gelatoVariantCount: gelatoStoreProductId ? listing.gelatoVariantCount : undefined,
+    publishState: live ? "live" : listing.publishState === "live" ? "ready" : listing.publishState,
+    state: live ? "active" : "inactive",
+  };
+}
+
 export function applyLiveCatalog(shop: ShopState) {
-  const deleted = new Set([...(shop.deletedListingIds || []), ...getDeletedListingIds()]);
+  const deleted = catalogDeletedIds(shop);
   if (shopLooksLikeSample(shop)) {
     shop.shopName = "FERNORATRENDS";
     shop.currency = "NZD";
-    shop.listings = liveListings().filter((row) => !deleted.has(row.id));
+    shop.listings = liveListings().filter((row) => !deleted.has(row.id)).map(stripStaleMarketplaceIds);
     shop.orders = [];
     shop.lastSyncAt = new Date().toISOString();
     shop.deletedListingIds = [...deleted];
@@ -40,6 +74,15 @@ export function applyLiveCatalog(shop: ShopState) {
     );
     if (match) {
       used.add(match.id);
+      const etsyListingId = isStaleEtsyListingId(match.etsyListingId || product.etsyListingId)
+        ? ""
+        : match.etsyListingId || product.etsyListingId;
+      const gelatoStoreProductId = isStaleGelatoProductId(
+        match.gelatoStoreProductId || product.gelatoStoreProductId,
+      )
+        ? undefined
+        : match.gelatoStoreProductId || product.gelatoStoreProductId;
+      const live = Boolean(etsyListingId) && match.state === "active";
       next.push({
         ...product,
         ...match,
@@ -57,25 +100,30 @@ export function applyLiveCatalog(shop: ShopState) {
         quote: product.quote,
         description: product.description,
         variants: product.variants,
-        etsyListingId: match.etsyListingId || product.etsyListingId,
-        etsyUrl: match.etsyUrl || product.etsyUrl,
-        gelatoStoreProductId: match.gelatoStoreProductId || product.gelatoStoreProductId,
-        gelatoConnectedCount: match.gelatoConnectedCount ?? product.gelatoConnectedCount,
-        gelatoVariantCount: match.gelatoVariantCount ?? product.gelatoVariantCount,
+        etsyListingId,
+        etsyUrl: etsyListingId ? match.etsyUrl || product.etsyUrl : undefined,
+        gelatoStoreProductId,
+        gelatoConnectedCount: gelatoStoreProductId
+          ? match.gelatoConnectedCount ?? product.gelatoConnectedCount
+          : undefined,
+        gelatoVariantCount: gelatoStoreProductId
+          ? match.gelatoVariantCount ?? product.gelatoVariantCount
+          : undefined,
         taxonomyId: match.taxonomyId || product.taxonomyId,
         shippingProfileId: match.shippingProfileId || product.shippingProfileId,
         returnPolicyId: match.returnPolicyId || product.returnPolicyId,
-        publishState:
-          match.state === "active" ? "live" : match.publishState || product.publishState,
+        publishState: live ? "live" : "ready",
+        state: live ? "active" : "inactive",
       });
     } else {
-      next.push({ ...product });
+      next.push(stripStaleMarketplaceIds({ ...product }));
     }
   }
   for (const row of shop.listings) {
     if (used.has(row.id) || row.id.startsWith("live_")) continue;
     if (deleted.has(row.id) || (row.etsyListingId && deleted.has(row.etsyListingId))) continue;
     if (LIVE_PRODUCTS.some((product) => product.title === row.title)) continue;
+    if (isStaleEtsyListingId(row.etsyListingId) || isStaleGelatoProductId(row.gelatoStoreProductId)) continue;
     next.push(row);
   }
   const nextDeleted = [...deleted];
@@ -90,5 +138,20 @@ export function applyLiveCatalog(shop: ShopState) {
 }
 
 export function applyHarvestDrop(shop: ShopState) {
+  return applyLiveCatalog(shop);
+}
+
+/** Keep the five live products; leave retired catalog IDs tombstoned. */
+export function restoreLiveCatalogInShop(shop: ShopState) {
+  const keep = new Set(LIVE_PRODUCTS.map((row) => row.id));
+  const nextDeleted = [
+    ...new Set([
+      ...(shop.deletedListingIds || []).filter((id) => !keep.has(id)),
+      ...getDeletedListingIds().filter((id) => !keep.has(id)),
+      ...RETIRED_CATALOG_IDS,
+    ]),
+  ];
+  shop.deletedListingIds = nextDeleted;
+  writeDeletedListingIds(nextDeleted);
   return applyLiveCatalog(shop);
 }
