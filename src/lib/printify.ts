@@ -3,6 +3,7 @@ import { getCredentials, patchCredentials } from "@/lib/credentials";
 import {
   formatPrintifySafetyInformation,
   pickPrintifyShop,
+  printifyChannelKey,
   printifyGpsrIsUnavailable,
   printifyGpsrModeFromProbe,
   printifyGpsrNotes,
@@ -22,10 +23,12 @@ import {
   type PrintifyStarterSpec,
 } from "@/lib/printify-products";
 import { restoreLiveCatalogInShop } from "@/lib/drop";
-import { syncEtsyCatalogSections } from "@/lib/etsy";
+import { inactivateOlderEtsyListings, listEtsyShopListings, syncEtsyCatalogSections } from "@/lib/etsy";
+import { deleteOlderGelatoProducts } from "@/lib/gelato-store";
+import { etsyListingUrl } from "@/lib/live-catalog";
+import { deleteOlderShopifyProducts, syncFernoraCatalogToShopify } from "@/lib/shopify";
 import { syncShopifyCatalogMenu } from "@/lib/shopify-horizon";
 import { updateShop } from "@/lib/store";
-import { clearDeletedListings } from "@/lib/tombstones";
 
 export {
   formatPrintifySafetyInformation,
@@ -57,6 +60,7 @@ type PrintifyProduct = {
   title?: string;
   safety_information?: string;
   variants?: Array<{ id?: number; is_enabled?: boolean }>;
+  external?: { id?: string; handle?: string };
 };
 
 type PrintifyProductPage = {
@@ -170,6 +174,89 @@ async function deletePrintifyProduct(shopId: number, productId: string, token?: 
   await printify(`/shops/${shopId}/products/${productId}.json`, { method: "DELETE", token });
 }
 
+export async function deletePrintifyProductByTitle(title: string, token?: string) {
+  const ping = await pingPrintify(token);
+  const shopId = ping.shopId;
+  if (!shopId) return { deleted: false, note: "No Printify shop on this token" };
+  const existing = await listShopProducts(shopId);
+  const id = existingPrintifyProductId(existing, title);
+  if (!id) return { deleted: false, note: "Not found on Printify" };
+  await deletePrintifyProduct(shopId, id, token);
+  return { deleted: true, id };
+}
+
+async function publishPrintifyProduct(shopId: number, productId: string, token?: string) {
+  const body = {
+    title: true,
+    description: true,
+    images: true,
+    variants: true,
+    tags: true,
+    keyFeatures: true,
+    shipping_template: true,
+  };
+  try {
+    await printify(`/shops/${shopId}/products/${productId}/publish.json`, { method: "POST", token, body });
+  } catch (error) {
+    const message = (error as Error).message;
+    if (!/shipping/i.test(message)) throw error;
+    await printify(`/shops/${shopId}/products/${productId}/publish.json`, {
+      method: "POST",
+      token,
+      body: { ...body, shipping_template: false },
+    });
+  }
+}
+
+async function attachPrintifyEtsyIds(
+  shopId: number,
+  products: CreatedPrintifyProduct[],
+  token?: string,
+) {
+  const notes: string[] = [];
+  let etsyByTitle = new Map<string, string>();
+  try {
+    const listings = await listEtsyShopListings(["active", "draft"]);
+    etsyByTitle = new Map(
+      listings
+        .filter((row) => row.listing_id && row.title)
+        .map((row) => [(row.title || "").trim().toLowerCase(), String(row.listing_id)]),
+    );
+  } catch (error) {
+    notes.push(`Etsy listing match: ${(error as Error).message}`);
+  }
+  let attached = 0;
+  for (const product of products) {
+    let listingId = "";
+    let url: string | undefined;
+    try {
+      const current = await getPrintifyProduct(shopId, product.id, token);
+      listingId = String(current.external?.id || "");
+      url = current.external?.handle;
+    } catch (error) {
+      notes.push(`Printify ${product.title}: ${(error as Error).message}`);
+    }
+    if (!listingId) listingId = etsyByTitle.get(product.title.trim().toLowerCase()) || "";
+    if (!listingId) continue;
+    url = url || etsyListingUrl(listingId);
+    await updateShop((shop) => {
+      const row = shop.listings.find((item) => item.id === product.key || item.title === product.title);
+      if (!row) return;
+      row.etsyListingId = listingId;
+      row.etsyUrl = url;
+      row.publishState = "live";
+      row.state = "active";
+    });
+    attached += 1;
+  }
+  notes.unshift(
+    attached
+      ? `Pressroom Catalog now shows ${attached} live Etsy listing${attached === 1 ? "" : "s"}.`
+      : "Printify published, but Etsy listing IDs are not on Catalog yet.",
+  );
+  return notes;
+}
+
 function wantedVariantIds(spec: PrintifyStarterSpec) {
   return spec.variants.filter((variant) => variant.is_enabled).map((variant) => variant.id);
 }
@@ -179,6 +266,37 @@ function sameOneVariant(spec: PrintifyStarterSpec, product: PrintifyProduct, tit
   const enabled = printifyEnabledVariantIds(product);
   const wanted = wantedVariantIds(spec);
   return enabled.length === 1 && wanted.length === 1 && enabled[0] === wanted[0];
+}
+
+async function deleteLeftoverDisconnectedPrintifyProducts(token?: string) {
+  const shops = await listPrintifyShops(token);
+  const keep = new Set(
+    FERNORA_PRINTIFY_STARTERS.flatMap((spec) => [spec.title, ...(spec.aliases || [])]).map((title) =>
+      title.trim().toLowerCase(),
+    ),
+  );
+  const notes: string[] = [];
+  for (const shop of shops) {
+    if (printifyChannelKey(shop.sales_channel) !== "disconnected") continue;
+    const existing = await listShopProducts(shop.id);
+    let deleted = 0;
+    for (const product of existing) {
+      if (!product.id) continue;
+      if (keep.has((product.title || "").trim().toLowerCase())) continue;
+      try {
+        await deletePrintifyProduct(shop.id, product.id, token);
+        deleted += 1;
+      } catch (error) {
+        notes.push(`${product.title || product.id}: ${(error as Error).message}`);
+      }
+    }
+    if (deleted) {
+      notes.push(
+        `Deleted ${deleted} leftover product${deleted === 1 ? "" : "s"} from disconnected ${shop.title || "shop"} (${shop.id}). Catalog with print templates is on the Etsy-connected Fernora Trends shop.`,
+      );
+    }
+  }
+  return notes;
 }
 
 export async function createFernoraPrintifyProducts(input?: { shopId?: number; token?: string }) {
@@ -219,10 +337,64 @@ export async function createFernoraPrintifyProducts(input?: { shopId?: number; t
       replaced: Boolean(already),
     });
   }
-  clearDeletedListings();
+  const extras = existing.filter((row) => row.id && !claimed.has(row.id));
+  let removedPrintify = 0;
+  for (const extra of extras) {
+    if (!extra.id) continue;
+    try {
+      await deletePrintifyProduct(shopId, extra.id, input?.token);
+      removedPrintify += 1;
+    } catch (error) {
+      extraNotes.push(`Printify extra ${extra.title || extra.id}: ${(error as Error).message}`);
+    }
+  }
+  if (removedPrintify) {
+    extraNotes.push(
+      `Deleted ${removedPrintify} older Printify product${removedPrintify === 1 ? "" : "s"} from ${shopId}.`,
+    );
+  }
+  try {
+    extraNotes.push(...(await deleteLeftoverDisconnectedPrintifyProducts(input?.token)));
+  } catch (error) {
+    extraNotes.push(`Disconnected Printify shop: ${(error as Error).message}`);
+  }
   await updateShop((shop) => {
     restoreLiveCatalogInShop(shop);
   });
+  try {
+    extraNotes.push(...(await deleteOlderGelatoProducts()).notes);
+  } catch (error) {
+    extraNotes.push(`Gelato cleanup: ${(error as Error).message}`);
+  }
+  try {
+    extraNotes.push(...(await inactivateOlderEtsyListings()).notes);
+  } catch (error) {
+    extraNotes.push(`Etsy cleanup: ${(error as Error).message}`);
+  }
+  try {
+    extraNotes.push(...(await deleteOlderShopifyProducts()).notes);
+  } catch (error) {
+    extraNotes.push(`Shopify cleanup: ${(error as Error).message}`);
+  }
+  let publishedCount = 0;
+  for (const product of products) {
+    try {
+      await publishPrintifyProduct(shopId, product.id, input?.token);
+      publishedCount += 1;
+    } catch (error) {
+      extraNotes.push(`Printify publish ${product.title}: ${(error as Error).message}`);
+    }
+  }
+  try {
+    extraNotes.push(...(await attachPrintifyEtsyIds(shopId, products, input?.token)));
+  } catch (error) {
+    extraNotes.push(`Catalog Etsy IDs: ${(error as Error).message}`);
+  }
+  try {
+    extraNotes.push(...(await syncFernoraCatalogToShopify()).notes);
+  } catch (error) {
+    extraNotes.push(`Shopify catalog: ${(error as Error).message}`);
+  }
   try {
     extraNotes.push(...(await syncEtsyCatalogSections()));
   } catch (error) {
@@ -246,17 +418,19 @@ export async function createFernoraPrintifyProducts(input?: { shopId?: number; t
     },
   });
   const createdCount = products.filter((row) => !row.skipped).length;
+  const published = publishedCount === products.length && products.length > 0;
   return {
     shopId,
     shopTitle: gpsr.shopTitle || ping.shopTitle,
-    published: false,
+    published,
     products,
     gpsr,
     fullyConnected: gpsr.fullyConnected,
     notes: [
-      `Created ${createdCount} Printify product${createdCount === 1 ? "" : "s"} on ${
+      `Catalog is five products (one per mix) on ${
         gpsr.shopTitle || "Fernora Trends"
-      } (${shopId}), one enabled variant each. Left unpublished — not migrated from Gelato.`,
+      } (${shopId}), one enabled variant each. Created ${createdCount}, published ${publishedCount} to the Etsy sales channel. Not migrated from Gelato.`,
+      "Older catalog products were removed from Printify, Etsy, Shopify, Gelato, and Pressroom.",
       "Catalog dropdowns match Printify: All, Quotes, Botanical, Scenic, Home décor, Original fern.",
       ...extraNotes,
       ...gpsr.notes,

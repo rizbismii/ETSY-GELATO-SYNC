@@ -213,13 +213,12 @@ export default function ListingsPage() {
         <div>
           <h1 className="font-heading text-4xl tracking-tight">Catalog</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Mixed Fernora shop: positive quote prints, botanicals, scenic work and five home-décor
-            pieces — not an all-abstract wall. Prices in {currency}. Printify is the main supplier
-            except the United Kingdom and the European Union. One Printify product per catalog item,
-            one variant each. Catalog dropdowns on Etsy, Shopify, and this desk match Printify: All,
-            Quotes, Botanical, Scenic, Home décor, Original fern. Listings stay priced so a
-            worst-case Etsy Offsite sale still leaves 40% after print and fees. Actual ad spend is
-            the Meta daily cap on Ads. Etsy Ads (CPC) are not activated.
+            Mixed Fernora shop: five products, one per mix — Quotes, Botanical, Scenic, Home décor,
+            and Original fern. Prices in {currency}. Printify is the main supplier except the United
+            Kingdom and the European Union. One variant each. Catalog dropdowns on Etsy, Shopify, and
+            this desk match Printify: All, Quotes, Botanical, Scenic, Home décor, Original fern.
+            Listings stay priced so a worst-case Etsy Offsite sale still leaves 40% after print and
+            fees. Actual ad spend is the Meta daily cap on Ads. Etsy Ads (CPC) are not activated.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -292,9 +291,9 @@ export default function ListingsPage() {
       <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm leading-6">
         <p className="font-medium">Print file templates</p>
         <p className="mt-1 text-muted-foreground">
-          Each product stores its print file in this catalog. Printify holds one unpublished product
-          per item (one variant). Gelato stays for UK and EU only. Download the template for the
-          current mix.
+          Each product stores its print file in this catalog. Printify holds five products (one
+          variant). Publish them to Etsy, Shopify, and fernora.nz. Gelato stays for UK and EU only.
+          Download the template for the current mix.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {visible
@@ -344,34 +343,36 @@ export default function ListingsPage() {
           {visible.map((listing) => {
             const status = listing.publishState || "ready";
             return (
-              <Card key={listing.id}>
-                <CardContent className="grid gap-4 p-4 lg:grid-cols-[200px_180px_1fr]">
-                  <ProductArt
-                    id={listing.id}
-                    title={listing.title}
-                    category={listing.category}
-                    imageUrl={listing.imageUrl}
-                    fit="contain"
-                    className="h-56 w-full rounded-lg lg:h-full min-h-52"
-                  />
-                  {listing.printFileUrl ? (
-                    <div className="space-y-2">
-                      <ProductArt
-                        id={`${listing.id}-print`}
-                        title={`${listing.title} print file`}
-                        category={listing.category}
-                        imageUrl={listing.printFileUrl}
-                        kind="print"
-                        fit="contain"
-                        className="h-56 w-full rounded-lg lg:h-full min-h-52"
-                      />
-                      <p className="text-[11px] leading-4 text-muted-foreground">
-                        {printTemplateLabel(listing.category, listing.id)}
-                      </p>
-                    </div>
-                  ) : (
-                    <p className="self-center text-xs text-muted-foreground">No print file saved yet.</p>
-                  )}
+              <Card key={listing.id} className="overflow-hidden">
+                <CardContent className="grid items-start gap-5 p-4 lg:grid-cols-[minmax(16rem,32rem)_minmax(0,1fr)]">
+                  <div className="grid grid-cols-2 items-start gap-3">
+                    <ProductArt
+                      id={listing.id}
+                      title={listing.title}
+                      category={listing.category}
+                      imageUrl={listing.imageUrl}
+                      fit="contain"
+                      className="aspect-[4/5] w-full rounded-lg"
+                    />
+                    {listing.printFileUrl ? (
+                      <div className="min-w-0 space-y-2">
+                        <ProductArt
+                          id={`${listing.id}-print`}
+                          title={`${listing.title} print file`}
+                          category={listing.category}
+                          imageUrl={listing.printFileUrl}
+                          kind="print"
+                          fit="contain"
+                          className="aspect-[4/5] w-full rounded-lg"
+                        />
+                        <p className="text-[11px] leading-4 text-muted-foreground">
+                          {printTemplateLabel(listing.category, listing.id)}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="self-center text-xs text-muted-foreground">No print file saved yet.</p>
+                    )}
+                  </div>
                   <div className="min-w-0 space-y-4">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div>
@@ -516,9 +517,9 @@ export default function ListingsPage() {
           <DialogHeader>
             <DialogTitle>Delete {pendingDelete?.title}?</DialogTitle>
             <DialogDescription>
-              This removes the product from the Gelato store, sets the Etsy listing inactive (the app
-              cannot hard-delete Etsy listings), and deletes it from Shopify. It also leaves the
-              Pressroom catalog and the Fernora shop.
+              This removes the product from Printify, the Gelato store, sets the Etsy listing inactive
+              (the app cannot hard-delete Etsy listings), and deletes it from Shopify. It also leaves
+              the Pressroom catalog and the Fernora shop.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

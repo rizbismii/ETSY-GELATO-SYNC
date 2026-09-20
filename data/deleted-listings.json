@@ -1,3 +1,19 @@
 {
-  "ids": []
+  "ids": [
+    "live_hoodie",
+    "live_tote",
+    "live_mug",
+    "live_canvas",
+    "live_quote_light",
+    "live_tee_kind",
+    "live_tote_grow",
+    "live_mug_morning",
+    "live_sweat_soft",
+    "live_case_belong",
+    "live_poster_pohutukawa",
+    "live_frame_coast",
+    "live_wood_tui",
+    "live_acrylic_brave",
+    "live_metal_dusk"
+  ]
 }

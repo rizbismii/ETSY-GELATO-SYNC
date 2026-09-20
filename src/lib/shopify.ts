@@ -816,6 +816,50 @@ export async function createShopifyDraftInvoice(input: {
   return draft;
 }
 
+export async function listShopifyProducts(query = `vendor:${FERNORA_NAME}`) {
+  const products: Array<{ id: string; title: string; handle: string }> = [];
+  let cursor: string | null = null;
+  for (let page = 0; page < 20; page += 1) {
+    const data = await shopifyGraphql<{
+      products: {
+        pageInfo: { hasNextPage: boolean; endCursor?: string | null };
+        nodes: Array<{ id: string; title: string; handle: string }>;
+      };
+    }>(
+      `query ($q: String!, $cursor: String) {
+        products(first: 50, query: $q, after: $cursor) {
+          pageInfo { hasNextPage endCursor }
+          nodes { id title handle }
+        }
+      }`,
+      { q: query, cursor },
+    );
+    products.push(...data.products.nodes);
+    if (!data.products.pageInfo.hasNextPage) break;
+    cursor = data.products.pageInfo.endCursor || null;
+    if (!cursor) break;
+  }
+  return products;
+}
+
+async function shopifyProductDelete(productId: string) {
+  const data = await shopifyGraphql<{
+    productDelete: { deletedProductId?: string | null; userErrors: Array<{ message: string }> };
+  }>(
+    `mutation ($id: ID!) {
+      productDelete(input: { id: $id }) {
+        deletedProductId
+        userErrors { field message }
+      }
+    }`,
+    { id: productId },
+  );
+  if (data.productDelete.userErrors.length) {
+    throw new Error(data.productDelete.userErrors.map((row) => row.message).join("; "));
+  }
+  return data.productDelete.deletedProductId || productId;
+}
+
 export async function deleteShopifyProduct(listingId: string) {
   const shop = await getShop();
   const mapped = shop.shopifyCatalog?.[listingId];
@@ -836,24 +880,42 @@ export async function deleteShopifyProduct(listingId: string) {
   if (!productId) {
     return { deleted: false, note: "No Shopify product mapped for this listing" };
   }
-  const data = await shopifyGraphql<{
-    productDelete: { deletedProductId?: string | null; userErrors: Array<{ message: string }> };
-  }>(
-    `mutation ($id: ID!) {
-      productDelete(input: { id: $id }) {
-        deletedProductId
-        userErrors { field message }
-      }
-    }`,
-    { id: productId },
-  );
-  if (data.productDelete.userErrors.length) {
-    throw new Error(data.productDelete.userErrors.map((row) => row.message).join("; "));
-  }
+  const deletedId = await shopifyProductDelete(productId);
   await updateShop((state) => {
     if (state.shopifyCatalog) delete state.shopifyCatalog[listingId];
   });
-  return { deleted: true, productId: data.productDelete.deletedProductId || productId };
+  return { deleted: true, productId: deletedId };
+}
+
+export async function deleteOlderShopifyProducts(keepTitles: string[] = []) {
+  const notes: string[] = [];
+  const keep = new Set(keepTitles.map((title) => title.trim().toLowerCase()).filter(Boolean));
+  const seen = new Set<string>();
+  const products = [
+    ...(await listShopifyProducts(`vendor:${FERNORA_NAME}`)),
+    ...(await listShopifyProducts("sku:live_*")),
+  ];
+  let deleted = 0;
+  for (const product of products) {
+    if (seen.has(product.id)) continue;
+    seen.add(product.id);
+    if (keep.has(product.title.trim().toLowerCase())) continue;
+    try {
+      await shopifyProductDelete(product.id);
+      deleted += 1;
+    } catch (error) {
+      notes.push(`${product.title}: ${(error as Error).message}`);
+    }
+  }
+  await updateShop((state) => {
+    state.shopifyCatalog = {};
+  });
+  notes.unshift(
+    deleted
+      ? `Deleted ${deleted} older Shopify product${deleted === 1 ? "" : "s"}.`
+      : "No older Shopify products to delete.",
+  );
+  return { deleted, notes };
 }
 
 export async function registerShopifyWebhooks(origin: string) {

@@ -17,7 +17,7 @@ export const CATALOG_CLEARED_NOTE =
   "The live catalog is cleared. Recreate products on Printify for New Zealand, Australia, the United States, and other non-EU/UK destinations. Keep Gelato for the United Kingdom and the European Union only.";
 
 export const CATALOG_PRINTIFY_NOTE =
-  "The catalog is one Printify product per item, one enabled variant each. Etsy, Shopify, and the website Catalog dropdowns use the same mix: All, Quotes, Botanical, Scenic, Home décor, Original fern. Do not migrate leftover External products. Gelato stays for EU/UK only.";
+  "The catalog is five Printify products, one per mix, one enabled variant each. Etsy, Shopify, and the website Catalog dropdowns use the same mix: All, Quotes, Botanical, Scenic, Home décor, Original fern. Do not migrate leftover External products. Gelato stays for EU/UK only.";
 
 export function isGelatoComplianceLane(lane?: ShipLaneCode | string | null) {
   return lane === "GB" || lane === "EU";

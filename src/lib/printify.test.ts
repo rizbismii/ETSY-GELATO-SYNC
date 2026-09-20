@@ -109,6 +109,8 @@ test("Printify is fully connected only with products on a sales channel", () => 
     /Etsy connected as Fernora Trends/,
   );
   assert.match(printifyShopLine(connected[1], "FERNORATRENDS"), /Etsy connected/);
+  assert.match(printifyShopLine(connected[1], "FERNORATRENDS"), /open this store in Printify My products/);
+  assert.match(printifyShopLine(connected[0], "FERNORATRENDS"), /leftover store, not the catalog/);
   assert.doesNotMatch(printifyShopLine(connected[1], "FERNORATRENDS"), /not FERNORATRENDS/);
   assert.equal(printifyIsFullyConnected([{ id: 1, title: "Etsy", salesChannel: "etsy", productCount: 2 }]), true);
 });
@@ -139,10 +141,17 @@ test("EU GPSR probe without stamps is available; stamps mark applied", () => {
   );
 });
 
-test("Fernora Printify catalog is one enabled variant per live product", () => {
-  assert.equal(FERNORA_PRINTIFY_STARTERS.length, 20);
+test("Fernora Printify catalog is five products, one enabled variant each", () => {
+  assert.equal(FERNORA_PRINTIFY_STARTERS.length, 5);
   const keys = FERNORA_PRINTIFY_STARTERS.map((row) => row.key);
-  assert.equal(new Set(keys).size, 20);
+  assert.equal(new Set(keys).size, 5);
+  assert.deepEqual(keys, [
+    "live_poster",
+    "live_quote_breathe",
+    "live_botanical_kowhai",
+    "live_canvas_harbour",
+    "live_frame_kind",
+  ]);
   const catalog = readFileSync(new URL("./live-catalog.ts", import.meta.url), "utf8");
   const liveIds = [...catalog.matchAll(/^\s+id: "(live_[^"]+)"/gm)].map((row) => row[1]);
   assert.deepEqual([...keys].sort(), [...new Set(liveIds)].sort());
@@ -153,18 +162,18 @@ test("Fernora Printify catalog is one enabled variant per live product", () => {
     assert.ok(spec.printFile.startsWith("print-"));
   }
   const poster = FERNORA_PRINTIFY_STARTERS.find((row) => row.key === "live_poster");
-  const tote = FERNORA_PRINTIFY_STARTERS.find((row) => row.key === "live_tote");
+  const breathe = FERNORA_PRINTIFY_STARTERS.find((row) => row.key === "live_quote_breathe");
   assert.equal(poster?.blueprintId, 282);
   assert.equal(poster?.printProviderId, 99);
   assert.deepEqual(
     poster?.variants.map((row) => row.id),
     [43138],
   );
-  assert.equal(tote?.blueprintId, 553);
-  assert.equal(tote?.printProviderId, 34);
+  assert.equal(breathe?.blueprintId, 284);
+  assert.equal(breathe?.printProviderId, 99);
   assert.deepEqual(
-    tote?.variants.map((row) => row.id),
-    [70646],
+    breathe?.variants.map((row) => row.id),
+    [43166],
   );
   const payload = buildPrintifyProductPayload(poster!, "img_poster");
   assert.equal(payload.visible, true);
