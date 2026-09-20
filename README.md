@@ -1,8 +1,8 @@
 # Pressroom
 
-Operations desk for **FERNORATRENDS** on Etsy and the **Fernora** shop (New Zealand, Australia, the United States, the United Kingdom, the European Union, and selected countries at checkout), both fulfilled by Gelato. It connects the accounts, publishes the live catalog, maps listings to print products, sends paid receipts to production, and shows net profit after marketplace fees and print cost.
+Operations desk for **FERNORATRENDS** on Etsy and the **Fernora** shop (New Zealand, Australia, the United States, the United Kingdom, the European Union, and selected countries at checkout). **Printify** is the main print supplier except the United Kingdom and the European Union, where **Gelato** stays connected for GPSR. Saved connections stay as they are. The live catalog is cleared until products are recreated on Printify.
 
-There is no sample shop. The desk opens on the **20 live Fernora products** in NZD.
+There is no sample shop. The Catalog page stays empty while the deleted mix is held.
 
 ## What it does
 
@@ -95,11 +95,11 @@ PRINTIFY_API_TOKEN=
 
 ## Live catalog
 
-The catalog in this repo is the live Fernora sale: **20 listings**, with Etsy listing IDs and Gelato store product IDs in `src/lib/live-catalog.ts`. Shop origin on Etsy is Wellington 6012; Gelato still prints in-region. Advertising is a **Meta campaign** from Pressroom **Ads** to fernora.nz (daily cap 5, max 15). Leave Etsy Offsite Ads and on-site CPC Etsy Ads off. Listing prices still survive a 15% Offsite hit at **40% after-ads profit**. Push those prices to live Etsy listings from Catalog.
+The catalog in this repo is the Fernora mix in NZD: **20 listing templates**, currently **cleared**. Recreate on Printify for non-EU/UK destinations; keep Gelato for UK and EU. Shop origin on Etsy is Wellington 6012. Advertising is a **Meta campaign** from Pressroom **Ads** to fernora.nz (daily cap 5, max 15). Leave Etsy Offsite Ads and on-site CPC Etsy Ads off.
 
 ### Printify
 
-On **Connections**, paste a Printify personal access token from [printify.com/app/account/api](https://printify.com/app/account/api). **Gelato** stays the live printer for fernora.nz. Printify now shows **Fernora Trends** twice: Etsy Connected (the FERNORATRENDS shop) and Not Connected (old disconnected store). External products with Migrate product are existing Gelato/Etsy listings — do not migrate them. **Create Fern Arc Poster and Fern Spray tote** adds two unpublished Printify products on the Etsy-connected shop (matte vertical poster + AS Colour cotton tote). They stay in My products until you publish them in Printify. Keep **Non-EU**.
+On **Connections**, paste a Printify personal access token from [printify.com/app/account/api](https://printify.com/app/account/api). **Printify is the main supplier except EU/UK.** Keep **Non-EU** — Printify will not save EU without a real EU or Northern Ireland address, and Wellington 6012 is not valid. **Gelato** stays connected for those destinations only. Leave Etsy, Shopify, Printify, and Gelato keys as they are. Do not rebuild Shopify or the website around Gelato yet. External products with Migrate product are leftover listings — do not migrate them. The live catalog is cleared; recreate on Printify when ready.
 
 ### Meta ads
 

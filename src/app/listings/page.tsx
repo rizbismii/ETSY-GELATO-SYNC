@@ -215,9 +215,10 @@ export default function ListingsPage() {
           <h1 className="font-heading text-4xl tracking-tight">Catalog</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
             Mixed Fernora shop: positive quote prints, botanicals, scenic work and five home-décor
-            pieces — not an all-abstract wall. Prices in {currency}. Listings stay priced so a
-            worst-case Etsy Offsite sale still leaves 40% after print and fees. Actual ad spend is
-            the Meta daily cap on Ads.
+            pieces — not an all-abstract wall. Prices in {currency}. Printify is the main supplier
+            except the United Kingdom and the European Union. The catalog is cleared until products
+            are recreated on Printify. Listings stay priced so a worst-case Etsy Offsite sale still
+            leaves 40% after print and fees. Actual ad spend is the Meta daily cap on Ads.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -285,9 +286,9 @@ export default function ListingsPage() {
       <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm leading-6">
         <p className="font-medium">Print file templates</p>
         <p className="mt-1 text-muted-foreground">
-          Each product stores its Gelato print file in this catalog. Download the template for the
-          current mix, or keep the same <code className="rounded bg-muted px-1 text-xs">printFileUrl</code>{" "}
-          when you add future products — publish and Attach Gelato templates push that file.
+          Each product stores its print file in this catalog. Recreate on Printify for non-EU/UK
+          destinations; Gelato stays for UK and EU only. Download the template for the current mix
+          when you add products again.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {visible
@@ -329,7 +330,8 @@ export default function ListingsPage() {
       {visible.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            Nothing in this mix yet.
+            Nothing in this mix yet. The live catalog is cleared. Recreate on Printify (except EU/UK,
+            which stay on Gelato). Leave the saved connections as they are.
           </CardContent>
         </Card>
       ) : (

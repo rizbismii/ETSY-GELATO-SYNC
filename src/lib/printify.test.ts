@@ -57,11 +57,12 @@ test("GPSR 404 is treated as Non-EU, not a per-product failure", () => {
   );
   const notes = printifyGpsrNotes("non-eu", 5, 0);
   assert.equal(notes.length, 1);
-  assert.match(notes[0], /cannot replace Gelato/);
-  assert.match(notes[0], /other sales channels/);
-  assert.match(notes[0], /Wellington 6012 is not/);
+  assert.match(notes[0], /Printify is the main print supplier except/);
+  assert.match(notes[0], /United Kingdom and the European Union/);
+  assert.match(notes[0], /will not accept Wellington 6012/);
   assert.doesNotMatch(notes[0], /default affiliate/);
-  assert.equal(printifyGpsrHeadline("non-eu"), "Non-EU hold · Gelato stays the live print path");
+  assert.doesNotMatch(notes[0], /cannot replace Gelato as the live print platform/);
+  assert.equal(printifyGpsrHeadline("non-eu"), "Non-EU hold · Printify is main except EU/UK");
 });
 
 test("Fernora Trends Etsy shop is preferred over the disconnected store", () => {

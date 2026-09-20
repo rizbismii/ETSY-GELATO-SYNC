@@ -9,6 +9,7 @@ import {
   shipLaneForCountry,
   type ShipLaneCode,
 } from "@/lib/gelato-countries";
+import { getDeletedListingIds } from "@/lib/tombstones";
 import type { Address, Order, OrderItem } from "@/lib/types";
 
 export const FERNORA_NAME = "Fernora";
@@ -36,7 +37,8 @@ export function shopLane(product: LiveProduct, country: string) {
 }
 
 export function fernoraCatalog() {
-  return LIVE_PRODUCTS.map((product) => ({
+  const deleted = new Set(getDeletedListingIds());
+  return LIVE_PRODUCTS.filter((product) => !deleted.has(product.id)).map((product) => ({
     ...product,
     description: shopDescription(product),
   }));

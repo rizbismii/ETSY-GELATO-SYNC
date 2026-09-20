@@ -213,7 +213,7 @@ export default function DeskPage() {
           <CardContent className="flex flex-col gap-3">
             {data.issues.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Shop is clear. New paid orders can go straight to Gelato.
+                Shop is clear. Catalog is cleared — recreate on Printify except EU/UK.
               </p>
             ) : (
               data.issues.map((issue) => (

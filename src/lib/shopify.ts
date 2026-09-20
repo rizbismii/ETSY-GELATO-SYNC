@@ -279,6 +279,12 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
   const notes: string[] = [];
   const catalog: ShopifyCatalogMap = {};
   const products = fernoraCatalog();
+  if (!products.length) {
+    notes.push(
+      "Catalog is cleared. Not publishing Gelato products to Shopify. Recreate on Printify first; Gelato stays for EU/UK only.",
+    );
+    return { catalog, notes };
+  }
   for (const product of products) {
     const imageUrl = await absoluteAssetUrl(product.imageUrl, request);
     const skuQuery = product.variants?.length

@@ -13,10 +13,10 @@ export type PrintifyShopSummary = {
 };
 
 export const PRINTIFY_EU_GPSR_NOTE =
-  "Printify stamps GPSR only after Store settings can save EU with a real EU or Northern Ireland responsible-person address. Add business information will not accept Wellington. The API cannot flip the EU / Non-EU radio. Gelato stays the live print path for Pressroom and fernora.nz, including EU and UK.";
+  "Printify stamps GPSR only after Store settings can save EU with a real EU or Northern Ireland responsible-person address. Add business information will not accept Wellington. The API cannot flip the EU / Non-EU radio. Printify is the main supplier except EU/UK; Gelato stays connected for those destinations only.";
 
 export const PRINTIFY_NON_EU_NOTE =
-  "Printify cannot replace Gelato as the live print platform. Keep Non-EU: Printify’s EU save opens Add business information and requires your own EU address, which Wellington 6012 is not. Use Printify only on other sales channels (not Shopify/Gelato). Paid fernora.nz orders stay on Gelato, which already prints in-region for EU and UK.";
+  "Printify is the main print supplier except the United Kingdom and the European Union. Keep Non-EU on Printify: Add business information will not accept Wellington 6012. Gelato stays connected for EU/UK GPSR only. Leave the saved connections as they are. Do not republish the deleted catalog onto Gelato, and do not migrate leftover External products.";
 
 export function formatPrintifySafetyInformation(blocks: PrintifyGpsrBlock[]) {
   return blocks
@@ -64,7 +64,7 @@ export function printifyGpsrNotes(status: PrintifyGpsrStatus, scanned: number, u
   if (status === "empty") {
     return [
       PRINTIFY_EU_GPSR_NOTE,
-      "Shop is empty. Add products in Printify, then Save again to stamp GPSR once EU is on.",
+      "Shop is empty. Catalog is cleared — recreate on Printify when ready. Do not migrate leftover External products.",
     ];
   }
   return [
@@ -76,7 +76,7 @@ export function printifyGpsrNotes(status: PrintifyGpsrStatus, scanned: number, u
 }
 
 export function printifyGpsrHeadline(status?: PrintifyGpsrStatus | null) {
-  if (status === "non-eu") return "Non-EU hold · Gelato stays the live print path";
+  if (status === "non-eu") return "Non-EU hold · Printify is main except EU/UK";
   if (status === "stamped") return "GPSR stamped on products";
   if (status === "available") return "EU GPSR available · stamp on Save";
   if (status === "empty") return "shop connected · no products yet";
