@@ -115,7 +115,7 @@ export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
       "Men’s mesh sneakers with an original Fernora star-and-fern print. Dye sublimation on breathable mesh, white sole, memory-foam insole. Made to order.",
     tags: CATALOG_LISTING_TAGS.live_sneaker_star,
     printFile: "print-star-sneakers.png",
-    mockupFile: "catalog-star-sneakers.png",
+    mockupFile: "catalog-star-sneakers-angle.jpg",
     blueprintId: 1072,
     printProviderId: 90,
     variants: whiteSoleSneakers(printifyListCents(catalogPrice("live_sneaker_star"))),

@@ -132,6 +132,9 @@ test("Horizon branding shows country · currency and made-to-order homepage copy
   assert.match(source, /title: series\.label/);
   assert.match(source, /CATALOG_SERIES/);
   assert.match(source, /All, Quotes, Botanical, Scenic, Home décor, and Original fern/);
+  assert.match(source, /fernora-product-layout/);
+  assert.match(source, /body\.template-index #MainContent \.section--page-width/);
+  assert.match(source, /sticky_details_desktop = false/);
   assert.doesNotMatch(source, /by Gelato/);
   assert.doesNotMatch(source, /Gelato quality/);
 });

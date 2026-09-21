@@ -387,6 +387,108 @@ async function catalogProductImageSource(assetPath: string, request?: Request) {
   }
 }
 
+function customerGalleryPaths(product: ReturnType<typeof fernoraCatalog>[number]) {
+  const skip = new Set([product.printFileUrl].filter(Boolean) as string[]);
+  return [...new Set(
+    [product.imageUrl, ...(product.gallery || [])].filter(
+      (file): file is string => Boolean(file) && !skip.has(file),
+    ),
+  )];
+}
+
+function mediaFilename(url?: string | null, alt?: string | null) {
+  const fromUrl = url?.split("?")[0]?.split("/").pop()?.toLowerCase() || "";
+  const fromAlt = alt?.split("/").pop()?.toLowerCase() || "";
+  return fromUrl || fromAlt;
+}
+
+async function ensureShopifyProductGallery(
+  productId: string,
+  product: ReturnType<typeof fernoraCatalog>[number],
+  request?: Request,
+) {
+  const wanted = customerGalleryPaths(product);
+  if (!wanted.length) return;
+  const listed = await shopifyGraphql<{
+    product?: {
+      media: {
+        nodes: Array<{
+          id: string;
+          alt?: string | null;
+          preview?: { image?: { url?: string | null } | null } | null;
+        }>;
+      };
+    } | null;
+  }>(
+    `query ($id: ID!) {
+      product(id: $id) {
+        media(first: 30) {
+          nodes {
+            id
+            alt
+            preview { image { url } }
+          }
+        }
+      }
+    }`,
+    { id: productId },
+  );
+  const have = new Set(
+    (listed.product?.media.nodes || []).map((row) =>
+      mediaFilename(row.preview?.image?.url, row.alt),
+    ),
+  );
+  const missing = wanted.filter((file) => {
+    const name = file.split("/").pop()?.toLowerCase() || "";
+    return name && ![...have].some((existing) => existing.includes(name) || name.includes(existing));
+  });
+  if (missing.length) {
+    const media = [];
+    for (const file of missing) {
+      media.push({
+        originalSource: await catalogProductImageSource(file, request),
+        alt: `${product.title} · ${file.split("/").pop()}`,
+        mediaContentType: "IMAGE",
+      });
+    }
+    const created = await shopifyGraphql<{
+      productCreateMedia: { mediaUserErrors: Array<{ message: string }> };
+    }>(
+      `mutation ($productId: ID!, $media: [CreateMediaInput!]!) {
+        productCreateMedia(productId: $productId, media: $media) {
+          media { ... on MediaImage { id } }
+          mediaUserErrors { field message }
+        }
+      }`,
+      { productId, media },
+    );
+    if (created.productCreateMedia.mediaUserErrors.length) {
+      throw new Error(created.productCreateMedia.mediaUserErrors.map((row) => row.message).join("; "));
+    }
+  }
+  const after = await shopifyGraphql<{
+    product?: { media: { nodes: Array<{ id: string; preview?: { image?: { url?: string | null } | null } | null }> } } | null;
+  }>(
+    `query ($id: ID!) {
+      product(id: $id) {
+        media(first: 30) { nodes { id preview { image { url } } } }
+      }
+    }`,
+    { id: productId },
+  );
+  const featuredName = wanted[0]?.split("/").pop()?.toLowerCase() || "";
+  const nodes = after.product?.media.nodes || [];
+  const featured = nodes.find((row) => mediaFilename(row.preview?.image?.url).includes(featuredName));
+  if (featured && nodes[0]?.id !== featured.id) {
+    await shopifyGraphql(
+      `mutation ($id: ID!, $moves: [MoveInput!]!) {
+        productReorderMedia(id: $id, moves: $moves) { userErrors { field message } }
+      }`,
+      { id: productId, moves: [{ id: featured.id, newPosition: 0 }] },
+    );
+  }
+}
+
 export async function syncFernoraCatalogToShopify(request?: Request) {
   const notes: string[] = [];
   const catalog: ShopifyCatalogMap = {};
@@ -504,6 +606,11 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
       await publishableToOnlineStore(node.id);
     } catch (error) {
       notes.push(`${product.title}: published to Admin but not Online Store (${(error as Error).message})`);
+    }
+    try {
+      await ensureShopifyProductGallery(node.id, product, request);
+    } catch (error) {
+      notes.push(`${product.title}: mockups (${(error as Error).message})`);
     }
   }
   await updateShop((state) => {

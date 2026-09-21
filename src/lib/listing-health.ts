@@ -39,7 +39,17 @@ const GALLERY_PAIRS: Record<string, { mockup: string; print: string }> = {
     print: "/catalog/print-harbour-morning.png",
   },
   live_frame_kind: { mockup: "/catalog/catalog-kind-light.png", print: "/catalog/print-kind-light.png" },
-  live_sneaker_star: { mockup: "/catalog/catalog-star-sneakers.png", print: "/catalog/print-star-sneakers.png" },
+  live_sneaker_star: { mockup: "/catalog/catalog-star-sneakers-angle.jpg", print: "/catalog/print-star-sneakers.png" },
+};
+
+const GALLERY_EXTRA: Record<string, string[]> = {
+  live_sneaker_star: [
+    "/catalog/gallery-live_sneaker_star-model.jpg",
+    "/catalog/gallery-live_sneaker_star-model-2.jpg",
+    "/catalog/gallery-live_sneaker_star-outside.jpg",
+    "/catalog/gallery-live_sneaker_star-top.jpg",
+    "/catalog/catalog-star-sneakers.png",
+  ],
 };
 
 export function clipListingTag(tag: string) {
@@ -69,6 +79,7 @@ export function listingGallery(id?: string | null, mockup?: string | null, print
   const pair = id ? GALLERY_PAIRS[id] : undefined;
   const files = [
     pair?.mockup || mockup || "",
+    ...(id ? GALLERY_EXTRA[id] || [] : []),
     pair?.print || print || "",
     id ? `/catalog/gallery-${id}-detail.png` : "",
     id ? `/catalog/gallery-${id}-close.png` : "",

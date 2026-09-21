@@ -40,6 +40,10 @@ test("gallery lists the listing photo, print file, and extra stills", () => {
   assert.ok(files.includes("/catalog/catalog-poster.png"));
   assert.ok(files.includes("/catalog/print-poster-fern-arc.png"));
   assert.ok(files.includes("/catalog/gallery-live_poster-detail.png"));
+  const sneakers = listingGallery("live_sneaker_star");
+  assert.ok(sneakers.includes("/catalog/catalog-star-sneakers-angle.jpg"));
+  assert.ok(sneakers.includes("/catalog/gallery-live_sneaker_star-model.jpg"));
+  assert.ok(sneakers.includes("/catalog/gallery-live_sneaker_star-model-2.jpg"));
 });
 
 test("prices use Printify costs and do not pad for opted-out Offsite Ads", () => {

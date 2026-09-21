@@ -313,7 +313,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     gelatoProductUid: "printify_mesh_sneakers_1072",
     gelatoProductName: "Men’s mesh sneakers · white sole",
     printFileUrl: "/catalog/print-star-sneakers.png",
-    imageUrl: "/catalog/catalog-star-sneakers.png",
+    imageUrl: "/catalog/catalog-star-sneakers-angle.jpg",
     gelatoUnitCost: catalogUnitCost("live_sneaker_star"),
     drop: LIVE_DROP_ID,
     issues: [],
