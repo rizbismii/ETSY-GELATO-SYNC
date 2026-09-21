@@ -12,6 +12,7 @@ test("live catalog covers every mix plus Southern Cross sneakers", () => {
     "live_canvas_harbour",
     "live_frame_kind",
     "live_sneaker_star",
+    "live_sneaker_star_w",
   ]);
   assert.match(catalog, /LIVE_CATALOG_IDS/);
   assert.match(catalog, /collection: "original"/);

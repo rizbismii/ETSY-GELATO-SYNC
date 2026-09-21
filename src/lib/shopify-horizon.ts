@@ -12,6 +12,7 @@ const PICKER_CSS_MARK = "/* fernora-country-currency */";
 const MOBILE_LAYOUT_MARK = "/* fernora-mobile-layout */";
 const STUDIO_LAYOUT_MARK = "/* fernora-studio-layout */";
 const PRODUCT_LAYOUT_MARK = "/* fernora-product-layout */";
+const GALLERY_LAYOUT_MARK = "/* fernora-product-gallery */";
 const COLLECTION_HANDLES = CATALOG_SERIES.map((series) => series.handle);
 const SERIES_COLLECTIONS = CATALOG_SERIES.map((series) => ({
   handle: series.handle,
@@ -250,6 +251,29 @@ function withVisiblePickerCss(header: string) {
     next = next.includes("{% endstylesheet %}")
       ? next.replace("{% endstylesheet %}", `${product}{% endstylesheet %}`)
       : `${next}\n{% stylesheet %}${product}{% endstylesheet %}\n`;
+  }
+  if (!next.includes(GALLERY_LAYOUT_MARK)) {
+    const gallery = `
+  ${GALLERY_LAYOUT_MARK}
+  .product-information .media-gallery {
+    min-width: 0;
+  }
+  .product-information .media-gallery__grid,
+  .product-information .thumbnail-list,
+  .product-information .resource-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(4.75rem, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+  .product-information .media-gallery__grid > :first-child,
+  .product-information .media-gallery__grid .media-gallery__featured {
+    grid-column: 1 / -1;
+  }
+`;
+    next = next.includes("{% endstylesheet %}")
+      ? next.replace("{% endstylesheet %}", `${gallery}{% endstylesheet %}`)
+      : `${next}\n{% stylesheet %}${gallery}{% endstylesheet %}\n`;
   }
   return next;
 }
@@ -847,7 +871,7 @@ async function patchProductTemplate(themeId: string) {
   }
   const gallery = main?.blocks?.["media-gallery"];
   if (gallery?.settings) {
-    gallery.settings.media_presentation = "carousel";
+    gallery.settings.media_presentation = "grid";
     gallery.settings.thumbnail_position = "below";
     gallery.settings.large_first_image = true;
     gallery.settings.extend_media = false;

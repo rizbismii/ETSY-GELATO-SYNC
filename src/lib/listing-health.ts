@@ -40,6 +40,7 @@ const GALLERY_PAIRS: Record<string, { mockup: string; print: string }> = {
   },
   live_frame_kind: { mockup: "/catalog/catalog-kind-light.png", print: "/catalog/print-kind-light.png" },
   live_sneaker_star: { mockup: "/catalog/catalog-star-sneakers-angle.jpg", print: "/catalog/print-star-sneakers.png" },
+  live_sneaker_star_w: { mockup: "/catalog/catalog-star-sneakers-w-angle.jpg", print: "/catalog/print-star-sneakers.png" },
 };
 
 const GALLERY_EXTRA: Record<string, string[]> = {
@@ -47,8 +48,20 @@ const GALLERY_EXTRA: Record<string, string[]> = {
     "/catalog/gallery-live_sneaker_star-model.jpg",
     "/catalog/gallery-live_sneaker_star-model-2.jpg",
     "/catalog/gallery-live_sneaker_star-outside.jpg",
+    "/catalog/gallery-live_sneaker_star-outside-right.jpg",
+    "/catalog/gallery-live_sneaker_star-inside.jpg",
+    "/catalog/gallery-live_sneaker_star-inside-right.jpg",
     "/catalog/gallery-live_sneaker_star-top.jpg",
+    "/catalog/gallery-live_sneaker_star-back.jpg",
+    "/catalog/gallery-live_sneaker_star-bottom.jpg",
     "/catalog/catalog-star-sneakers.png",
+  ],
+  live_sneaker_star_w: [
+    "/catalog/gallery-live_sneaker_star_w-model.jpg",
+    "/catalog/gallery-live_sneaker_star_w-model-2.jpg",
+    "/catalog/gallery-live_sneaker_star_w-outside.jpg",
+    "/catalog/gallery-live_sneaker_star_w-top.jpg",
+    "/catalog/gallery-live_sneaker_star_w-back.jpg",
   ],
 };
 
@@ -124,6 +137,10 @@ export const CATALOG_LISTING_TAGS: Record<string, string[]> = {
   live_sneaker_star: fillListingTags(
     ["Original fern", "sneakers", "mesh", "stars", "gold", "green"],
     ["mens shoes", "southern cross", "fern print", "white sole", "streetwear"],
+  ),
+  live_sneaker_star_w: fillListingTags(
+    ["Original fern", "sneakers", "mesh", "stars", "gold", "green"],
+    ["womens shoes", "southern cross", "fern print", "white sole", "streetwear"],
   ),
 };
 

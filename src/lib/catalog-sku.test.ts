@@ -7,6 +7,7 @@ import {
   resolveCatalogLine,
   sneakerVariants,
 } from "./clothing.ts";
+import { SNEAKER_WOMENS_WHITE_SOLE } from "./sneaker-sizes.ts";
 
 const hoodie = {
   id: "live_hoodie",
@@ -81,4 +82,21 @@ test("resolveCatalogLine maps a sneaker size SKU to Printify mesh sneakers", () 
   assert.equal(line.variation, "White sole · US 9.5");
   assert.equal(parseSneakerSku("live_sneaker_star-us-7-5")?.sizeUid, "7-5");
   assert.equal(sneakerVariants("live_sneaker_star", "printify_mesh_sneakers_1072").length, 9);
+});
+
+test("resolveCatalogLine maps a women’s sneaker size SKU to Printify 1219", () => {
+  const sneakers = {
+    id: "live_sneaker_star_w",
+    title: "Southern Cross Star · Women’s Mesh Sneakers",
+    gelatoProductUid: "printify_mesh_sneakers_1219",
+    printFileUrl: "/catalog/print-star-sneakers.png",
+    variants: sneakerVariants("live_sneaker_star_w", "printify_mesh_sneakers_1219", SNEAKER_WOMENS_WHITE_SOLE),
+  };
+  const line = resolveCatalogLine([sneakers], "live_sneaker_star_w-us-8");
+  assert.ok(line);
+  assert.equal(line.listingId, "live_sneaker_star_w");
+  assert.equal(line.variant?.sizeUid, "8");
+  assert.equal(line.variant?.size, "US 8");
+  assert.equal(line.gelatoProductUid, "printify_mesh_sneakers_1219:92346");
+  assert.equal(sneakerVariants("live_sneaker_star_w", "printify_mesh_sneakers_1219", SNEAKER_WOMENS_WHITE_SOLE).length, 9);
 });

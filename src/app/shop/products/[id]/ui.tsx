@@ -29,10 +29,14 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
   const clothingColors = [...new Map((product.variants || []).map((row) => [row.colorUid, row])).values()];
   const clothingSizes = [...new Map((product.variants || []).map((row) => [row.sizeUid, row])).values()];
   const preferred = defaultClothingVariant(product.variants);
+  const gallery = [...new Set([product.imageUrl, ...(product.gallery || [])])].filter(
+    (file) => file && file !== product.printFileUrl,
+  );
   const [country, setCountry] = useState("NZ");
   const [color, setColor] = useState(preferred?.colorUid || clothingColors[0]?.colorUid || "black");
   const [size, setSize] = useState(preferred?.sizeUid || clothingSizes[0]?.sizeUid || "m");
   const [view, setView] = useState<"mockup" | "print">("mockup");
+  const [hero, setHero] = useState(product.imageUrl);
   useEffect(() => {
     const saved = readProfile().country;
     if (saved) setCountry(saved);
@@ -61,13 +65,39 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
               id={product.id}
               title={product.title}
               category={product.category}
-              imageUrl={view === "print" ? product.printFileUrl || product.imageUrl : product.imageUrl}
+              imageUrl={view === "print" ? product.printFileUrl || product.imageUrl : hero || product.imageUrl}
               kind={view === "print" ? "print" : "mockup"}
               fit="contain"
               className="size-full"
             />
           </div>
         </div>
+        {view === "mockup" && gallery.length > 1 ? (
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+            {gallery.map((file) => (
+              <button
+                key={file}
+                type="button"
+                onClick={() => setHero(file)}
+                className={`overflow-hidden rounded-2xl border bg-card ${
+                  hero === file ? "border-foreground" : "border-border/70"
+                }`}
+              >
+                <div className="aspect-square">
+                  <ProductArt
+                    id={`${product.id}-${file}`}
+                    title={product.title}
+                    category={product.category}
+                    imageUrl={file}
+                    kind="mockup"
+                    fit="contain"
+                    className="size-full"
+                  />
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : null}
         <div className="flex gap-2">
           <Button size="sm" variant={view === "mockup" ? "default" : "outline"} onClick={() => setView("mockup")}>
             Product

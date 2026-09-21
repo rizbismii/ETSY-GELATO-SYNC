@@ -1,3 +1,4 @@
+import { SNEAKER_WOMENS_WHITE_SOLE } from "@/lib/sneaker-sizes";
 import { resolveCatalogLine, sneakerVariants } from "@/lib/clothing";
 import { GELATO_SHIP_BLURB } from "@/lib/gelato-countries";
 import { galleryForListing, tagsForListing } from "@/lib/listing-health";
@@ -32,7 +33,7 @@ export const SHIP_COUNTRIES = [
 
 export const SHIP_BLURB = GELATO_SHIP_BLURB;
 
-/** Wall-art mixes stay filled; Southern Cross sneakers sit in Original fern. */
+/** Wall-art mixes stay filled; Southern Cross sneakers (men’s and women’s) sit in Original fern. */
 export const LIVE_CATALOG_IDS = [
   "live_poster",
   "live_quote_breathe",
@@ -40,6 +41,7 @@ export const LIVE_CATALOG_IDS = [
   "live_canvas_harbour",
   "live_frame_kind",
   "live_sneaker_star",
+  "live_sneaker_star_w",
 ] as const;
 
 export type LiveCatalogId = (typeof LIVE_CATALOG_IDS)[number];
@@ -324,6 +326,36 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     lanes: catalogLanes("live_sneaker_star"),
     gallery: galleryForListing("live_sneaker_star"),
     variants: sneakerVariants("live_sneaker_star", "printify_mesh_sneakers_1072"),
+  }),
+  item({
+    id: "live_sneaker_star_w",
+    etsyListingId: "",
+    title: "Southern Cross Star · Women’s Mesh Sneakers",
+    description:
+      "Women’s mesh sneakers with an original Fernora star-and-fern print on forest green. Dye sublimation, white sole, memory-foam insole. Made to order.",
+    state: "inactive",
+    price: catalogPrice("live_sneaker_star_w"),
+    currency: "NZD",
+    quantity: 999,
+    views: 0,
+    favorites: 0,
+    tags: tagsForListing("live_sneaker_star_w"),
+    category: "sneakers",
+    collection: "original",
+    gelatoProductUid: "printify_mesh_sneakers_1219",
+    gelatoProductName: "Women’s mesh sneakers · white sole",
+    printFileUrl: "/catalog/print-star-sneakers.png",
+    imageUrl: "/catalog/catalog-star-sneakers-w-angle.jpg",
+    gelatoUnitCost: catalogUnitCost("live_sneaker_star_w"),
+    drop: LIVE_DROP_ID,
+    issues: [],
+    taxonomyId: 1478,
+    shippingProfileId: 315080633003,
+    returnPolicyId: RETURN_POLICY_ID,
+    publishState: "ready",
+    lanes: catalogLanes("live_sneaker_star_w"),
+    gallery: galleryForListing("live_sneaker_star_w"),
+    variants: sneakerVariants("live_sneaker_star_w", "printify_mesh_sneakers_1219", SNEAKER_WOMENS_WHITE_SOLE),
   }),
 ];
 

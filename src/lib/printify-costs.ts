@@ -27,6 +27,8 @@ export const PRINTIFY_PRINT_NZD = {
   live_frame_kind: 38.53,
   /** Live Printify variant.cost on shop 28911689, 21 September 2026 (NZD). */
   live_sneaker_star: 37.77,
+  /** Women’s mesh 1219 uses the same Smart Printee print cost as men’s 1072 until live cost is read. */
+  live_sneaker_star_w: 37.77,
 } as const;
 
 export type PrintifyCostKey = keyof typeof PRINTIFY_PRINT_NZD;
@@ -85,8 +87,12 @@ function gelatoFamily(key: PrintifyCostKey): keyof typeof GELATO_LANE_COSTS {
 function printifyFamily(key: PrintifyCostKey): keyof typeof PRINTIFY_SHIP_USD {
   if (key === "live_canvas_harbour") return "canvas";
   if (key === "live_frame_kind") return "frame";
-  if (key === "live_sneaker_star") return "sneaker";
+  if (isSneakerKey(key)) return "sneaker";
   return "poster";
+}
+
+function isSneakerKey(key: PrintifyCostKey) {
+  return key === "live_sneaker_star" || key === "live_sneaker_star_w";
 }
 
 function sneakerShipUsd(region: "NZ" | "AU" | "US" | "GB" | "EU") {
@@ -108,7 +114,7 @@ export function catalogLanes(key: PrintifyCostKey): CostLane[] {
     { region: "EU", label: "European Union", country: "DE" },
   ];
   return rows.map((row) => {
-    if (key === "live_sneaker_star") {
+    if (isSneakerKey(key)) {
       return {
         ...row,
         printer: "printify",

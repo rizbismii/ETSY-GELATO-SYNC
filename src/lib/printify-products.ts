@@ -1,7 +1,13 @@
 import path from "node:path";
 import { CATALOG_LISTING_TAGS } from "./listing-health.ts";
 import { catalogPrice, printifyListCents } from "./printify-costs.ts";
-import { SNEAKER_WHITE_SOLE, SNEAKER_WHITE_SOLE_DEFAULT } from "./sneaker-sizes.ts";
+import {
+  SNEAKER_WHITE_SOLE,
+  SNEAKER_WHITE_SOLE_DEFAULT,
+  SNEAKER_WOMENS_WHITE_SOLE,
+  SNEAKER_WOMENS_WHITE_SOLE_DEFAULT,
+  type SneakerSizeRow,
+} from "./sneaker-sizes.ts";
 
 export { SNEAKER_WHITE_SOLE_DEFAULT, SNEAKER_WHITE_SOLE_IDS } from "./sneaker-sizes.ts";
 
@@ -30,18 +36,22 @@ function one(id: number, price: number): PrintifyVariantInput[] {
   return [{ id, price, is_enabled: true, is_default: true }];
 }
 
-function whiteSoleSneakers(price: number): PrintifyVariantInput[] {
-  return SNEAKER_WHITE_SOLE.map((row) => ({
+function whiteSoleSneakers(
+  price: number,
+  sizes: readonly SneakerSizeRow[] = SNEAKER_WHITE_SOLE,
+  defaultId: number = SNEAKER_WHITE_SOLE_DEFAULT,
+): PrintifyVariantInput[] {
+  return sizes.map((row) => ({
     id: row.printifyId,
     price,
     is_enabled: true,
-    ...(row.printifyId === SNEAKER_WHITE_SOLE_DEFAULT ? { is_default: true } : {}),
+    ...(row.printifyId === defaultId ? { is_default: true } : {}),
   }));
 }
 
 /**
- * Fernora catalog: five wall-art mixes (one enabled variant each) plus Southern Cross star sneakers
- * (white sole, every US size). Not Gelato External migrations.
+ * Fernora catalog: five wall-art mixes (one enabled variant each) plus men’s and women’s
+ * Southern Cross star mesh sneakers (white sole, every US size). Not Gelato External migrations.
  */
 export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
   {
@@ -121,6 +131,24 @@ export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
     variants: whiteSoleSneakers(printifyListCents(catalogPrice("live_sneaker_star"))),
     positions: ["left_shoe", "right_shoe"],
     aliases: ["Southern Cross Star Mesh Sneakers"],
+  },
+  {
+    key: "live_sneaker_star_w",
+    title: "Southern Cross Star · Women’s Mesh Sneakers",
+    description:
+      "Women’s mesh sneakers with an original Fernora star-and-fern print. Dye sublimation on breathable mesh, white sole, memory-foam insole. Made to order.",
+    tags: CATALOG_LISTING_TAGS.live_sneaker_star_w,
+    printFile: "print-star-sneakers.png",
+    mockupFile: "catalog-star-sneakers-w-angle.jpg",
+    blueprintId: 1219,
+    printProviderId: 90,
+    variants: whiteSoleSneakers(
+      printifyListCents(catalogPrice("live_sneaker_star_w")),
+      SNEAKER_WOMENS_WHITE_SOLE,
+      SNEAKER_WOMENS_WHITE_SOLE_DEFAULT,
+    ),
+    positions: ["left_shoe", "right_shoe"],
+    aliases: ["Southern Cross Star Womens Mesh Sneakers", "Southern Cross Star Women’s Mesh Sneakers"],
   },
 ];
 

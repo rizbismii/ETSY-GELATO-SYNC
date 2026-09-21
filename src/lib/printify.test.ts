@@ -142,10 +142,10 @@ test("EU GPSR probe without stamps is available; stamps mark applied", () => {
   );
 });
 
-test("Fernora Printify catalog is six products including mesh sneakers", () => {
-  assert.equal(FERNORA_PRINTIFY_STARTERS.length, 6);
+test("Fernora Printify catalog is seven products including men’s and women’s mesh sneakers", () => {
+  assert.equal(FERNORA_PRINTIFY_STARTERS.length, 7);
   const keys = FERNORA_PRINTIFY_STARTERS.map((row) => row.key);
-  assert.equal(new Set(keys).size, 6);
+  assert.equal(new Set(keys).size, 7);
   assert.deepEqual(keys, [
     "live_poster",
     "live_quote_breathe",
@@ -153,17 +153,18 @@ test("Fernora Printify catalog is six products including mesh sneakers", () => {
     "live_canvas_harbour",
     "live_frame_kind",
     "live_sneaker_star",
+    "live_sneaker_star_w",
   ]);
   const catalog = readFileSync(new URL("./live-catalog.ts", import.meta.url), "utf8");
   const liveIds = [...catalog.matchAll(/^\s+id: "(live_[^"]+)"/gm)].map((row) => row[1]);
   assert.deepEqual([...keys].sort(), [...new Set(liveIds)].sort());
   for (const spec of FERNORA_PRINTIFY_STARTERS) {
     const enabled = spec.variants.filter((row) => row.is_enabled);
-    if (spec.key === "live_sneaker_star") {
+    if (spec.key.startsWith("live_sneaker_")) {
       assert.equal(enabled.length, 9);
-      assert.equal(spec.blueprintId, 1072);
       assert.equal(spec.printProviderId, 90);
       assert.deepEqual(spec.positions, ["left_shoe", "right_shoe"]);
+      assert.equal(spec.blueprintId, spec.key === "live_sneaker_star_w" ? 1219 : 1072);
     } else {
       assert.equal(enabled.length, 1);
     }
@@ -194,6 +195,9 @@ test("Fernora Printify catalog is six products including mesh sneakers", () => {
     ["left_shoe", "right_shoe"],
   );
   assert.equal(sneakerPayload.print_areas[0].variant_ids.length, 9);
+  const womens = FERNORA_PRINTIFY_STARTERS.find((row) => row.key === "live_sneaker_star_w");
+  assert.equal(womens?.blueprintId, 1219);
+  assert.equal(womens?.variants.find((row) => row.is_default)?.id, 92346);
   const payload = buildPrintifyProductPayload(poster!, "img_poster");
   assert.equal(payload.visible, true);
   assert.equal("publish_details" in payload, false);

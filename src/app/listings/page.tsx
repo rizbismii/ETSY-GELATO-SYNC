@@ -221,7 +221,7 @@ export default function ListingsPage() {
         <div>
           <h1 className="font-heading text-4xl tracking-tight">Catalog</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Mixed Fernora shop: five wall-art mixes plus Southern Cross star sneakers — Quotes,
+            Mixed Fernora shop: five wall-art mixes plus men’s and women’s Southern Cross mesh sneakers — Quotes,
             Botanical, Scenic, Home décor, and Original fern. Prices in {currency}. Printify is the
             main supplier except the United Kingdom and the European Union (wall art). Mesh sneakers
             print on Printify. Catalog dropdowns on Etsy, Shopify, and this desk match Printify: All,
@@ -300,7 +300,7 @@ export default function ListingsPage() {
       <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm leading-6">
         <p className="font-medium">Print file templates</p>
         <p className="mt-1 text-muted-foreground">
-          Each product stores its print file in this catalog. Printify holds six products (wall art
+          Each product stores its print file in this catalog. Printify holds seven products (wall art
           one variant; sneakers every white-sole size). Publish them to Etsy, Shopify, and fernora.nz.
           Gelato stays for UK and EU wall art. Download the template for the current mix.
         </p>

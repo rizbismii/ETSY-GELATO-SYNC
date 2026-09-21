@@ -1,4 +1,9 @@
-import { SNEAKER_DEFAULT_SIZE_UID, SNEAKER_WHITE_SOLE } from "./sneaker-sizes.ts";
+import {
+  SNEAKER_DEFAULT_SIZE_UID,
+  SNEAKER_WHITE_SOLE,
+  SNEAKER_WOMENS_DEFAULT_SIZE_UID,
+  type SneakerSizeRow,
+} from "./sneaker-sizes.ts";
 import type { ClothingVariant, Listing } from "@/lib/types";
 
 export const CLOTHING_COLORS = [
@@ -69,9 +74,13 @@ export function clothingVariants(productId: string, category: string): ClothingV
   return rows;
 }
 
-/** White-sole US sizes for Printify mesh sneakers (blueprint 1072). */
-export function sneakerVariants(productId: string, gelatoProductUid: string): ClothingVariant[] {
-  return SNEAKER_WHITE_SOLE.map((row) => ({
+/** White-sole US sizes for Printify mesh sneakers (1072 men’s or 1219 women’s). */
+export function sneakerVariants(
+  productId: string,
+  gelatoProductUid: string,
+  sizes: readonly SneakerSizeRow[] = SNEAKER_WHITE_SOLE,
+): ClothingVariant[] {
+  return sizes.map((row) => ({
     id: `${productId}-us-${row.sizeUid}`,
     color: "White sole",
     colorUid: "white",
@@ -88,6 +97,7 @@ export function defaultClothingVariant(variants: ClothingVariant[] | undefined) 
     variants.find((row) => row.colorUid === "black" && row.sizeUid === "m") ||
     variants.find((row) => row.sizeUid === "m") ||
     variants.find((row) => row.sizeUid === SNEAKER_DEFAULT_SIZE_UID) ||
+    variants.find((row) => row.sizeUid === SNEAKER_WOMENS_DEFAULT_SIZE_UID) ||
     variants[0]
   );
 }

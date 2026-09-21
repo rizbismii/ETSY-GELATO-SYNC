@@ -61,9 +61,10 @@ test("print templates keep a downloadable filename and surface for current produ
 });
 
 test("print files stay paired to their own listing mockup", () => {
-  assert.equal(CATALOG_ART_PAIRS.length, 6);
+  assert.equal(CATALOG_ART_PAIRS.length, 7);
   assert.equal(printFileForListing("live_poster"), "/catalog/print-poster-fern-arc.png");
   assert.equal(printFileForListing("live_sneaker_star"), "/catalog/print-star-sneakers.png");
+  assert.equal(printFileForListing("live_sneaker_star_w"), "/catalog/print-star-sneakers.png");
   assert.equal(
     printFileForListing("live_quote_breathe", "/catalog/print-poster-fern-arc.png"),
     "/catalog/print-breathe-here.png",
@@ -133,8 +134,10 @@ test("Horizon branding shows country · currency and made-to-order homepage copy
   assert.match(source, /CATALOG_SERIES/);
   assert.match(source, /All, Quotes, Botanical, Scenic, Home décor, and Original fern/);
   assert.match(source, /fernora-product-layout/);
+  assert.match(source, /fernora-product-gallery/);
   assert.match(source, /body\.template-index #MainContent \.section--page-width/);
   assert.match(source, /sticky_details_desktop = false/);
+  assert.match(source, /media_presentation = "grid"/);
   assert.doesNotMatch(source, /by Gelato/);
   assert.doesNotMatch(source, /Gelato quality/);
 });
