@@ -1,4 +1,6 @@
 import path from "node:path";
+import { CATALOG_LISTING_TAGS } from "./listing-health.ts";
+import { catalogPrice, printifyListCents } from "./printify-costs.ts";
 
 export type PrintifyVariantInput = {
   id: number;
@@ -35,12 +37,12 @@ export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
     title: "Fern Arc Poster · A3 Semi-Gloss",
     description:
       "A tall botanical study of a New Zealand fern, printed to order on premium matte paper. Unframed. Made to order.",
-    tags: ["fern", "poster", "botanical", "nz art", "wall print", "Original fern"],
+    tags: CATALOG_LISTING_TAGS.live_poster,
     printFile: "print-poster-fern-arc.png",
     mockupFile: "catalog-poster.png",
     blueprintId: 282,
     printProviderId: 99,
-    variants: one(43138, 5699),
+    variants: one(43138, printifyListCents(catalogPrice("live_poster"))),
     positions: ["front"],
     aliases: ["Fern Arc Poster"],
   },
@@ -49,36 +51,36 @@ export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
     title: "Breathe You Are Here · A3 Quote Poster",
     description:
       "Landscape matte print with a botanical border and the line “Breathe. You are here.” Unframed. Made to order.",
-    tags: ["breathe", "quote", "kind", "poster", "positive", "Quotes"],
+    tags: CATALOG_LISTING_TAGS.live_quote_breathe,
     printFile: "print-breathe-here.png",
     mockupFile: "catalog-breathe-here.png",
     blueprintId: 284,
     printProviderId: 99,
-    variants: one(43166, 5699),
+    variants: one(43166, printifyListCents(catalogPrice("live_quote_breathe"))),
     positions: ["front"],
   },
   {
     key: "live_botanical_kowhai",
     title: "Kowhai Bells · 18×24 Botanical Print",
     description: "Large 18×24 in painterly study of New Zealand kōwhai bells on cream. Unframed. Made to order.",
-    tags: ["kowhai", "botanical", "flowers", "poster", "yellow", "Botanical"],
+    tags: CATALOG_LISTING_TAGS.live_botanical_kowhai,
     printFile: "print-kowhai-botanical.png",
     mockupFile: "catalog-kowhai-botanical.png",
     blueprintId: 282,
     printProviderId: 99,
-    variants: one(43144, 7399),
+    variants: one(43144, printifyListCents(catalogPrice("live_botanical_kowhai"))),
     positions: ["front"],
   },
   {
     key: "live_canvas_harbour",
     title: "Harbour Morning Canvas · 12×12",
     description: "Square slim-wrap canvas of a quiet New Zealand harbour at first light. Made to order.",
-    tags: ["harbour", "canvas", "landscape", "morning", "home", "Scenic"],
+    tags: CATALOG_LISTING_TAGS.live_canvas_harbour,
     printFile: "print-harbour-morning.png",
     mockupFile: "catalog-harbour-morning.png",
     blueprintId: 937,
     printProviderId: 99,
-    variants: one(102204, 11899),
+    variants: one(102204, printifyListCents(catalogPrice("live_canvas_harbour"))),
     positions: ["front"],
   },
   {
@@ -86,12 +88,12 @@ export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
     title: "Home Is a Kind Light · 12×16 Oak Frame",
     description:
       "Walnut-framed 12×16 print: botanicals and “Home is a kind light.” Ready to hang. Made to order.",
-    tags: ["home", "framed", "kind", "quote", "homedecor", "Home décor"],
+    tags: CATALOG_LISTING_TAGS.live_frame_kind,
     printFile: "print-kind-light.png",
     mockupFile: "catalog-kind-light.png",
     blueprintId: 540,
     printProviderId: 99,
-    variants: one(69671, 18499),
+    variants: one(69671, printifyListCents(catalogPrice("live_frame_kind"))),
     positions: ["front"],
   },
 ];

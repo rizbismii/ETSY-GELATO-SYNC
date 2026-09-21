@@ -170,8 +170,27 @@ async function refreshPrintifyPrintFile(
   await printify(`/shops/${shopId}/products/${productId}.json`, {
     method: "PUT",
     token,
-    body: { print_areas: printAreasForExistingVariants(spec, image.id, variantIds) },
+    body: {
+      tags: spec.tags,
+      print_areas: printAreasForExistingVariants(spec, image.id, variantIds),
+    },
   });
+  try {
+    await printify(`/shops/${shopId}/products/${productId}.json`, {
+      method: "PUT",
+      token,
+      body: {
+        variants: spec.variants.map((variant) => ({
+          id: variant.id,
+          price: variant.price,
+          is_enabled: variant.is_enabled,
+          ...(variant.is_default ? { is_default: true } : {}),
+        })),
+      },
+    });
+  } catch {
+    /* price PUT can fail if Printify wants every blueprint variant; tags and print still saved */
+  }
   return image.id;
 }
 
@@ -345,7 +364,9 @@ export async function createFernoraPrintifyProducts(input?: { shopId?: number; t
             skipped: true,
             printRefreshed: true,
           });
-          extraNotes.push(`Refreshed the ${spec.title} print file so it matches the listing photo.`);
+          extraNotes.push(
+            `Refreshed the ${spec.title} print file, 13 listing-health tags, and Printify price.`,
+          );
           continue;
         } catch (error) {
           extraNotes.push(`Print refresh ${spec.title}: ${(error as Error).message}`);

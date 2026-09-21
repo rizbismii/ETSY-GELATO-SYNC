@@ -1,6 +1,12 @@
 import { resolveCatalogLine } from "@/lib/clothing";
 import { GELATO_SHIP_BLURB } from "@/lib/gelato-countries";
-import { OFFSITE_ADS_RATE, TARGET_AFTER_ADS_MARGIN, recommendedPrice } from "@/lib/money";
+import { galleryForListing, tagsForListing } from "@/lib/listing-health";
+import {
+  catalogLanes,
+  catalogPrice,
+  catalogUnitCost,
+  type CostLane,
+} from "@/lib/printify-costs";
 import type { Listing } from "@/lib/types";
 
 export const ETSY_SHOP_URL = "https://www.etsy.com/shop/FERNORATRENDS";
@@ -41,14 +47,7 @@ export function isLiveCatalogId(id?: string | null): id is LiveCatalogId {
   return Boolean(id && (LIVE_CATALOG_IDS as readonly string[]).includes(id));
 }
 
-export type ShipLane = {
-  region: string;
-  label: string;
-  country: string;
-  shipping: number;
-  printCost: number;
-  days: string;
-};
+export type ShipLane = CostLane;
 
 export type LiveProduct = Listing & {
   description: string;
@@ -60,43 +59,8 @@ export type LiveProduct = Listing & {
   lanes: ShipLane[];
   collection: "original" | "quote" | "botanical" | "scenic" | "home";
   quote?: string;
+  gallery: string[];
 };
-
-function priceFor(print: Record<string, number>, ship: Record<string, number>) {
-  return Math.max(
-    ...Object.keys(print).map((region) =>
-      recommendedPrice(
-        print[region],
-        ship[region] ?? 0,
-        TARGET_AFTER_ADS_MARGIN,
-        OFFSITE_ADS_RATE,
-      ),
-    ),
-  );
-}
-
-function lanes(
-  print: Record<string, number>,
-  ship: Record<string, number>,
-): ShipLane[] {
-  return [
-    { region: "NZ", label: "New Zealand", country: "NZ", shipping: ship.NZ, printCost: print.NZ, days: "2–8 days" },
-    { region: "AU", label: "Australia", country: "AU", shipping: ship.AU, printCost: print.AU, days: "3–10 days" },
-    { region: "US", label: "United States", country: "US", shipping: ship.US, printCost: print.US, days: "4–12 days" },
-    { region: "GB", label: "United Kingdom", country: "GB", shipping: ship.GB, printCost: print.GB, days: "4–12 days" },
-    { region: "EU", label: "European Union", country: "DE", shipping: ship.EU, printCost: print.EU, days: "4–12 days" },
-  ];
-}
-
-const posterPrint = { NZ: 17.23, AU: 16.28, US: 13.17, GB: 15.17, EU: 16.14 };
-const p18Print = { NZ: 23.09, AU: 20.97, US: 18.44, GB: 19.09, EU: 19.73 };
-const canvas12Print = { NZ: 27.49, AU: 38.79, US: 34.96, GB: 28.07, EU: 31.1 };
-const framePrint = { NZ: 60.85, AU: 54.47, US: 59.78, GB: 48.55, EU: 46.54 };
-
-const shipSmallPoster = { NZ: 10.09, AU: 12.76, US: 8.08, GB: 10.47, EU: 11.57 };
-const shipLargePoster = { NZ: 11.81, AU: 15.31, US: 9.74, GB: 11.38, EU: 13.9 };
-const shipCanvas = { NZ: 15.27, AU: 12.4, US: 15.15, GB: 9.32, EU: 15.05 };
-const shipFrame = { NZ: 15.27, AU: 15.07, US: 22.93, GB: 11.38, EU: 15.05 };
 
 /** Old Etsy listing IDs from the deleted 20-item Gelato mix. Never treat these as live. */
 export const STALE_ETSY_LISTINGS: Record<string, { id: string; url: string }> = {
@@ -189,26 +153,27 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     description:
       "A tall botanical study of a New Zealand fern, printed to order on premium 200 gsm semi-gloss A3 paper. Unframed. Made to order.",
     state: "inactive",
-    price: priceFor(posterPrint, shipSmallPoster),
+    price: catalogPrice("live_poster"),
     currency: "NZD",
     quantity: 999,
     views: 0,
     favorites: 0,
-    tags: ["fern", "poster", "botanical", "nz art", "wall print"],
+    tags: tagsForListing("live_poster"),
     category: "poster",
     collection: "original",
     gelatoProductUid: "flat_a3_200-gsm-80lb-coated-silk_4-0_ver",
     gelatoProductName: "A3 semi-gloss poster",
     printFileUrl: "/catalog/print-poster-fern-arc.png",
     imageUrl: "/catalog/catalog-poster.png",
-    gelatoUnitCost: Math.max(...Object.values(posterPrint)),
+    gelatoUnitCost: catalogUnitCost("live_poster"),
     drop: LIVE_DROP_ID,
     issues: [],
     taxonomyId: 119,
     shippingProfileId: 315080633003,
     returnPolicyId: RETURN_POLICY_ID,
     publishState: "ready",
-    lanes: lanes(posterPrint, shipSmallPoster),
+    lanes: catalogLanes("live_poster"),
+    gallery: galleryForListing("live_poster"),
   }),
   item({
     id: "live_quote_breathe",
@@ -218,26 +183,27 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
       "Landscape A3 semi-gloss print with a botanical border and the line “Breathe. You are here.” A calm reminder for a hallway, studio or bedside. Unframed.",
     quote: "Breathe. You are here.",
     state: "inactive",
-    price: priceFor(posterPrint, shipSmallPoster),
+    price: catalogPrice("live_quote_breathe"),
     currency: "NZD",
     quantity: 999,
     views: 0,
     favorites: 0,
-    tags: ["breathe", "quote", "kind", "poster", "positive"],
+    tags: tagsForListing("live_quote_breathe"),
     category: "poster",
     collection: "quote",
     gelatoProductUid: "flat_a3_200-gsm-80lb-coated-silk_4-0_hor",
     gelatoProductName: "A3 semi-gloss poster · landscape",
     printFileUrl: "/catalog/print-breathe-here.png",
     imageUrl: "/catalog/catalog-breathe-here.png",
-    gelatoUnitCost: Math.max(...Object.values(posterPrint)),
+    gelatoUnitCost: catalogUnitCost("live_quote_breathe"),
     drop: LIVE_DROP_ID,
     issues: [],
     taxonomyId: 119,
     shippingProfileId: 315080633003,
     returnPolicyId: RETURN_POLICY_ID,
     publishState: "ready",
-    lanes: lanes(posterPrint, shipSmallPoster),
+    lanes: catalogLanes("live_quote_breathe"),
+    gallery: galleryForListing("live_quote_breathe"),
   }),
   item({
     id: "live_botanical_kowhai",
@@ -246,26 +212,27 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     description:
       "Large 18×24 in painterly study of New Zealand kōwhai bells on cream. Botanical, not abstract. Unframed.",
     state: "inactive",
-    price: priceFor(p18Print, shipLargePoster),
+    price: catalogPrice("live_botanical_kowhai"),
     currency: "NZD",
     quantity: 999,
     views: 0,
     favorites: 0,
-    tags: ["kowhai", "botanical", "flowers", "poster", "yellow"],
+    tags: tagsForListing("live_botanical_kowhai"),
     category: "poster",
     collection: "botanical",
     gelatoProductUid: "flat_18x24-inch-450x600-mm_200-gsm-80lb-coated-silk_4-0_ver",
     gelatoProductName: "18×24 in semi-gloss poster",
     printFileUrl: "/catalog/print-kowhai-botanical.png",
     imageUrl: "/catalog/catalog-kowhai-botanical.png",
-    gelatoUnitCost: Math.max(...Object.values(p18Print)),
+    gelatoUnitCost: catalogUnitCost("live_botanical_kowhai"),
     drop: LIVE_DROP_ID,
     issues: [],
     taxonomyId: 119,
     shippingProfileId: 315080634723,
     returnPolicyId: RETURN_POLICY_ID,
     publishState: "ready",
-    lanes: lanes(p18Print, shipLargePoster),
+    lanes: catalogLanes("live_botanical_kowhai"),
+    gallery: galleryForListing("live_botanical_kowhai"),
   }),
   item({
     id: "live_canvas_harbour",
@@ -274,26 +241,27 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     description:
       "Square slim-wrap canvas of a quiet New Zealand harbour at first light. Scenic, not geometric abstract.",
     state: "inactive",
-    price: priceFor(canvas12Print, shipCanvas),
+    price: catalogPrice("live_canvas_harbour"),
     currency: "NZD",
     quantity: 999,
     views: 0,
     favorites: 0,
-    tags: ["harbour", "canvas", "landscape", "morning", "home"],
+    tags: tagsForListing("live_canvas_harbour"),
     category: "canvas",
     collection: "scenic",
     gelatoProductUid: "canvas_12x12-inch-300x300-mm_canvas_wood-fsc-slim_4-0_ver",
     gelatoProductName: "Canvas 12×12 in · slim wrap",
     printFileUrl: "/catalog/print-harbour-morning.png",
     imageUrl: "/catalog/catalog-harbour-morning.png",
-    gelatoUnitCost: Math.max(...Object.values(canvas12Print)),
+    gelatoUnitCost: catalogUnitCost("live_canvas_harbour"),
     drop: LIVE_DROP_ID,
     issues: [],
     taxonomyId: 1027,
     shippingProfileId: 315080642699,
     returnPolicyId: RETURN_POLICY_ID,
     publishState: "ready",
-    lanes: lanes(canvas12Print, shipCanvas),
+    lanes: catalogLanes("live_canvas_harbour"),
+    gallery: galleryForListing("live_canvas_harbour"),
   }),
   item({
     id: "live_frame_kind",
@@ -303,12 +271,12 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
       "Natural-wood framed 12×16 print: botanicals and “Home is a kind light.” Ready to hang home décor.",
     quote: "Home is a kind light.",
     state: "inactive",
-    price: priceFor(framePrint, shipFrame),
+    price: catalogPrice("live_frame_kind"),
     currency: "NZD",
     quantity: 999,
     views: 0,
     favorites: 0,
-    tags: ["home", "framed", "kind", "quote", "homedecor"],
+    tags: tagsForListing("live_frame_kind"),
     category: "framed",
     collection: "home",
     gelatoProductUid:
@@ -316,14 +284,15 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     gelatoProductName: "12×16 in oak framed print",
     printFileUrl: "/catalog/print-kind-light.png",
     imageUrl: "/catalog/catalog-kind-light.png",
-    gelatoUnitCost: Math.max(...Object.values(framePrint)),
+    gelatoUnitCost: catalogUnitCost("live_frame_kind"),
     drop: LIVE_DROP_ID,
     issues: [],
     taxonomyId: 1027,
     shippingProfileId: 315489864704,
     returnPolicyId: RETURN_POLICY_ID,
     publishState: "ready",
-    lanes: lanes(framePrint, shipFrame),
+    lanes: catalogLanes("live_frame_kind"),
+    gallery: galleryForListing("live_frame_kind"),
   }),
 ];
 

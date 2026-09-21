@@ -160,6 +160,7 @@ test("Fernora Printify catalog is five products, one enabled variant each", () =
     assert.equal(spec.variants.length, 1);
     assert.equal(spec.variants[0].is_enabled, true);
     assert.equal(spec.variants[0].is_default, true);
+    assert.equal(spec.tags.length, 13);
     assert.ok(spec.printFile.startsWith("print-"));
     assert.ok(spec.mockupFile.startsWith("catalog-"));
     assert.notEqual(spec.printFile, spec.mockupFile);

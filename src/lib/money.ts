@@ -69,7 +69,12 @@ export function listingNet(price: number, unitCost: number, shippingCost: number
   return price + shippingCost - fees - unitCost - shippingCost;
 }
 
-export function offsiteAdsFee(itemTotal: number, shippingPaid: number, rate = OFFSITE_ADS_RATE) {
+/** Per-sale ad rate used in listing prices. Offsite is opted out — do not pad prices for 15%. */
+export function listingAdsRate() {
+  return ETSY_OFFSITE_ADS_ENABLED ? OFFSITE_ADS_RATE : 0;
+}
+
+export function offsiteAdsFee(itemTotal: number, shippingPaid: number, rate = listingAdsRate()) {
   return (itemTotal + shippingPaid) * rate;
 }
 
@@ -91,7 +96,7 @@ export function recommendedPrice(
   unitCost: number,
   shippingCost: number,
   targetMargin = TARGET_AFTER_ADS_MARGIN,
-  adsRate = OFFSITE_ADS_RATE,
+  adsRate = listingAdsRate(),
 ) {
   const stack = ETSY_TRANSACTION_RATE + ETSY_PAYMENT_RATE + adsRate + targetMargin;
   const denominator = 1 - stack;

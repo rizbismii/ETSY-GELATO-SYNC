@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Keep print templates on the same artwork as the listing mockup.
 
-Fern Arc was shipping a different fern (curled frond + roots) than the catalog
-photo (open frond on cream paper). This rebuilds that print from the mockup
-and fails if the wrong design comes back.
+Fern Arc must be the paper the customer sees — not a re-centered / rescaled fern.
+Lifestyle mockup stays the listing photo; the print is that paper cropped to A3.
+Also writes extra gallery stills so listing health has more than one photo.
 """
 
 from __future__ import annotations
@@ -18,7 +18,6 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "public" / "catalog"
 
-# Customer-facing mockup is the source of truth for wall-art prints.
 PAIRS = (
     {
         "key": "live_poster",
@@ -26,7 +25,8 @@ PAIRS = (
         "print": "print-poster-fern-arc.png",
         "rebuild": True,
         "shape": "portrait",
-        "crop": (0.30, 0.17, 0.735, 0.805),
+        # Listing paper corners (TL, TR, BR, BL) as fractions of catalog-poster.png.
+        "corners": ((0.380, 0.250), (0.738, 0.236), (0.775, 0.812), (0.332, 0.816)),
     },
     {
         "key": "live_quote_breathe",
@@ -72,64 +72,33 @@ def crop_frac(rgb: np.ndarray, box: tuple[float, float, float, float]) -> np.nda
     return rgb[int(h * y0) : int(h * y1), int(w * x0) : int(w * x1)]
 
 
-def drop_specks(mask: np.ndarray, min_pixels: int) -> np.ndarray:
-    h, w = mask.shape
-    seen = np.zeros_like(mask, dtype=bool)
-    keep = np.zeros_like(mask, dtype=bool)
-    for y, x in zip(*np.nonzero(mask)):
-        if seen[y, x]:
-            continue
-        stack = [(int(y), int(x))]
-        blob: list[tuple[int, int]] = []
-        while stack:
-            cy, cx = stack.pop()
-            if cy < 0 or cx < 0 or cy >= h or cx >= w or seen[cy, cx] or not mask[cy, cx]:
-                continue
-            seen[cy, cx] = True
-            blob.append((cy, cx))
-            stack.extend(((cy - 1, cx), (cy + 1, cx), (cy, cx - 1), (cy, cx + 1)))
-        if len(blob) >= min_pixels:
-            for by, bx in blob:
-                keep[by, bx] = True
-    return keep
+def perspective_coeffs(source: list[tuple[float, float]], target: list[tuple[float, float]]) -> list[float]:
+    matrix = []
+    for src, dst in zip(source, target):
+        matrix.append([dst[0], dst[1], 1, 0, 0, 0, -src[0] * dst[0], -src[0] * dst[1]])
+        matrix.append([0, 0, 0, dst[0], dst[1], 1, -src[1] * dst[0], -src[1] * dst[1]])
+    solved = np.linalg.lstsq(np.array(matrix, dtype=np.float64), np.array(source, dtype=np.float64).reshape(8), rcond=None)[0]
+    return solved.tolist()
 
 
-def listing_fern_on_cream(rgb: np.ndarray) -> np.ndarray:
-    """Lift the fern the customer sees onto a clean cream sheet. No wall, no other fern."""
-    luma = luma_of(rgb)
-    paper = np.median(rgb[luma > 210], axis=0).astype(np.uint8)
-    ink = luma < 168
-    if ink.sum() < 80:
-        ink = luma < 180
-    ink = drop_specks(ink, min_pixels=40)
-    ys, xs = np.nonzero(ink)
-    pad = 24
-    y0, y1 = max(0, ys.min() - pad), min(rgb.shape[0], ys.max() + pad + 1)
-    x0, x1 = max(0, xs.min() - pad), min(rgb.shape[1], xs.max() + pad + 1)
-    fern = rgb[y0:y1, x0:x1]
-    fluma = luma[y0:y1, x0:x1]
-    fink = ink[y0:y1, x0:x1]
-    alpha = np.clip((172 - fluma) * (255 / 18), 0, 255).astype(np.uint8)
-    alpha[~fink] = 0
-    canvas = Image.new("RGB", A3, tuple(int(c) for c in paper))
-    art = Image.fromarray(fern, "RGB")
-    mask = Image.fromarray(alpha, "L")
-    scale = min((A3[0] * 0.70) / art.size[0], (A3[1] * 0.70) / art.size[1])
-    nw, nh = max(1, int(art.size[0] * scale)), max(1, int(art.size[1] * scale))
-    art = art.resize((nw, nh), Image.Resampling.LANCZOS)
-    mask = mask.resize((nw, nh), Image.Resampling.LANCZOS)
-    canvas.paste(art, ((A3[0] - nw) // 2, int(A3[1] * 0.16)), mask)
-    return np.array(canvas)
+def paper_to_print(mockup: Image.Image, corners: tuple[tuple[float, float], ...], size: tuple[int, int] = A3) -> np.ndarray:
+    """Warp the listing paper onto a flat A3 sheet. Same fern, same margins — no wall."""
+    w, h = mockup.size
+    source = [(x * w, y * h) for x, y in corners]
+    dest = [(0, 0), (size[0] - 1, 0), (size[0] - 1, size[1] - 1), (0, size[1] - 1)]
+    coeffs = perspective_coeffs(source, dest)
+    flat = mockup.transform(size, Image.Transform.PERSPECTIVE, coeffs, Image.Resampling.BICUBIC)
+    return np.array(flat.convert("RGB"))
 
 
 def rebuild_poster() -> np.ndarray:
-    mockup = np.array(Image.open(OUT / "catalog-poster.png").convert("RGB"))
+    mockup = Image.open(OUT / "catalog-poster.png").convert("RGB")
     pair = next(row for row in PAIRS if row["key"] == "live_poster")
-    return listing_fern_on_cream(crop_frac(mockup, pair["crop"]))
+    return paper_to_print(mockup, pair["corners"])
 
 
 def has_wrong_fern_arc(print_rgb: np.ndarray) -> str | None:
-    """The retired print has a fiddlehead curl and roots. The listing fern does not."""
+    """Retired print had a fiddlehead curl and roots. Wall in the crop means the paper warp missed."""
     luma = luma_of(print_rgb)
     h, w = luma.shape
     ink = luma < 90
@@ -139,7 +108,27 @@ def has_wrong_fern_arc(print_rgb: np.ndarray) -> str | None:
     top_right = ink[int(h * 0.04) : int(h * 0.28), int(w * 0.55) : int(w * 0.88)]
     if top_right.size and top_right.mean() > 0.04:
         return "print still has a curled fiddlehead that is not on the listing mockup"
+    top_band = luma[: int(h * 0.04)]
+    if top_band.size and (top_band < 160).mean() > 0.02:
+        return "print still includes the room wall — paper warp missed the listing sheet"
+    mid_ink = luma < 168
+    ys, xs = np.nonzero(mid_ink)
+    if len(ys) < 80:
+        return "print is missing the listing fern"
     return None
+
+
+def write_gallery(key: str, print_rgb: np.ndarray) -> None:
+    img = Image.fromarray(print_rgb, "RGB")
+    w, h = img.size
+    detail_box = (int(w * 0.18), int(h * 0.12), int(w * 0.82), int(h * 0.78))
+    close_box = (int(w * 0.28), int(h * 0.18), int(w * 0.72), int(h * 0.62))
+    img.crop(detail_box).resize((1200, 1600), Image.Resampling.LANCZOS).save(
+        OUT / f"gallery-{key}-detail.png", "PNG", optimize=True
+    )
+    img.crop(close_box).resize((1200, 1600), Image.Resampling.LANCZOS).save(
+        OUT / f"gallery-{key}-close.png", "PNG", optimize=True
+    )
 
 
 def build() -> list[dict[str, object]]:
@@ -155,6 +144,7 @@ def build() -> list[dict[str, object]]:
         if not print_path.exists():
             raise SystemExit(f"Missing print {print_path}")
         print_rgb = np.array(Image.open(print_path).convert("RGB"))
+        write_gallery(pair["key"], print_rgb)
         wrong = has_wrong_fern_arc(print_rgb) if pair["key"] == "live_poster" else None
         rows.append(
             {
@@ -177,8 +167,14 @@ def check_only() -> int:
     for pair in PAIRS:
         mockup = OUT / pair["mockup"]
         print_path = OUT / pair["print"]
+        detail = OUT / f"gallery-{pair['key']}-detail.png"
+        close = OUT / f"gallery-{pair['key']}-close.png"
         if not mockup.exists() or not print_path.exists():
             print(f"MISSING {pair['mockup']} or {pair['print']}")
+            failed += 1
+            continue
+        if not detail.exists() or not close.exists():
+            print(f"MISSING gallery stills for {pair['key']}")
             failed += 1
             continue
         if pair["key"] != "live_poster":

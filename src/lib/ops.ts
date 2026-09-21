@@ -1,6 +1,6 @@
 import { GELATO_CATALOG, suggestTemplate, templateByUid } from "@/lib/catalog";
 import { getCredentials } from "@/lib/credentials";
-import { listingNet, orderProfit, recommendedPrice, destinationEconomics, OFFSITE_ADS_RATE, TARGET_AFTER_ADS_MARGIN } from "@/lib/money";
+import { listingNet, orderProfit, recommendedPrice, destinationEconomics, listingAdsRate, TARGET_AFTER_ADS_MARGIN } from "@/lib/money";
 import { getShop, updateShop } from "@/lib/store";
 import type { Address, Connections, Listing, OpsIssue, Order, Overview, ShopState } from "@/lib/types";
 import { existsSync } from "node:fs";
@@ -517,7 +517,7 @@ export async function raiseThinPrices() {
             listing.price,
             lane.printCost,
             lane.shipping,
-            OFFSITE_ADS_RATE,
+            listingAdsRate(),
           );
           if (!acc || advertised.margin < acc.margin) {
             return { margin: advertised.margin, print: lane.printCost, shipping: lane.shipping };
@@ -528,9 +528,9 @@ export async function raiseThinPrices() {
       );
       const shipping = worst?.shipping ?? templateByUid(listing.gelatoProductUid)?.shippingCost ?? 4.2;
       const printCost = worst?.print ?? listing.gelatoUnitCost;
-      const advertised = destinationEconomics(listing.price, printCost, shipping, OFFSITE_ADS_RATE);
+      const advertised = destinationEconomics(listing.price, printCost, shipping, listingAdsRate());
       if (advertised.margin + 1e-9 >= TARGET_AFTER_ADS_MARGIN) continue;
-      const next = recommendedPrice(printCost, shipping, TARGET_AFTER_ADS_MARGIN, OFFSITE_ADS_RATE);
+      const next = recommendedPrice(printCost, shipping, TARGET_AFTER_ADS_MARGIN, listingAdsRate());
       if (next <= listing.price) continue;
       changed.push({ id: listing.id, from: listing.price, to: next });
       listing.price = next;
@@ -676,7 +676,7 @@ export async function syncLive() {
   });
   try {
     const prices = await pushLivePricesToEtsy();
-    if (prices.updated) notes.push(`Pushed ${prices.updated} catalog prices to Etsy (40% after ads)`);
+    if (prices.updated) notes.push(`Pushed ${prices.updated} catalog prices to Etsy (40% after print and fees)`);
     if (prices.errors.length) notes.push(...prices.errors.slice(0, 3));
   } catch (error) {
     notes.push(`Etsy price push failed: ${(error as Error).message}`);
@@ -729,15 +729,19 @@ export async function publishListing(id: string, mode: "draft" | "live") {
     url = etsyListingUrl(listingId) || created.url;
   }
 
-  const imagePath = `${process.cwd()}/public${meta.imageUrl}`;
-  if (!existsSync(imagePath)) {
-    throw new Error(`Catalog image missing for ${listing.title}`);
-  }
-  try {
-    await uploadEtsyListingImage(listingId, imagePath, 1);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (!/already|exists|limit/i.test(message)) throw error;
+  const gallery = (meta.gallery?.length ? meta.gallery : [meta.imageUrl, meta.printFileUrl]).filter(Boolean);
+  for (const [index, file] of gallery.entries()) {
+    const imagePath = `${process.cwd()}/public${file}`;
+    if (!existsSync(imagePath)) {
+      if (index === 0) throw new Error(`Catalog image missing for ${listing.title}`);
+      continue;
+    }
+    try {
+      await uploadEtsyListingImage(listingId, imagePath, index + 1);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!/already|exists|limit/i.test(message)) throw error;
+    }
   }
 
   await updateShop((current) => {
