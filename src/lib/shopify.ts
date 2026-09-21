@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { defaultClothingVariant } from "@/lib/clothing";
@@ -393,7 +394,10 @@ function customerGalleryPaths(product: ReturnType<typeof fernoraCatalog>[number]
     [product.imageUrl, ...(product.gallery || [])].filter(
       (file): file is string => Boolean(file) && !skip.has(file),
     ),
-  )];
+  )].filter((file) => {
+    const rel = file.replace(/^\//, "").split("?")[0];
+    return existsSync(path.join(process.cwd(), "public", rel));
+  });
 }
 
 function mediaFilename(url?: string | null, alt?: string | null) {
@@ -433,11 +437,23 @@ async function ensureShopifyProductGallery(
     }`,
     { id: productId },
   );
-  const have = new Set(
-    (listed.product?.media.nodes || []).map((row) =>
-      mediaFilename(row.preview?.image?.url, row.alt),
-    ),
-  );
+  const current = listed.product?.media.nodes || [];
+  const have = new Set(current.map((row) => mediaFilename(row.preview?.image?.url, row.alt)));
+  const wantedNames = wanted.map((file) => file.split("/").pop()?.toLowerCase() || "").filter(Boolean);
+  const stale = current.filter((row) => {
+    const name = mediaFilename(row.preview?.image?.url, row.alt);
+    return name && !wantedNames.some((wantedName) => name.includes(wantedName) || wantedName.includes(name));
+  });
+  if (stale.length) {
+    await shopifyGraphql(
+      `mutation ($productId: ID!, $mediaIds: [ID!]!) {
+        productDeleteMedia(productId: $productId, mediaIds: $mediaIds) {
+          mediaUserErrors { field message }
+        }
+      }`,
+      { productId, mediaIds: stale.map((row) => row.id) },
+    );
+  }
   const missing = wanted.filter((file) => {
     const name = file.split("/").pop()?.toLowerCase() || "";
     return name && ![...have].some((existing) => existing.includes(name) || name.includes(existing));
@@ -552,6 +568,7 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
       ],
     };
     if (found?.id) input.id = found.id;
+    if (product.id === "live_sneaker_star") input.handle = "black-camo-mens-mesh-sneakers";
     if (!found?.media.nodes.length && product.imageUrl) {
       input.files = [
         {

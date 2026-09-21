@@ -41,10 +41,10 @@ test("gallery lists the listing photo, print file, and extra stills", () => {
   assert.ok(files.includes("/catalog/print-poster-fern-arc.png"));
   assert.ok(files.includes("/catalog/gallery-live_poster-detail.png"));
   const sneakers = listingGallery("live_sneaker_star");
-  assert.ok(sneakers.includes("/catalog/catalog-star-sneakers-angle.jpg"));
-  assert.ok(sneakers.includes("/catalog/gallery-live_sneaker_star-model.jpg"));
-  assert.ok(sneakers.includes("/catalog/gallery-live_sneaker_star-model-2.jpg"));
-  assert.ok(sneakers.includes("/catalog/gallery-live_sneaker_star-back.jpg"));
+  assert.ok(sneakers.includes("/catalog/catalog-camo-sneakers-angle.jpg"));
+  assert.ok(sneakers.includes("/catalog/gallery-live_sneaker_star-camo-model.jpg"));
+  assert.ok(sneakers.includes("/catalog/gallery-live_sneaker_star-camo-detail.png"));
+  assert.ok(sneakers.includes("/catalog/print-camo-sneakers.png"));
   const womens = listingGallery("live_sneaker_star_w");
   assert.ok(womens.includes("/catalog/catalog-star-sneakers-w-angle.jpg"));
   assert.ok(womens.includes("/catalog/gallery-live_sneaker_star_w-model.jpg"));

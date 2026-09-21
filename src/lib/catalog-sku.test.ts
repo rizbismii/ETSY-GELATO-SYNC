@@ -68,9 +68,9 @@ test("resolveCatalogLine falls back to title when SKU is missing", () => {
 test("resolveCatalogLine maps a sneaker size SKU to Printify mesh sneakers", () => {
   const sneakers = {
     id: "live_sneaker_star",
-    title: "Southern Cross Star · Mesh Sneakers",
+    title: "Black Camo · Men’s Mesh Sneakers",
     gelatoProductUid: "printify_mesh_sneakers_1072",
-    printFileUrl: "/catalog/print-star-sneakers.png",
+    printFileUrl: "/catalog/print-camo-sneakers.png",
     variants: sneakerVariants("live_sneaker_star", "printify_mesh_sneakers_1072"),
   };
   const line = resolveCatalogLine([sneakers], "live_sneaker_star-us-9-5");

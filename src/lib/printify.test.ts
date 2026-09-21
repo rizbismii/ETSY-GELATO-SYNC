@@ -17,6 +17,7 @@ import {
   buildPrintifyProductPayload,
   existingPrintifyProductId,
   FERNORA_PRINTIFY_STARTERS,
+  mergePrintAreaVariantIds,
   printAreasForExistingVariants,
   printifyEnabledVariantIds,
   printifyImageFileName,
@@ -190,12 +191,21 @@ test("Fernora Printify catalog is seven products including men’s and women’s
   );
   const sneaker = FERNORA_PRINTIFY_STARTERS.find((row) => row.key === "live_sneaker_star");
   const sneakerPayload = buildPrintifyProductPayload(sneaker!, "img_sneaker");
+  assert.equal(sneaker?.title, "Black Camo · Men’s Mesh Sneakers");
+  assert.equal(sneaker?.printFile, "print-camo-sneakers.png");
   assert.deepEqual(
     sneakerPayload.print_areas[0].placeholders.map((row: { position: string }) => row.position),
     ["left_shoe", "right_shoe"],
   );
   assert.equal(sneakerPayload.print_areas[0].variant_ids.length, 9);
+  assert.deepEqual(mergePrintAreaVariantIds([80915, 80917], [80914, 80915], [undefined, 80916]), [
+    80915,
+    80917,
+    80914,
+    80916,
+  ]);
   const womens = FERNORA_PRINTIFY_STARTERS.find((row) => row.key === "live_sneaker_star_w");
+  assert.equal(womens?.title, "Southern Cross Star · Women’s Mesh Sneakers");
   assert.equal(womens?.blueprintId, 1219);
   assert.equal(womens?.variants.find((row) => row.is_default)?.id, 92346);
   const payload = buildPrintifyProductPayload(poster!, "img_poster");

@@ -1055,7 +1055,7 @@ export function ConnectionsClient() {
             <p className="text-sm leading-6 text-muted-foreground">
               Printify is the main print supplier except the United Kingdom and the European Union.
               Keep the token and the Etsy-connected Fernora Trends shop. Keep seven catalog products
-              (five wall-art mixes plus men’s and women’s Southern Cross mesh sneakers) and publish them to Etsy,
+              (five wall-art mixes plus black-camo men’s and Southern Cross women’s mesh sneakers) and publish them to Etsy,
               Shopify, and fernora.nz. Do not
               migrate leftover External products, and do not republish the old Gelato mix.
             </p>
@@ -1076,7 +1076,7 @@ export function ConnectionsClient() {
                 Recreate or refresh the seven catalog products on Printify, then publish them to Etsy,
                 Shopify, and the website. Print files must match the listing photo — Fern Arc prints
                 the open fern on the catalog card, not a different curled frond. Mesh sneakers use
-                the Southern Cross star-and-fern print on both shoes. They land in{" "}
+                black camo on the men’s pair and the Southern Cross star-and-fern print on the women’s pair. They land in{" "}
                 <strong className="font-medium text-foreground">My products</strong> on the
                 Etsy-connected shop.
               </li>

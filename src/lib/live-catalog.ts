@@ -300,9 +300,9 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
   item({
     id: "live_sneaker_star",
     etsyListingId: "",
-    title: "Southern Cross Star · Mesh Sneakers",
+    title: "Black Camo · Men’s Mesh Sneakers",
     description:
-      "Men’s mesh sneakers with an original Fernora star-and-fern print on forest green. Dye sublimation, white sole, memory-foam insole. Made to order.",
+      "Men’s mesh sneakers with an original Fernora black-camo print. Dye sublimation, white sole, memory-foam insole. Made to order.",
     state: "inactive",
     price: catalogPrice("live_sneaker_star"),
     currency: "NZD",
@@ -314,8 +314,8 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     collection: "original",
     gelatoProductUid: "printify_mesh_sneakers_1072",
     gelatoProductName: "Men’s mesh sneakers · white sole",
-    printFileUrl: "/catalog/print-star-sneakers.png",
-    imageUrl: "/catalog/catalog-star-sneakers-angle.jpg",
+    printFileUrl: "/catalog/print-camo-sneakers.png",
+    imageUrl: "/catalog/catalog-camo-sneakers-angle.jpg",
     gelatoUnitCost: catalogUnitCost("live_sneaker_star"),
     drop: LIVE_DROP_ID,
     issues: [],

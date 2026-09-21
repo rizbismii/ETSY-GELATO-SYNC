@@ -50,8 +50,8 @@ function whiteSoleSneakers(
 }
 
 /**
- * Fernora catalog: five wall-art mixes (one enabled variant each) plus men’s and women’s
- * Southern Cross star mesh sneakers (white sole, every US size). Not Gelato External migrations.
+ * Fernora catalog: five wall-art mixes (one enabled variant each) plus black-camo men’s
+ * and Southern Cross women’s mesh sneakers (white sole, every US size). Not Gelato External migrations.
  */
 export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
   {
@@ -120,17 +120,17 @@ export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
   },
   {
     key: "live_sneaker_star",
-    title: "Southern Cross Star · Mesh Sneakers",
+    title: "Black Camo · Men’s Mesh Sneakers",
     description:
-      "Men’s mesh sneakers with an original Fernora star-and-fern print. Dye sublimation on breathable mesh, white sole, memory-foam insole. Made to order.",
+      "Men’s mesh sneakers with an original Fernora black-camo print. Dye sublimation on breathable mesh, white sole, memory-foam insole. Made to order.",
     tags: CATALOG_LISTING_TAGS.live_sneaker_star,
-    printFile: "print-star-sneakers.png",
-    mockupFile: "catalog-star-sneakers-angle.jpg",
+    printFile: "print-camo-sneakers.png",
+    mockupFile: "catalog-camo-sneakers-angle.jpg",
     blueprintId: 1072,
     printProviderId: 90,
     variants: whiteSoleSneakers(printifyListCents(catalogPrice("live_sneaker_star"))),
     positions: ["left_shoe", "right_shoe"],
-    aliases: ["Southern Cross Star Mesh Sneakers"],
+    aliases: ["Southern Cross Star · Mesh Sneakers", "Southern Cross Star Mesh Sneakers"],
   },
   {
     key: "live_sneaker_star_w",
@@ -214,4 +214,9 @@ export function printAreasForExistingVariants(spec: PrintifyStarterSpec, imageId
   const areas = buildPrintifyProductPayload(spec, imageId).print_areas;
   if (!variantIds.length) return areas;
   return areas.map((area) => ({ ...area, variant_ids: variantIds }));
+}
+
+/** Printify error 8251 if print_areas omit any blueprint variant, even disabled ones. */
+export function mergePrintAreaVariantIds(...groups: Array<Array<number | undefined | null>>) {
+  return [...new Set(groups.flat().filter((id): id is number => typeof id === "number" && id > 0))];
 }

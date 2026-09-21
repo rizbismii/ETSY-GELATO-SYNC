@@ -17,6 +17,7 @@ import {
   buildPrintifyProductPayload,
   existingPrintifyProductId,
   FERNORA_PRINTIFY_STARTERS,
+  mergePrintAreaVariantIds,
   printAreasForExistingVariants,
   printifyCatalogFile,
   printifyEnabledVariantIds,
@@ -167,11 +168,15 @@ async function refreshPrintifyPrintFile(
 ) {
   const current = await getPrintifyProduct(shopId, productId, token);
   const image = await uploadPrintifyImage(spec.printFile, token);
-  const variantIds = (current.variants || []).map((variant) => variant.id).filter((id): id is number => Boolean(id));
+  const currentIds = (current.variants || []).map((variant) => variant.id).filter((id): id is number => Boolean(id));
+  const catalogIds = await listBlueprintVariantIds(spec.blueprintId, spec.printProviderId, token);
+  const variantIds = mergePrintAreaVariantIds(catalogIds, currentIds);
   await printify(`/shops/${shopId}/products/${productId}.json`, {
     method: "PUT",
     token,
     body: {
+      title: spec.title,
+      description: spec.description,
       tags: spec.tags,
       print_areas: printAreasForExistingVariants(spec, image.id, variantIds),
     },
@@ -207,6 +212,14 @@ async function createPrintifyProduct(shopId: number, spec: PrintifyStarterSpec, 
 
 async function getPrintifyProduct(shopId: number, productId: string, token?: string) {
   return printify<PrintifyProduct>(`/shops/${shopId}/products/${productId}.json`, { token });
+}
+
+async function listBlueprintVariantIds(blueprintId: number, printProviderId: number, token?: string) {
+  const catalog = await printify<{ variants?: Array<{ id?: number }> }>(
+    `/catalog/blueprints/${blueprintId}/print_providers/${printProviderId}/variants.json`,
+    { token },
+  );
+  return (catalog.variants || []).map((variant) => variant.id).filter((id): id is number => Boolean(id));
 }
 
 async function deletePrintifyProduct(shopId: number, productId: string, token?: string) {
@@ -485,7 +498,7 @@ export async function createFernoraPrintifyProducts(input?: { shopId?: number; t
     notes: [
       `Catalog is seven products on ${
         gpsr.shopTitle || "Fernora Trends"
-      } (${shopId}): five wall-art mixes plus men’s and women’s Southern Cross mesh sneakers. Created ${createdCount}, published ${publishedCount} to the Etsy sales channel. Not migrated from Gelato.`,
+      } (${shopId}): five wall-art mixes plus black-camo men’s and Southern Cross women’s mesh sneakers. Created ${createdCount}, published ${publishedCount} to the Etsy sales channel. Not migrated from Gelato.`,
       "Older catalog products were removed from Printify, Etsy, Shopify, Gelato, and Pressroom.",
       "Catalog dropdowns match Printify: All, Quotes, Botanical, Scenic, Home décor, Original fern.",
       ...extraNotes,

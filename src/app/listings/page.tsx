@@ -221,7 +221,7 @@ export default function ListingsPage() {
         <div>
           <h1 className="font-heading text-4xl tracking-tight">Catalog</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Mixed Fernora shop: five wall-art mixes plus men’s and women’s Southern Cross mesh sneakers — Quotes,
+            Mixed Fernora shop: five wall-art mixes plus black-camo men’s and Southern Cross women’s mesh sneakers — Quotes,
             Botanical, Scenic, Home décor, and Original fern. Prices in {currency}. Printify is the
             main supplier except the United Kingdom and the European Union (wall art). Mesh sneakers
             print on Printify. Catalog dropdowns on Etsy, Shopify, and this desk match Printify: All,

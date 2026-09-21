@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-test("live catalog covers every mix plus Southern Cross sneakers", () => {
+test("live catalog covers every mix plus black-camo men’s and Southern Cross women’s sneakers", () => {
   const catalog = readFileSync(new URL("./live-catalog.ts", import.meta.url), "utf8");
   const liveIds = [...catalog.matchAll(/^\s+id: "(live_[^"]+)"/gm)].map((row) => row[1]);
   assert.deepEqual(liveIds, [
@@ -23,6 +23,8 @@ test("live catalog covers every mix plus Southern Cross sneakers", () => {
   assert.match(catalog, /export const ETSY_KNOWN_LISTINGS[\s\S]*= \{\}/);
   assert.match(catalog, /STALE_ETSY_LISTINGS/);
   assert.match(catalog, /RETIRED_CATALOG_IDS/);
+  assert.match(catalog, /title: "Black Camo · Men’s Mesh Sneakers"/);
+  assert.match(catalog, /title: "Southern Cross Star · Women’s Mesh Sneakers"/);
   assert.match(catalog, /variants: sneakerVariants\("live_sneaker_star"/);
   assert.doesNotMatch(catalog, /id: "live_hoodie"/);
 });
