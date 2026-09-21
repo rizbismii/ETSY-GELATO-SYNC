@@ -115,6 +115,12 @@ On **Ads**, create a Business app at [developers.facebook.com](https://developer
 
 Publish options per product: **Save Etsy draft** or **Publish live**. **Delete** removes the product from Printify, Gelato, inactivates it on Etsy, deletes it from Shopify, and takes it out of Pressroom and `/shop`. Print files live at `/catalog/*.png` and must match the listing photo — never a different fern or quote. Rebuild with `npm run print-files`. **Create 5-product catalog · publish to shops** refreshes Printify print areas so the file customers receive is the design they bought.
 
+### Design options (saved, not built yet)
+
+Do **not** import Printify’s full blueprint catalog into Pressroom. Pressroom only holds Fernora listings: five products now, one per mix, one enabled variant. A second artwork is a **new listing**, not another variant on Fern Arc.
+
+AI design, when we pick it up: generate **up to five art directions per mix**, publish **one** winner. Generate mockups **from that print file** (hero shelf, flat, detail, room, scale) so the photo and the print stay the same fern or quote. Write title, description, and 13 tags once in Pressroom; publish copies them to Printify, Etsy, Shopify, and fernora.nz. Do not name the printer on customer copy. Extra Printify mockup scenes (toward 20) are still selected in Printify My products.
+
 ## Stack
 
 Next.js (App Router), TypeScript, Tailwind CSS, and shadcn/ui.
