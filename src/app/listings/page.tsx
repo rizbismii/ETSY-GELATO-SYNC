@@ -29,12 +29,10 @@ type Lane = {
   shipping: number;
   printCost: number;
   days: string;
+  printer?: "printify" | "gelato";
   fees: number;
-  ads?: number;
   net: number;
   margin: number;
-  adsNet?: number;
-  adsMargin?: number;
 };
 
 type Row = Listing & {
@@ -51,6 +49,15 @@ type Row = Listing & {
   variants?: Array<{ id: string; color: string; size: string }>;
   gelatoConnectedCount?: number;
   gelatoVariantCount?: number;
+  gallery?: string[];
+  listingHealth?: {
+    tags: number;
+    tagLimit: number;
+    tagsOk: boolean;
+    photos: number;
+    photoTarget: number;
+    photosOk: boolean;
+  };
 };
 
 type Payload = {
@@ -69,6 +76,7 @@ type Payload = {
     offsiteEnabled?: boolean;
     offsiteOptedOutOn?: string;
     countries: Array<{ region: string; label: string }>;
+    dailyBudget?: number;
   };
 };
 
@@ -141,7 +149,7 @@ export default function ListingsPage() {
       const result = await api<{ updated: number; errors?: string[] }>("/api/listings/reprice", {
         method: "POST",
       });
-      if (result.updated) toast.success(`Pushed ${result.updated} prices to Etsy (40% after ads)`);
+      if (result.updated) toast.success(`Pushed ${result.updated} prices to Etsy (40% after print and fees)`);
       else toast.message(result.errors?.[0] || "No Etsy listings to reprice");
       if (result.errors?.length && result.updated) toast.warning(result.errors.slice(0, 3).join(" · "));
       await load();
@@ -205,7 +213,7 @@ export default function ListingsPage() {
   }
 
   const currency = data.currency || "NZD";
-  const adsRate = Math.round((data.ads?.rate ?? 0.15) * 100);
+  const dailyCap = data.ads?.dailyBudget ?? 5;
 
   return (
     <div className="flex flex-col gap-6">
@@ -217,8 +225,9 @@ export default function ListingsPage() {
             and Original fern. Prices in {currency}. Printify is the main supplier except the United
             Kingdom and the European Union. One variant each. Catalog dropdowns on Etsy, Shopify, and
             this desk match Printify: All, Quotes, Botanical, Scenic, Home décor, Original fern.
-            Listings stay priced so a worst-case Etsy Offsite sale still leaves 40% after print and
-            fees. Actual ad spend is the Meta daily cap on Ads. Etsy Ads (CPC) are not activated.
+            Print and ship costs are Printify for NZ / AU / US and Gelato for UK / EU. Prices keep
+            40% after Etsy fees and print — Offsite Ads are off, so listings are not padded for 15%.
+            Ad spend is the Meta daily cap (NZ${dailyCap}) on Ads. Etsy Ads (CPC) are not activated.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -240,7 +249,7 @@ export default function ListingsPage() {
             disabled={Boolean(busy) || !data.etsyAuthorized}
           >
             {busy === "reprice" ? <Loader2 className="animate-spin" /> : null}
-            Push 40% prices to Etsy
+            Push Printify prices to Etsy
           </Button>
           <Button
             variant="outline"
@@ -269,10 +278,9 @@ export default function ListingsPage() {
             "New Zealand, Australia, United States, United Kingdom, European Union"}{" "}
           plus Canada, Ireland, and the selected Americas / Asia / Middle East countries enabled at
           checkout. Japan, Korea, India, Indonesia, the Philippines, and Vietnam stay off. Advertising is a{" "}
-          <strong>Meta campaign from Pressroom</strong> to fernora.nz with a low daily cap. Etsy
-          Offsite Ads were opted out on {data.ads?.offsiteOptedOutOn || "19 September 2026"} (
-          {adsRate}% of an attributed sale if a leftover ad still hits). On-site CPC Etsy Ads are
-          not activated — new shop 15-day wait
+          <strong>Meta campaign from Pressroom</strong> to fernora.nz with a daily cap of NZ${dailyCap}{" "}
+          (max 15). Etsy Offsite Ads were opted out on {data.ads?.offsiteOptedOutOn || "19 September 2026"}
+          and are not in the price. On-site CPC Etsy Ads are not activated — new shop 15-day wait
           {data.ads?.cpcWaitDaysLeft
             ? ` (~${data.ads.cpcWaitDaysLeft} days left as of ${data.ads.cpcWaitNotedOn || "20 September 2026"})`
             : ""}
@@ -404,27 +412,32 @@ export default function ListingsPage() {
                         <p className="text-profit">
                           NZ net {formatMoney(listing.net, currency)} · {formatPercent(listing.margin)}
                         </p>
-                        <p
-                          className={`text-xs ${
-                            (listing.adsMargin ?? 0) + 1e-9 >= 0.4 ? "text-profit" : "text-destructive"
-                          }`}
-                        >
-                          After Offsite Ads {formatMoney(listing.adsNet ?? 0, currency)} ·{" "}
-                          {formatPercent(listing.adsMargin ?? 0)} · target 40%
+                        <p className="text-xs text-muted-foreground">
+                          Printify print cost · Offsite off · Meta daily cap NZ${dailyCap}
                         </p>
                       </div>
                     </div>
                     <p className="text-sm leading-6 text-muted-foreground">{listing.description}</p>
+                    {listing.listingHealth ? (
+                      <p className="text-xs text-muted-foreground">
+                        Listing health · tags {listing.listingHealth.tags}/{listing.listingHealth.tagLimit}
+                        {listing.listingHealth.tagsOk ? "" : " — add tags"} · photos{" "}
+                        {listing.listingHealth.photos}/{listing.listingHealth.photoTarget} stored
+                        {listing.listingHealth.photosOk
+                          ? ""
+                          : " — Printify still needs extra mockups selected in My products"}
+                      </p>
+                    ) : null}
                     <div className="overflow-x-auto rounded-lg border border-border">
                       <table className="w-full min-w-[36rem] text-left text-xs">
                         <thead className="bg-muted/60 text-muted-foreground">
                           <tr>
                             <th className="px-3 py-2 font-medium">Ships to</th>
+                            <th className="px-3 py-2 font-medium">Printer</th>
                             <th className="px-3 py-2 font-medium">Print</th>
                             <th className="px-3 py-2 font-medium">Ship</th>
                             <th className="px-3 py-2 font-medium">Etsy fees</th>
-                            <th className="px-3 py-2 font-medium">Organic net</th>
-                            <th className="px-3 py-2 font-medium">After ads {adsRate}%</th>
+                            <th className="px-3 py-2 font-medium">Net</th>
                             <th className="px-3 py-2 font-medium">Transit</th>
                           </tr>
                         </thead>
@@ -432,19 +445,12 @@ export default function ListingsPage() {
                           {(listing.lanes || []).map((lane) => (
                             <tr key={lane.region} className="border-t border-border/70">
                               <td className="px-3 py-2">{lane.label}</td>
+                              <td className="px-3 py-2 capitalize">{lane.printer || "printify"}</td>
                               <td className="px-3 py-2">{formatMoney(lane.printCost, currency)}</td>
                               <td className="px-3 py-2">{formatMoney(lane.shipping, currency)}</td>
                               <td className="px-3 py-2">{formatMoney(lane.fees, currency)}</td>
                               <td className={`px-3 py-2 ${lane.net < 8 ? "text-destructive" : "text-profit"}`}>
                                 {formatMoney(lane.net, currency)} ({formatPercent(lane.margin)})
-                              </td>
-                              <td
-                                className={`px-3 py-2 ${
-                                  (lane.adsMargin ?? 0) + 1e-9 >= 0.4 ? "text-profit" : "text-destructive"
-                                }`}
-                              >
-                                {formatMoney(lane.adsNet ?? 0, currency)} (
-                                {formatPercent(lane.adsMargin ?? 0)})
                               </td>
                               <td className="px-3 py-2 text-muted-foreground">{lane.days}</td>
                             </tr>
@@ -453,9 +459,10 @@ export default function ListingsPage() {
                       </table>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Buyer pays destination shipping. Organic net is price minus marketplace fees and
-                      print. After ads is the Etsy Offsite worst case ({adsRate}% of price + shipping) if
-                      that switch is left on. Actual spend is the Meta daily cap on Ads.
+                      Buyer pays destination shipping. Print and ship for New Zealand, Australia, and
+                      the United States are live Printify costs (shipping converted from USD at 1.67).
+                      United Kingdom and European Union stay on Gelato for GPSR. Net is price minus
+                      Etsy fees and print. Ads are the Meta daily cap — not a per-sale 15%.
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {listing.printFileUrl ? (

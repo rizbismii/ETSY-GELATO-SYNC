@@ -1,3 +1,31 @@
+/** Listing mockup is the source of truth. Print files must be that same artwork. */
+
+export const CATALOG_ART_PAIRS = [
+  { key: "live_poster", mockup: "/catalog/catalog-poster.png", print: "/catalog/print-poster-fern-arc.png" },
+  { key: "live_quote_breathe", mockup: "/catalog/catalog-breathe-here.png", print: "/catalog/print-breathe-here.png" },
+  { key: "live_botanical_kowhai", mockup: "/catalog/catalog-kowhai-botanical.png", print: "/catalog/print-kowhai-botanical.png" },
+  { key: "live_canvas_harbour", mockup: "/catalog/catalog-harbour-morning.png", print: "/catalog/print-harbour-morning.png" },
+  { key: "live_frame_kind", mockup: "/catalog/catalog-kind-light.png", print: "/catalog/print-kind-light.png" },
+] as const;
+
+export function catalogArtPair(id?: string | null) {
+  return CATALOG_ART_PAIRS.find((row) => row.key === id);
+}
+
+export function printFileForListing(id?: string | null, current?: string | null) {
+  const pair = catalogArtPair(id);
+  if (pair) return pair.print;
+  if (current && isForeignPrintFile(id, current)) return "";
+  return current || "";
+}
+
+export function isForeignPrintFile(id?: string | null, printFileUrl?: string | null) {
+  if (!printFileUrl) return false;
+  const name = printFileName(printFileUrl);
+  const owner = CATALOG_ART_PAIRS.find((row) => row.print.endsWith(`/${name}`) || row.print === printFileUrl);
+  return Boolean(owner && owner.key !== id);
+}
+
 /** How Gelato print files are built so templates match catalog mockups. */
 
 export type PrintSurface = "dtg" | "wrap" | "full-bleed";
@@ -49,7 +77,7 @@ export function printTemplateLabel(category: string, listingId?: string) {
   const treatment = printTreatment(category, listingId);
   if (surface === "dtg") return `DTG RGBA · ${treatment} (transparent ground, matches mockup)`;
   if (surface === "wrap") return `Mug wrap · ${treatment}`;
-  return "Full-bleed artwork · same crop as the listing mockup";
+  return "Print file must match the listing photo — same artwork the customer sees";
 }
 
 /** Catalog mockups are lifestyle photos; print files must stay uncropped. */

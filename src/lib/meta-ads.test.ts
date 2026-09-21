@@ -24,6 +24,7 @@ import {
   ETSY_CPC_WAIT_NOTED_ON,
   ETSY_OFFSITE_ADS_ENABLED,
   ETSY_OFFSITE_OPTED_OUT_ON,
+  listingAdsRate,
 } from "./money.ts";
 
 test("Meta daily budget stays on a low cap", () => {
@@ -40,6 +41,7 @@ test("Etsy Offsite Ads stay opted out and CPC Ads are not activated", () => {
   assert.equal(ETSY_OFFSITE_OPTED_OUT_ON, "19 September 2026");
   assert.equal(ETSY_CPC_WAIT_DAYS_LEFT, 6);
   assert.equal(ETSY_CPC_WAIT_NOTED_ON, "20 September 2026");
+  assert.equal(listingAdsRate(), 0);
 });
 
 test("ad account and pixel IDs normalize", () => {

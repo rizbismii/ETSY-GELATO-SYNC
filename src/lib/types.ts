@@ -85,6 +85,7 @@ export type Listing = {
   gelatoProductName?: string;
   printFileUrl?: string;
   imageUrl?: string;
+  gallery?: string[];
   gelatoUnitCost: number;
   drop?: string;
   issues: string[];

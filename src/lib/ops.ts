@@ -1,6 +1,6 @@
 import { GELATO_CATALOG, suggestTemplate, templateByUid } from "@/lib/catalog";
 import { getCredentials } from "@/lib/credentials";
-import { listingNet, orderProfit, recommendedPrice, destinationEconomics, OFFSITE_ADS_RATE, TARGET_AFTER_ADS_MARGIN } from "@/lib/money";
+import { listingNet, orderProfit, recommendedPrice, destinationEconomics, listingAdsRate, TARGET_AFTER_ADS_MARGIN } from "@/lib/money";
 import { getShop, updateShop } from "@/lib/store";
 import type { Address, Connections, Listing, OpsIssue, Order, Overview, ShopState } from "@/lib/types";
 import { existsSync } from "node:fs";
@@ -15,7 +15,8 @@ import {
   updateEtsyListingPrice,
   uploadEtsyListingImage,
 } from "@/lib/etsy";
-import { PRINT_FILE, HARVEST_DROP_ID, HARVEST_DROP_NAME } from "@/lib/constants";
+import { HARVEST_DROP_ID, HARVEST_DROP_NAME } from "@/lib/constants";
+import { printFileForListing } from "@/lib/print-file";
 import { applyHarvestDrop } from "@/lib/drop";
 import { ETSY_KNOWN_LISTINGS, etsyListingUrl, liveProductById, resolveLiveSku, READINESS_STATE_ID } from "@/lib/live-catalog";
 import { absoluteAssetUrl } from "@/lib/origin";
@@ -476,7 +477,7 @@ export async function mapListing(id: string, gelatoProductUid: string, printFile
     listing.gelatoProductUid = gelatoProductUid;
     listing.gelatoProductName = template.name;
     listing.gelatoUnitCost = template.unitCost;
-    listing.printFileUrl = printFileUrl || listing.printFileUrl || PRINT_FILE;
+    listing.printFileUrl = printFileForListing(listing.id, printFileUrl || listing.printFileUrl);
     listing.issues = enrichListing(listing).issues;
     for (const order of state.orders) {
       Object.assign(order, enrichOrder(order, state.listings));
@@ -495,7 +496,7 @@ export async function autoMapUnmapped() {
       listing.gelatoProductUid = template.uid;
       listing.gelatoProductName = template.name;
       listing.gelatoUnitCost = template.unitCost;
-      listing.printFileUrl = listing.printFileUrl || PRINT_FILE;
+      listing.printFileUrl = printFileForListing(listing.id, listing.printFileUrl);
       mapped.push(listing.id);
     }
     state.listings = state.listings.map(enrichListing);
@@ -516,7 +517,7 @@ export async function raiseThinPrices() {
             listing.price,
             lane.printCost,
             lane.shipping,
-            OFFSITE_ADS_RATE,
+            listingAdsRate(),
           );
           if (!acc || advertised.margin < acc.margin) {
             return { margin: advertised.margin, print: lane.printCost, shipping: lane.shipping };
@@ -527,9 +528,9 @@ export async function raiseThinPrices() {
       );
       const shipping = worst?.shipping ?? templateByUid(listing.gelatoProductUid)?.shippingCost ?? 4.2;
       const printCost = worst?.print ?? listing.gelatoUnitCost;
-      const advertised = destinationEconomics(listing.price, printCost, shipping, OFFSITE_ADS_RATE);
+      const advertised = destinationEconomics(listing.price, printCost, shipping, listingAdsRate());
       if (advertised.margin + 1e-9 >= TARGET_AFTER_ADS_MARGIN) continue;
-      const next = recommendedPrice(printCost, shipping, TARGET_AFTER_ADS_MARGIN, OFFSITE_ADS_RATE);
+      const next = recommendedPrice(printCost, shipping, TARGET_AFTER_ADS_MARGIN, listingAdsRate());
       if (next <= listing.price) continue;
       changed.push({ id: listing.id, from: listing.price, to: next });
       listing.price = next;
@@ -675,7 +676,7 @@ export async function syncLive() {
   });
   try {
     const prices = await pushLivePricesToEtsy();
-    if (prices.updated) notes.push(`Pushed ${prices.updated} catalog prices to Etsy (40% after ads)`);
+    if (prices.updated) notes.push(`Pushed ${prices.updated} catalog prices to Etsy (40% after print and fees)`);
     if (prices.errors.length) notes.push(...prices.errors.slice(0, 3));
   } catch (error) {
     notes.push(`Etsy price push failed: ${(error as Error).message}`);
@@ -728,15 +729,19 @@ export async function publishListing(id: string, mode: "draft" | "live") {
     url = etsyListingUrl(listingId) || created.url;
   }
 
-  const imagePath = `${process.cwd()}/public${meta.imageUrl}`;
-  if (!existsSync(imagePath)) {
-    throw new Error(`Catalog image missing for ${listing.title}`);
-  }
-  try {
-    await uploadEtsyListingImage(listingId, imagePath, 1);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (!/already|exists|limit/i.test(message)) throw error;
+  const gallery = (meta.gallery?.length ? meta.gallery : [meta.imageUrl, meta.printFileUrl]).filter(Boolean);
+  for (const [index, file] of gallery.entries()) {
+    const imagePath = `${process.cwd()}/public${file}`;
+    if (!existsSync(imagePath)) {
+      if (index === 0) throw new Error(`Catalog image missing for ${listing.title}`);
+      continue;
+    }
+    try {
+      await uploadEtsyListingImage(listingId, imagePath, index + 1);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!/already|exists|limit/i.test(message)) throw error;
+    }
   }
 
   await updateShop((current) => {

@@ -1072,8 +1072,9 @@ export function ConnectionsClient() {
               </li>
               <li>Do not click Migrate product on leftover External products.</li>
               <li>
-                Recreate the five catalog products on Printify, then publish them to Etsy, Shopify,
-                and the website. They land in{" "}
+                Recreate or refresh the five catalog products on Printify, then publish them to Etsy,
+                Shopify, and the website. Print files must match the listing photo — Fern Arc prints
+                the open fern on the catalog card, not a different curled frond. They land in{" "}
                 <strong className="font-medium text-foreground">My products</strong> on the
                 Etsy-connected shop.
               </li>

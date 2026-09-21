@@ -17,6 +17,7 @@ import {
   buildPrintifyProductPayload,
   existingPrintifyProductId,
   FERNORA_PRINTIFY_STARTERS,
+  printAreasForExistingVariants,
   printifyEnabledVariantIds,
   printifyImageFileName,
 } from "./printify-products.ts";
@@ -159,7 +160,10 @@ test("Fernora Printify catalog is five products, one enabled variant each", () =
     assert.equal(spec.variants.length, 1);
     assert.equal(spec.variants[0].is_enabled, true);
     assert.equal(spec.variants[0].is_default, true);
+    assert.equal(spec.tags.length, 13);
     assert.ok(spec.printFile.startsWith("print-"));
+    assert.ok(spec.mockupFile.startsWith("catalog-"));
+    assert.notEqual(spec.printFile, spec.mockupFile);
   }
   const poster = FERNORA_PRINTIFY_STARTERS.find((row) => row.key === "live_poster");
   const breathe = FERNORA_PRINTIFY_STARTERS.find((row) => row.key === "live_quote_breathe");
@@ -181,6 +185,10 @@ test("Fernora Printify catalog is five products, one enabled variant each", () =
   assert.equal(payload.print_areas[0].placeholders[0].position, "front");
   assert.equal(payload.print_areas[0].placeholders[0].images[0].id, "img_poster");
   assert.deepEqual(payload.print_areas[0].variant_ids, [43138]);
+  assert.deepEqual(printAreasForExistingVariants(poster!, "img_poster", [43138, 43139])[0].variant_ids, [
+    43138,
+    43139,
+  ]);
   assert.equal(
     existingPrintifyProductId([{ id: "abc", title: "Fern Arc Poster" }], "Fern Arc Poster · A3 Semi-Gloss", [
       "Fern Arc Poster",
@@ -191,6 +199,13 @@ test("Fernora Printify catalog is five products, one enabled variant each", () =
   assert.deepEqual(printifyEnabledVariantIds({ variants: [{ id: 1, is_enabled: true }, { id: 2, is_enabled: false }] }), [
     1,
   ]);
+  const pairs = readFileSync(new URL("./print-file.ts", import.meta.url), "utf8");
+  for (const spec of FERNORA_PRINTIFY_STARTERS) {
+    assert.match(pairs, new RegExp(`key: "${spec.key}"[\\s\\S]*print: "/catalog/${spec.printFile}"`));
+    assert.match(pairs, new RegExp(`mockup: "/catalog/${spec.mockupFile}"`));
+    assert.match(catalog, new RegExp(`id: "${spec.key}"[\\s\\S]*printFileUrl: "/catalog/${spec.printFile}"`));
+    assert.match(catalog, new RegExp(`id: "${spec.key}"[\\s\\S]*imageUrl: "/catalog/${spec.mockupFile}"`));
+  }
   const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
   assert.equal(printifyImageFileName("print-poster-fern-arc.png", jpeg), "print-poster-fern-arc.jpg");
   const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);

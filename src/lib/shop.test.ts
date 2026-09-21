@@ -8,7 +8,14 @@ import {
   isGelatoCountry,
   shipLaneForCountry,
 } from "./gelato-countries.ts";
-import { printFileName, printSurface, printTreatment } from "./print-file.ts";
+import {
+  CATALOG_ART_PAIRS,
+  isForeignPrintFile,
+  printFileForListing,
+  printFileName,
+  printSurface,
+  printTreatment,
+} from "./print-file.ts";
 import {
   gelatoCarrierRateResponse,
   shippingToCarrierCents,
@@ -51,6 +58,18 @@ test("print templates keep a downloadable filename and surface for current produ
   assert.equal(printTreatment("poster"), "full-bleed");
   assert.ok(gelatoCodesForLane("EU").includes("DE"));
   assert.ok(gelatoCodesForLane("NZ").includes("NZ"));
+});
+
+test("print files stay paired to their own listing mockup", () => {
+  assert.equal(CATALOG_ART_PAIRS.length, 5);
+  assert.equal(printFileForListing("live_poster"), "/catalog/print-poster-fern-arc.png");
+  assert.equal(
+    printFileForListing("live_quote_breathe", "/catalog/print-poster-fern-arc.png"),
+    "/catalog/print-breathe-here.png",
+  );
+  assert.equal(isForeignPrintFile("live_quote_breathe", "/catalog/print-poster-fern-arc.png"), true);
+  assert.equal(isForeignPrintFile("live_poster", "/catalog/print-poster-fern-arc.png"), false);
+  assert.equal(printFileForListing("future_print"), "");
 });
 
 test("Shopify carrier callback quotes destination rates in cents", () => {
@@ -154,7 +173,9 @@ test("Catalog dropdown order is All, Quotes, Botanical, Scenic, Home décor, Ori
   assert.match(shop, /CATALOG_MENU/);
   assert.match(listings, /CATALOG_MENU/);
   assert.match(listings, /aspect-\[4\/5\]/);
+  assert.match(listings, /Printer/);
   assert.doesNotMatch(listings, /lg:h-full/);
+  assert.doesNotMatch(listings, /After ads/);
 });
 
 test("markets pin countries without presentment currency to USD", () => {
