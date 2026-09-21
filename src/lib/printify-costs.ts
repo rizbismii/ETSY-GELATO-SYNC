@@ -16,19 +16,30 @@ export type CostLane = {
 };
 
 /**
- * Live Printify variant.cost in shop NZD (cents / 100).
+ * Live Printify variant.cost (cents / 100). Printify bills production in USD and
+ * always labels the dashboard USD. Etsy shop currency is still NZD — retail
+ * cents sent to Printify are the NZD list price, not a USD price.
  * Fernora Trends Etsy shop 28911689, 21 September 2026.
  */
-export const PRINTIFY_PRINT_NZD = {
+export const PRINTIFY_PRINT_USD = {
   live_poster: 9.28,
   live_quote_breathe: 9.23,
   live_botanical_kowhai: 10.62,
   live_canvas_harbour: 19.97,
   live_frame_kind: 38.53,
-  /** Live Printify variant.cost on shop 28911689, 21 September 2026 (NZD). */
   live_sneaker_star: 37.77,
-  /** Women’s mesh 1219 uses the same Smart Printee print cost as men’s 1072 until live cost is read. */
+  /** Women’s mesh 1219 uses the same Smart Printee print cost as men’s 1072. */
   live_sneaker_star_w: 37.77,
+} as const;
+
+export const PRINTIFY_PRINT_NZD = {
+  live_poster: usdToNzd(PRINTIFY_PRINT_USD.live_poster),
+  live_quote_breathe: usdToNzd(PRINTIFY_PRINT_USD.live_quote_breathe),
+  live_botanical_kowhai: usdToNzd(PRINTIFY_PRINT_USD.live_botanical_kowhai),
+  live_canvas_harbour: usdToNzd(PRINTIFY_PRINT_USD.live_canvas_harbour),
+  live_frame_kind: usdToNzd(PRINTIFY_PRINT_USD.live_frame_kind),
+  live_sneaker_star: usdToNzd(PRINTIFY_PRINT_USD.live_sneaker_star),
+  live_sneaker_star_w: usdToNzd(PRINTIFY_PRINT_USD.live_sneaker_star_w),
 } as const;
 
 export type PrintifyCostKey = keyof typeof PRINTIFY_PRINT_NZD;

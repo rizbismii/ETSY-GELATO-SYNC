@@ -1,4 +1,9 @@
-/** Shop, Etsy, Printify, and catalog math are New Zealand dollars. */
+/**
+ * Shop, Etsy, and catalog list prices are New Zealand dollars.
+ * Printify’s dashboard always prefixes USD: retail cents are still the Etsy NZD
+ * amount, while variant.cost is real USD production. Convert that cost to NZD
+ * before pricing. Ignore the USD label on retail in Printify listing health.
+ */
 
 export const SHOP_CURRENCY = "NZD";
 
@@ -49,6 +54,7 @@ export function listCentsInCurrency(nzd: number, currency: string = SHOP_CURRENC
   return Math.round(retailPriceInCurrency(nzd, currency) * 100);
 }
 
+/** Etsy-connected Printify shops publish this number in the Etsy shop currency (NZD). */
 export function printifyListCents(priceNzd: number) {
   return listCentsInCurrency(priceNzd, SHOP_CURRENCY);
 }

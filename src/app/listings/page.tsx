@@ -224,7 +224,9 @@ export default function ListingsPage() {
             Mixed Fernora shop: five wall-art mixes plus black-camo men’s and Southern Cross women’s mesh sneakers — Quotes,
             Botanical, Scenic, Home décor, and Original fern. List, print, and profit figures are shop{" "}
             {currency}. Shopify and the website convert that NZD list price into USD, AUD, GBP, and EUR
-            from the same table — never paste the NZD number into a USD field. Printify is the
+            from the same table — never paste the NZD number into a USD field. Printify listing
+            health always shows a USD prefix: retail there is the Etsy NZD number, production cost
+            is real USD and must be converted before pricing. Printify is the
             main supplier except the United Kingdom and the European Union (wall art). Mesh sneakers
             print on Printify. Catalog dropdowns on Etsy, Shopify, and this desk match Printify: All,
             Quotes, Botanical, Scenic, Home décor, Original fern. Print and ship costs are Printify
@@ -463,7 +465,7 @@ export default function ListingsPage() {
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Buyer pays destination shipping. Print and ship for New Zealand, Australia, and
-                      the United States are live Printify costs (shipping converted from USD at 1.67).
+                      the United States are live Printify costs (print and shipping converted from USD at 1.67).
                       United Kingdom and European Union stay on Gelato for GPSR. Net is price minus
                       Etsy fees and print. Ads are the Meta daily cap — not a per-sale 15%.
                     </p>
