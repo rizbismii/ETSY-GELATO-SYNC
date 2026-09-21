@@ -22,6 +22,7 @@ test("live catalog covers every mix plus Southern Cross sneakers", () => {
   assert.match(catalog, /export const ETSY_KNOWN_LISTINGS[\s\S]*= \{\}/);
   assert.match(catalog, /STALE_ETSY_LISTINGS/);
   assert.match(catalog, /RETIRED_CATALOG_IDS/);
+  assert.match(catalog, /variants: sneakerVariants\("live_sneaker_star"/);
   assert.doesNotMatch(catalog, /id: "live_hoodie"/);
 });
 
@@ -38,6 +39,7 @@ test("Pressroom catalog strips stale Etsy IDs and keeps retired products tombsto
   assert.match(printify, /inactivateOlderEtsyListings/);
   assert.match(printify, /deleteOlderShopifyProducts/);
   assert.match(printify, /syncFernoraCatalogToShopify/);
+  assert.match(printify, /fillShopifyCollections/);
   assert.match(printify, /attachPrintifyEtsyIds/);
   assert.doesNotMatch(printify, /clearDeletedListings/);
 });

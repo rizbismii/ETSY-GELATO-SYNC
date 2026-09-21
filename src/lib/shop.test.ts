@@ -144,6 +144,8 @@ test("customer-facing shop copy does not name Gelato as the supplier", () => {
   const shopifySource = readFileSync(new URL("./shopify.ts", import.meta.url), "utf8");
   assert.match(shopifySource, /title: "Standard delivery"/);
   assert.match(shopifySource, /name: "Standard delivery"/);
+  assert.match(shopifySource, /stagedUploadsCreate/);
+  assert.match(shopifySource, /name: "Size"/);
   assert.doesNotMatch(shopifySource, /escapeHtml\(GELATO_SHIP_BLURB\)/);
   const carrierSource = readFileSync(new URL("./shopify-storefront.ts", import.meta.url), "utf8");
   assert.match(carrierSource, /FERNORA_CARRIER_NAME = "Fernora"/);
@@ -161,6 +163,8 @@ test("customer-facing shop copy does not name Gelato as the supplier", () => {
     const source = readFileSync(new URL(file, import.meta.url), "utf8");
     assert.doesNotMatch(source, /\bGelato\b/, file);
   }
+  const productPage = readFileSync(new URL("../app/shop/products/[id]/ui.tsx", import.meta.url), "utf8");
+  assert.match(productPage, /clothingColors\.length > 1/);
 });
 
 test("Catalog dropdown order is All, Quotes, Botanical, Scenic, Home décor, Original fern", () => {

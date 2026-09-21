@@ -1,4 +1,4 @@
-import { resolveCatalogLine } from "@/lib/clothing";
+import { resolveCatalogLine, sneakerVariants } from "@/lib/clothing";
 import { GELATO_SHIP_BLURB } from "@/lib/gelato-countries";
 import { galleryForListing, tagsForListing } from "@/lib/listing-health";
 import {
@@ -323,6 +323,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     publishState: "ready",
     lanes: catalogLanes("live_sneaker_star"),
     gallery: galleryForListing("live_sneaker_star"),
+    variants: sneakerVariants("live_sneaker_star", "printify_mesh_sneakers_1072"),
   }),
 ];
 

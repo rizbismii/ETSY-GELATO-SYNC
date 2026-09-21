@@ -1,6 +1,9 @@
 import path from "node:path";
 import { CATALOG_LISTING_TAGS } from "./listing-health.ts";
 import { catalogPrice, printifyListCents } from "./printify-costs.ts";
+import { SNEAKER_WHITE_SOLE, SNEAKER_WHITE_SOLE_DEFAULT } from "./sneaker-sizes.ts";
+
+export { SNEAKER_WHITE_SOLE_DEFAULT, SNEAKER_WHITE_SOLE_IDS } from "./sneaker-sizes.ts";
 
 export type PrintifyVariantInput = {
   id: number;
@@ -27,16 +30,12 @@ function one(id: number, price: number): PrintifyVariantInput[] {
   return [{ id, price, is_enabled: true, is_default: true }];
 }
 
-/** Printify blueprint 1072 · Smart Printee 90 · White sole, every US size. */
-export const SNEAKER_WHITE_SOLE_IDS = [80915, 80917, 80919, 80921, 80923, 80925, 80927, 80929, 80931] as const;
-export const SNEAKER_WHITE_SOLE_DEFAULT = 80925;
-
 function whiteSoleSneakers(price: number): PrintifyVariantInput[] {
-  return SNEAKER_WHITE_SOLE_IDS.map((id) => ({
-    id,
+  return SNEAKER_WHITE_SOLE.map((row) => ({
+    id: row.printifyId,
     price,
     is_enabled: true,
-    ...(id === SNEAKER_WHITE_SOLE_DEFAULT ? { is_default: true } : {}),
+    ...(row.printifyId === SNEAKER_WHITE_SOLE_DEFAULT ? { is_default: true } : {}),
   }));
 }
 

@@ -3,7 +3,9 @@ import { test } from "node:test";
 import {
   clothingVariants,
   parseClothingSku,
+  parseSneakerSku,
   resolveCatalogLine,
+  sneakerVariants,
 } from "./clothing.ts";
 
 const hoodie = {
@@ -60,4 +62,23 @@ test("resolveCatalogLine falls back to title when SKU is missing", () => {
   assert.equal(line.listingId, "live_hoodie");
   assert.equal(line.variant?.colorUid, "navy");
   assert.equal(line.variant?.sizeUid, "m");
+});
+
+test("resolveCatalogLine maps a sneaker size SKU to Printify mesh sneakers", () => {
+  const sneakers = {
+    id: "live_sneaker_star",
+    title: "Southern Cross Star · Mesh Sneakers",
+    gelatoProductUid: "printify_mesh_sneakers_1072",
+    printFileUrl: "/catalog/print-star-sneakers.png",
+    variants: sneakerVariants("live_sneaker_star", "printify_mesh_sneakers_1072"),
+  };
+  const line = resolveCatalogLine([sneakers], "live_sneaker_star-us-9-5");
+  assert.ok(line);
+  assert.equal(line.listingId, "live_sneaker_star");
+  assert.equal(line.variant?.sizeUid, "9-5");
+  assert.equal(line.variant?.size, "US 9.5");
+  assert.equal(line.gelatoProductUid, "printify_mesh_sneakers_1072:80925");
+  assert.equal(line.variation, "White sole · US 9.5");
+  assert.equal(parseSneakerSku("live_sneaker_star-us-7-5")?.sizeUid, "7-5");
+  assert.equal(sneakerVariants("live_sneaker_star", "printify_mesh_sneakers_1072").length, 9);
 });

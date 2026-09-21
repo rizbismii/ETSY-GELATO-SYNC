@@ -1,3 +1,4 @@
+import { SNEAKER_DEFAULT_SIZE_UID, SNEAKER_WHITE_SOLE } from "./sneaker-sizes.ts";
 import type { ClothingVariant, Listing } from "@/lib/types";
 
 export const CLOTHING_COLORS = [
@@ -68,11 +69,25 @@ export function clothingVariants(productId: string, category: string): ClothingV
   return rows;
 }
 
+/** White-sole US sizes for Printify mesh sneakers (blueprint 1072). */
+export function sneakerVariants(productId: string, gelatoProductUid: string): ClothingVariant[] {
+  return SNEAKER_WHITE_SOLE.map((row) => ({
+    id: `${productId}-us-${row.sizeUid}`,
+    color: "White sole",
+    colorUid: "white",
+    size: row.size,
+    sizeUid: row.sizeUid,
+    sku: `${productId}-us-${row.sizeUid}`,
+    gelatoProductUid: `${gelatoProductUid}:${row.printifyId}`,
+  }));
+}
+
 export function defaultClothingVariant(variants: ClothingVariant[] | undefined) {
   if (!variants?.length) return undefined;
   return (
     variants.find((row) => row.colorUid === "black" && row.sizeUid === "m") ||
     variants.find((row) => row.sizeUid === "m") ||
+    variants.find((row) => row.sizeUid === SNEAKER_DEFAULT_SIZE_UID) ||
     variants[0]
   );
 }
@@ -120,8 +135,13 @@ export function matchClothingVariant(title: string, variants: ClothingVariant[] 
       break;
     }
   }
+  const usSize = text.match(/\bus\s*(\d+(?:\.\d+)?)\b/i);
   const sizeToken = text.match(/(?:^|[\s/_\-,·])(small|medium|large|xxs|xs|s|m|l|xl|2xl|xxl)(?:$|[\s/_\-,·])/i);
-  const sizeUid = sizeToken ? SIZE_ALIASES[sizeToken[1].toLowerCase()] : undefined;
+  const sizeUid = usSize
+    ? usSize[1].replace(".", "-")
+    : sizeToken
+      ? SIZE_ALIASES[sizeToken[1].toLowerCase()]
+      : undefined;
 
   const matched = variants.find(
     (row) =>
@@ -169,6 +189,7 @@ export function resolveListingFulfillment(
 }
 
 const CLOTHING_SKU_PATTERN = /^(.*)-(black|white|navy)-(s|m|l)$/i;
+const SNEAKER_SKU_PATTERN = /^(.*)-us-(\d+(?:-\d+)?)$/i;
 
 export function parseClothingSku(sku: string) {
   const match = sku.trim().match(CLOTHING_SKU_PATTERN);
@@ -177,6 +198,15 @@ export function parseClothingSku(sku: string) {
     productId: match[1],
     colorUid: match[2].toLowerCase(),
     sizeUid: match[3].toLowerCase(),
+  };
+}
+
+export function parseSneakerSku(sku: string) {
+  const match = sku.trim().match(SNEAKER_SKU_PATTERN);
+  if (!match) return undefined;
+  return {
+    productId: match[1],
+    sizeUid: match[2].toLowerCase(),
   };
 }
 
@@ -225,6 +255,15 @@ export function resolveCatalogLine(
       const product = products.find((row) => row.id === parsed.productId);
       if (product) {
         const variantId = `${parsed.productId}-${parsed.colorUid}-${parsed.sizeUid}`;
+        return lineFromProduct(product, findClothingVariant(product.variants, variantId), token);
+      }
+    }
+
+    const sneaker = parseSneakerSku(token);
+    if (sneaker) {
+      const product = products.find((row) => row.id === sneaker.productId);
+      if (product) {
+        const variantId = `${sneaker.productId}-us-${sneaker.sizeUid}`;
         return lineFromProduct(product, findClothingVariant(product.variants, variantId), token);
       }
     }
