@@ -98,7 +98,7 @@ export const CATALOG_LISTING_TAGS: Record<string, string[]> = {
     ["quote print", "calm", "you are here"],
   ),
   live_botanical_kowhai: fillListingTags(
-    ["kowhai", "botanical", "flowers", "poster", "yellow", "Botanical"],
+    ["Botanical", "kowhai", "flowers", "poster", "yellow"],
     ["nz flowers", "kowhai print", "floral print"],
   ),
   live_canvas_harbour: fillListingTags(

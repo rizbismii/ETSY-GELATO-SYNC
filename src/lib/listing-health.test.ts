@@ -23,10 +23,12 @@ test("current and future listings fill 13 unique tags under 20 characters", () =
 
 test("live catalog and Printify starters share 13 listing-health tags", () => {
   const catalog = readFileSync(new URL("./live-catalog.ts", import.meta.url), "utf8");
+  const mixLabels = ["Original fern", "Quotes", "Botanical", "Scenic", "Home décor"];
   for (const spec of FERNORA_PRINTIFY_STARTERS) {
     assert.equal(spec.tags.length, 13, spec.key);
     assert.deepEqual(spec.tags, CATALOG_LISTING_TAGS[spec.key]);
     assert.deepEqual(spec.tags, tagsForListing(spec.key));
+    assert.ok(mixLabels.some((label) => spec.tags.includes(label)), spec.key);
     assert.match(catalog, new RegExp(`id: "${spec.key}"[\\s\\S]*tags: tagsForListing\\("${spec.key}"\\)`));
     const health = listingHealth({ tags: spec.tags, gallery: listingGallery(spec.key) });
     assert.equal(health.tagsOk, true);
