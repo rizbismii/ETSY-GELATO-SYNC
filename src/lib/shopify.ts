@@ -927,16 +927,18 @@ export async function createShopifyDraftInvoice(input: {
   return draft;
 }
 
+type ShopifyProductPage = {
+  products: {
+    pageInfo: { hasNextPage: boolean; endCursor?: string | null };
+    nodes: Array<{ id: string; title: string; handle: string }>;
+  };
+};
+
 export async function listShopifyProducts(query = `vendor:${FERNORA_NAME}`) {
   const products: Array<{ id: string; title: string; handle: string }> = [];
   let cursor: string | null = null;
   for (let page = 0; page < 20; page += 1) {
-    const data = await shopifyGraphql<{
-      products: {
-        pageInfo: { hasNextPage: boolean; endCursor?: string | null };
-        nodes: Array<{ id: string; title: string; handle: string }>;
-      };
-    }>(
+    const data: ShopifyProductPage = await shopifyGraphql<ShopifyProductPage>(
       `query ($q: String!, $cursor: String) {
         products(first: 50, query: $q, after: $cursor) {
           pageInfo { hasNextPage endCursor }

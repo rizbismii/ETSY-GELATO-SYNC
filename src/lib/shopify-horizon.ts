@@ -336,14 +336,6 @@ type ThemeBlock = {
   block_order?: string[];
 };
 
-async function collectionGids() {
-  const listed = await shopifyGraphql<{
-    collections: { nodes: Array<{ id: string; handle: string }> };
-  }>(`{ collections(first: 30) { nodes { id handle } } }`);
-  const byHandle = new Map(listed.collections.nodes.map((row) => [row.handle, row.id]));
-  return COLLECTION_HANDLES.map((handle) => byHandle.get(handle)).filter(Boolean) as string[];
-}
-
 async function assignCollectionImages() {
   const notes: string[] = [];
   const listed = await shopifyGraphql<{
@@ -439,7 +431,6 @@ function imageBlock(image: string): ThemeBlock {
 
 async function upsertHorizonJson(themeId: string, heroRef: string) {
   const notes: string[] = [];
-  const collectionIds = await collectionGids().catch(() => [] as string[]);
   const indexRaw = await themeFileText(themeId, "templates/index.json");
   const indexStart = indexRaw.indexOf("{");
   if (indexStart < 0) {
