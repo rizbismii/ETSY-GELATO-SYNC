@@ -198,4 +198,5 @@ test("markets pin countries without presentment currency to USD", () => {
   assert.match(source, /international-usd/);
   assert.match(source, /localCurrencies: false/);
   assert.match(source, /"AR"/);
+  assert.match(source, /syncShopifyPresentmentPrices/);
 });

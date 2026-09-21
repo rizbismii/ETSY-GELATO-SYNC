@@ -222,7 +222,9 @@ export default function ListingsPage() {
           <h1 className="font-heading text-4xl tracking-tight">Catalog</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
             Mixed Fernora shop: five wall-art mixes plus black-camo men’s and Southern Cross women’s mesh sneakers — Quotes,
-            Botanical, Scenic, Home décor, and Original fern. Prices in {currency}. Printify is the
+            Botanical, Scenic, Home décor, and Original fern. List, print, and profit figures are shop{" "}
+            {currency}. Shopify and the website convert that NZD list price into USD, AUD, GBP, and EUR
+            from the same table — never paste the NZD number into a USD field. Printify is the
             main supplier except the United Kingdom and the European Union (wall art). Mesh sneakers
             print on Printify. Catalog dropdowns on Etsy, Shopify, and this desk match Printify: All,
             Quotes, Botanical, Scenic, Home décor, Original fern. Print and ship costs are Printify

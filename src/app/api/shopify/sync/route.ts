@@ -6,7 +6,7 @@ import {
   syncFernoraCatalogToShopify,
   syncShopifyPolicies,
 } from "@/lib/shopify";
-import { fillShopifyCollections, prepareShopifyCustomerStore } from "@/lib/shopify-storefront";
+import { fillShopifyCollections, prepareShopifyCustomerStore, syncShopifyPresentmentPrices } from "@/lib/shopify-storefront";
 
 export const dynamic = "force-dynamic";
 
@@ -19,11 +19,14 @@ export async function POST(request: Request) {
       const collections = await fillShopifyCollections().catch((error: Error) => [
         `Collections: ${error.message}`,
       ]);
+      const presentment = await syncShopifyPresentmentPrices().catch((error: Error) => [
+        `Presentment prices: ${error.message}`,
+      ]);
       const ping = await pingShopify();
       return Response.json({
         ok: true,
         ping,
-        notes: [...catalog.notes, ...collections],
+        notes: [...catalog.notes, ...collections, ...presentment],
         products: Object.keys(catalog.catalog).length,
       });
     }

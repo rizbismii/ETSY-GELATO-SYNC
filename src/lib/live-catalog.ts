@@ -8,6 +8,7 @@ import {
   catalogUnitCost,
   type CostLane,
 } from "@/lib/printify-costs";
+import { SHOP_CURRENCY } from "@/lib/shop-currency";
 import type { Listing } from "@/lib/types";
 
 export const ETSY_SHOP_URL = "https://www.etsy.com/shop/FERNORATRENDS";
@@ -19,7 +20,7 @@ export function etsyListingUrl(listingId?: string | null) {
 export const LIVE_DROP_ID = "fernora-live";
 export const LIVE_DROP_NAME = "Fernora mix";
 export const SHOP_NAME = "FERNORATRENDS";
-export const SHOP_CURRENCY = "NZD";
+export { SHOP_CURRENCY } from "@/lib/shop-currency";
 export const RETURN_POLICY_ID = 1515682339963;
 export const READINESS_STATE_ID = 1514454820482;
 
@@ -157,7 +158,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
       "A tall botanical study of a New Zealand fern, printed to order on premium 200 gsm semi-gloss A3 paper. Unframed. Made to order.",
     state: "inactive",
     price: catalogPrice("live_poster"),
-    currency: "NZD",
+    currency: SHOP_CURRENCY,
     quantity: 999,
     views: 0,
     favorites: 0,
@@ -187,7 +188,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     quote: "Breathe. You are here.",
     state: "inactive",
     price: catalogPrice("live_quote_breathe"),
-    currency: "NZD",
+    currency: SHOP_CURRENCY,
     quantity: 999,
     views: 0,
     favorites: 0,
@@ -216,7 +217,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
       "Large 18×24 in painterly study of New Zealand kōwhai bells on cream. Botanical, not abstract. Unframed.",
     state: "inactive",
     price: catalogPrice("live_botanical_kowhai"),
-    currency: "NZD",
+    currency: SHOP_CURRENCY,
     quantity: 999,
     views: 0,
     favorites: 0,
@@ -245,7 +246,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
       "Square slim-wrap canvas of a quiet New Zealand harbour at first light. Scenic, not geometric abstract.",
     state: "inactive",
     price: catalogPrice("live_canvas_harbour"),
-    currency: "NZD",
+    currency: SHOP_CURRENCY,
     quantity: 999,
     views: 0,
     favorites: 0,
@@ -275,7 +276,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     quote: "Home is a kind light.",
     state: "inactive",
     price: catalogPrice("live_frame_kind"),
-    currency: "NZD",
+    currency: SHOP_CURRENCY,
     quantity: 999,
     views: 0,
     favorites: 0,
@@ -305,7 +306,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
       "Men’s mesh sneakers with an original Fernora black-camo print. Dye sublimation, white sole, memory-foam insole. Made to order.",
     state: "inactive",
     price: catalogPrice("live_sneaker_star"),
-    currency: "NZD",
+    currency: SHOP_CURRENCY,
     quantity: 999,
     views: 0,
     favorites: 0,
@@ -335,7 +336,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
       "Women’s mesh sneakers with an original Fernora star-and-fern print on forest green. Dye sublimation, white sole, memory-foam insole. Made to order.",
     state: "inactive",
     price: catalogPrice("live_sneaker_star_w"),
-    currency: "NZD",
+    currency: SHOP_CURRENCY,
     quantity: 999,
     views: 0,
     favorites: 0,

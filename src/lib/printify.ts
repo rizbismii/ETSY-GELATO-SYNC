@@ -30,7 +30,7 @@ import { deleteOlderGelatoProducts } from "@/lib/gelato-store";
 import { etsyListingUrl } from "@/lib/live-catalog";
 import { deleteOlderShopifyProducts, syncFernoraCatalogToShopify } from "@/lib/shopify";
 import { syncShopifyCatalogMenu } from "@/lib/shopify-horizon";
-import { fillShopifyCollections } from "@/lib/shopify-storefront";
+import { fillShopifyCollections, syncShopifyPresentmentPrices } from "@/lib/shopify-storefront";
 import { updateShop } from "@/lib/store";
 
 export {
@@ -461,6 +461,7 @@ export async function createFernoraPrintifyProducts(input?: { shopId?: number; t
   try {
     extraNotes.push(...(await syncFernoraCatalogToShopify()).notes);
     extraNotes.push(...(await fillShopifyCollections()));
+    extraNotes.push(...(await syncShopifyPresentmentPrices()));
   } catch (error) {
     extraNotes.push(`Shopify catalog: ${(error as Error).message}`);
   }

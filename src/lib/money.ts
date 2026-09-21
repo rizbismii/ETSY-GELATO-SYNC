@@ -105,7 +105,7 @@ export function recommendedPrice(
   return Math.ceil(raw) - 0.01;
 }
 
-export function formatMoney(value: number, currency = "USD") {
+export function formatMoney(value: number, currency = "NZD") {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,

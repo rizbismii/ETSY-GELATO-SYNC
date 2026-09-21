@@ -1,6 +1,7 @@
 import { CATALOG_SERIES } from "@/lib/catalog-menu";
 import { fernoraCatalog, FERNORA_NAME } from "@/lib/shop";
 import { gelatoCodesForLane, SHIP_LANES } from "@/lib/gelato-countries";
+import { retailPriceInCurrency, SHOP_CURRENCY } from "@/lib/shop-currency";
 import {
   onlineStorePublicationId,
   publishableToOnlineStore,
@@ -199,6 +200,7 @@ export async function configureShopifyMarkets() {
     }
   }
   notes.push(...(await configureMarketCurrencies(resolved)));
+  notes.push(...(await ensureMarketPriceLists(resolved)));
   return notes;
 }
 
@@ -222,6 +224,168 @@ async function configureMarketCurrencies(markets: Array<{ id: string; spec: Mark
       );
     }
   }
+  return notes;
+}
+
+type MarketPriceList = { id: string; spec: MarketSpec; priceListId: string; currency: string };
+
+async function listMarketCatalogs(marketId: string) {
+  const data = await shopifyGraphql<{
+    market?: {
+      catalogs: { nodes: Array<{ id: string; title?: string; priceList?: { id: string; currency?: string } | null }> };
+    } | null;
+  }>(
+    `query ($id: ID!) {
+      market(id: $id) {
+        catalogs(first: 10) {
+          nodes { id title priceList { id name currency } }
+        }
+      }
+    }`,
+    { id: marketId },
+  );
+  return data.market?.catalogs.nodes || [];
+}
+
+export async function ensureMarketPriceLists(markets?: Array<{ id: string; spec: MarketSpec }>) {
+  const notes: string[] = [];
+  const rows = markets || (await listMarketsForPricing());
+  const ready: MarketPriceList[] = [];
+  for (const row of rows) {
+    if (row.spec.currency === SHOP_CURRENCY) continue;
+    const existing = (await listMarketCatalogs(row.id)).find((catalog) => catalog.priceList?.id);
+    if (existing?.priceList?.id) {
+      ready.push({ ...row, priceListId: existing.priceList.id, currency: existing.priceList.currency || row.spec.currency });
+      continue;
+    }
+    const createdCatalog = await shopifyGraphql<{
+      catalogCreate: { catalog?: { id: string }; userErrors: Array<{ message: string }> };
+    }>(
+      `mutation ($input: CatalogCreateInput!) {
+        catalogCreate(input: $input) {
+          catalog { id }
+          userErrors { field message }
+        }
+      }`,
+      {
+        input: {
+          title: `${row.spec.name} prices`,
+          status: "ACTIVE",
+          context: { marketIds: [row.id] },
+        },
+      },
+    );
+    if (createdCatalog.catalogCreate.userErrors.length || !createdCatalog.catalogCreate.catalog?.id) {
+      notes.push(
+        `${row.spec.name} catalog: ${createdCatalog.catalogCreate.userErrors.map((err) => err.message).join("; ") || "no catalog"}`,
+      );
+      continue;
+    }
+    const createdList = await shopifyGraphql<{
+      priceListCreate: { priceList?: { id: string; currency?: string }; userErrors: Array<{ message: string }> };
+    }>(
+      `mutation ($input: PriceListCreateInput!) {
+        priceListCreate(input: $input) {
+          priceList { id currency }
+          userErrors { field message }
+        }
+      }`,
+      {
+        input: {
+          name: `${row.spec.name} ${row.spec.currency}`,
+          currency: row.spec.currency,
+          catalogId: createdCatalog.catalogCreate.catalog.id,
+          parent: { adjustment: { type: "PERCENTAGE_DECREASE", value: 0 } },
+        },
+      },
+    );
+    if (createdList.priceListCreate.userErrors.length || !createdList.priceListCreate.priceList?.id) {
+      notes.push(
+        `${row.spec.name} price list: ${createdList.priceListCreate.userErrors.map((err) => err.message).join("; ") || "no list"}`,
+      );
+      continue;
+    }
+    ready.push({
+      ...row,
+      priceListId: createdList.priceListCreate.priceList.id,
+      currency: createdList.priceListCreate.priceList.currency || row.spec.currency,
+    });
+    notes.push(`Locked ${row.spec.name} list prices in ${row.spec.currency}.`);
+  }
+  return notes;
+}
+
+async function listMarketsForPricing() {
+  const existing = await listShopifyMarkets();
+  return MARKET_LANES.map((spec) => {
+    const already = matchMarket(existing, spec);
+    return already ? { id: already.id, spec } : undefined;
+  }).filter((row): row is { id: string; spec: MarketSpec } => Boolean(row));
+}
+
+export async function syncShopifyPresentmentPrices() {
+  const notes = [...(await ensureMarketPriceLists())];
+  const products = fernoraCatalog();
+  const listed = await shopifyGraphql<{
+    products: {
+      nodes: Array<{
+        title: string;
+        variants: { nodes: Array<{ id: string; sku?: string | null }> };
+      }>;
+    };
+  }>(
+    `{ products(first: 50, query: "vendor:${FERNORA_NAME}") {
+        nodes { title variants(first: 50) { nodes { id sku } } }
+      } }`,
+  );
+  const pricesByList = new Map<string, Array<{ variantId: string; price: { amount: string; currencyCode: string } }>>();
+  const markets = await listMarketsForPricing();
+  const lists = new Map<string, { priceListId: string; currency: string; name: string }>();
+  for (const row of markets) {
+    if (row.spec.currency === SHOP_CURRENCY) continue;
+    const catalog = (await listMarketCatalogs(row.id)).find((item) => item.priceList?.id);
+    if (!catalog?.priceList?.id) continue;
+    lists.set(row.id, {
+      priceListId: catalog.priceList.id,
+      currency: catalog.priceList.currency || row.spec.currency,
+      name: row.spec.name,
+    });
+  }
+  for (const product of products) {
+    const node = listed.products.nodes.find((row) =>
+      row.variants.nodes.some((variant) => (variant.sku || "").startsWith(product.id)),
+    );
+    if (!node) continue;
+    for (const list of lists.values()) {
+      const amount = retailPriceInCurrency(product.price, list.currency).toFixed(2);
+      const rows = pricesByList.get(list.priceListId) || [];
+      for (const variant of node.variants.nodes) {
+        rows.push({ variantId: variant.id, price: { amount, currencyCode: list.currency } });
+      }
+      pricesByList.set(list.priceListId, rows);
+    }
+  }
+  for (const [priceListId, prices] of pricesByList) {
+    const chunk = 50;
+    for (let index = 0; index < prices.length; index += chunk) {
+      const updated = await shopifyGraphql<{
+        priceListFixedPricesAdd: { userErrors: Array<{ message: string }> };
+      }>(
+        `mutation ($priceListId: ID!, $prices: [PriceListPriceInput!]!) {
+          priceListFixedPricesAdd(priceListId: $priceListId, prices: $prices) {
+            userErrors { field message }
+          }
+        }`,
+        { priceListId, prices: prices.slice(index, index + chunk) },
+      );
+      if (updated.priceListFixedPricesAdd.userErrors.length) {
+        notes.push(updated.priceListFixedPricesAdd.userErrors.map((err) => err.message).join("; "));
+      }
+    }
+  }
+  notes.unshift(
+    `Set presentment prices from shop ${SHOP_CURRENCY} for ${products.length} catalog product${products.length === 1 ? "" : "s"}.`,
+  );
   return notes;
 }
 
@@ -401,6 +565,7 @@ export async function prepareShopifyCustomerStore(origin: string) {
   const notes: string[] = [];
   notes.push(...(await publishFernoraToOnlineStore()));
   notes.push(...(await configureShopifyMarkets()));
+  notes.push(...(await syncShopifyPresentmentPrices()));
   notes.push(...(await fillShopifyCollections()));
   notes.push(...(await brandHorizonTheme(origin)));
   notes.push(...(await registerGelatoCarrierService(origin)));

@@ -1,4 +1,7 @@
 import { listingAdsRate, recommendedPrice, TARGET_AFTER_ADS_MARGIN } from "./money.ts";
+import { usdToNzd } from "./shop-currency.ts";
+
+export { printifyListCents, PRINTIFY_USD_TO_NZD, usdToNzd } from "./shop-currency.ts";
 
 export type PrintSupplier = "printify" | "gelato";
 
@@ -11,9 +14,6 @@ export type CostLane = {
   days: string;
   printer: PrintSupplier;
 };
-
-/** Printify catalog shipping is USD. Convert to shop NZD for the cost table. */
-export const PRINTIFY_USD_TO_NZD = 1.67;
 
 /**
  * Live Printify variant.cost in shop NZD (cents / 100).
@@ -56,10 +56,6 @@ export const GELATO_LANE_COSTS = {
   frame: { print: { GB: 48.55, EU: 46.54 }, ship: { GB: 11.38, EU: 15.05 } },
 } as const;
 
-export function usdToNzd(usd: number) {
-  return Math.round(usd * PRINTIFY_USD_TO_NZD * 100) / 100;
-}
-
 /**
  * NZ is not always a named Printify zone.
  * Use AU when Printify prices Oceania, otherwise REST_OF_THE_WORLD unless that rate is a penalty.
@@ -71,10 +67,6 @@ export function printifyShipUsd(family: keyof typeof PRINTIFY_SHIP_USD, region: 
   if (row.AU) return row.AU;
   if (row.ROTW <= 80) return row.ROTW;
   return row.AU ?? row.US;
-}
-
-export function printifyListCents(priceNzd: number) {
-  return Math.round(priceNzd * 100);
 }
 
 function gelatoFamily(key: PrintifyCostKey): keyof typeof GELATO_LANE_COSTS {
