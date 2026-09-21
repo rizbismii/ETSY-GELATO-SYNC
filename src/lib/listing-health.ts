@@ -39,6 +39,7 @@ const GALLERY_PAIRS: Record<string, { mockup: string; print: string }> = {
     print: "/catalog/print-harbour-morning.png",
   },
   live_frame_kind: { mockup: "/catalog/catalog-kind-light.png", print: "/catalog/print-kind-light.png" },
+  live_sneaker_star: { mockup: "/catalog/catalog-star-sneakers.png", print: "/catalog/print-star-sneakers.png" },
 };
 
 export function clipListingTag(tag: string) {
@@ -108,6 +109,10 @@ export const CATALOG_LISTING_TAGS: Record<string, string[]> = {
   live_frame_kind: fillListingTags(
     ["home", "framed", "kind", "quote", "homedecor", "Home décor"],
     ["oak frame", "ready to hang", "kind light"],
+  ),
+  live_sneaker_star: fillListingTags(
+    ["Original fern", "sneakers", "mesh", "stars", "gold", "green"],
+    ["mens shoes", "southern cross", "fern print", "white sole", "streetwear"],
   ),
 };
 

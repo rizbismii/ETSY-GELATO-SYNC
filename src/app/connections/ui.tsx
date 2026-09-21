@@ -1054,8 +1054,9 @@ export function ConnectionsClient() {
           <CardContent className="space-y-4">
             <p className="text-sm leading-6 text-muted-foreground">
               Printify is the main print supplier except the United Kingdom and the European Union.
-              Keep the token and the Etsy-connected Fernora Trends shop. Keep five catalog products
-              (one per mix, one variant) and publish them to Etsy, Shopify, and fernora.nz. Do not
+              Keep the token and the Etsy-connected Fernora Trends shop. Keep six catalog products
+              (five wall-art mixes plus Southern Cross star sneakers) and publish them to Etsy,
+              Shopify, and fernora.nz. Do not
               migrate leftover External products, and do not republish the old Gelato mix.
             </p>
             <p className="text-sm leading-6 text-muted-foreground">
@@ -1067,14 +1068,15 @@ export function ConnectionsClient() {
               <li>
                 Printify has two shops named Fernora Trends. In the left store dropdown, open the one
                 that is <strong className="font-medium text-foreground">connected to Etsy</strong>{" "}
-                (shop 28911689). The five catalog products with print templates are there. The
+                (shop 28911689). The six catalog products with print templates are there. The
                 disconnected Fernora Trends shop is not the catalog.
               </li>
               <li>Do not click Migrate product on leftover External products.</li>
               <li>
-                Recreate or refresh the five catalog products on Printify, then publish them to Etsy,
+                Recreate or refresh the six catalog products on Printify, then publish them to Etsy,
                 Shopify, and the website. Print files must match the listing photo — Fern Arc prints
-                the open fern on the catalog card, not a different curled frond. They land in{" "}
+                the open fern on the catalog card, not a different curled frond. Mesh sneakers use
+                the Southern Cross star-and-fern print on both shoes. They land in{" "}
                 <strong className="font-medium text-foreground">My products</strong> on the
                 Etsy-connected shop.
               </li>
@@ -1114,7 +1116,7 @@ export function ConnectionsClient() {
                 disabled={!printifyToken || Boolean(busy)}
               >
                 {busy === "printify-products" ? <Loader2 className="animate-spin" /> : null}
-                Create 5-product catalog · publish to shops
+                Create 6-product catalog · publish to shops
               </Button>
             </div>
           </CardContent>
@@ -1306,7 +1308,7 @@ export function ConnectionsClient() {
         </CardHeader>
         <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-xl text-sm text-muted-foreground">
-            Pull live Etsy listings and receipts. Printify holds five catalog products, one per mix.
+            Pull live Etsy listings and receipts. Printify holds six catalog products.
             Catalog dropdowns match Printify. Etsy shop sections need shops_w — Authorize with Etsy
             once so Quotes, Botanical, Scenic, Home décor, and Original fern can be created.
           </p>

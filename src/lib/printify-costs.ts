@@ -25,6 +25,8 @@ export const PRINTIFY_PRINT_NZD = {
   live_botanical_kowhai: 10.62,
   live_canvas_harbour: 19.97,
   live_frame_kind: 38.53,
+  /** Catalog “from USD 37.77” × 1.67 until the live Printify variant.cost is read. */
+  live_sneaker_star: 63.08,
 } as const;
 
 export type PrintifyCostKey = keyof typeof PRINTIFY_PRINT_NZD;
@@ -37,10 +39,11 @@ type PrintifyShipUsd = {
 };
 
 /** Printify first-item shipping (USD) for the enabled catalog variants. */
-export const PRINTIFY_SHIP_USD: Record<"poster" | "canvas" | "frame", PrintifyShipUsd> = {
+export const PRINTIFY_SHIP_USD: Record<"poster" | "canvas" | "frame" | "sneaker", PrintifyShipUsd> = {
   poster: { US: 5.99, CA: 12.09, ROTW: 12.19 },
   canvas: { US: 8.19, AU: 18.29, CA: 15.69, ROTW: 165.39 },
   frame: { US: 12.49, CA: 49.19, ROTW: 57.19 },
+  sneaker: { US: 18.69, AU: 25.69, ROTW: 25.69 },
 };
 
 /** Gelato print + ship for the UK/EU compliance lanes only. */
@@ -82,7 +85,15 @@ function gelatoFamily(key: PrintifyCostKey): keyof typeof GELATO_LANE_COSTS {
 function printifyFamily(key: PrintifyCostKey): keyof typeof PRINTIFY_SHIP_USD {
   if (key === "live_canvas_harbour") return "canvas";
   if (key === "live_frame_kind") return "frame";
+  if (key === "live_sneaker_star") return "sneaker";
   return "poster";
+}
+
+function sneakerShipUsd(region: "NZ" | "AU" | "US" | "GB" | "EU") {
+  if (region === "US") return 18.69;
+  if (region === "GB") return 20.59;
+  if (region === "EU") return 23.29;
+  return 25.69;
 }
 
 export function catalogLanes(key: PrintifyCostKey): CostLane[] {
@@ -97,6 +108,15 @@ export function catalogLanes(key: PrintifyCostKey): CostLane[] {
     { region: "EU", label: "European Union", country: "DE" },
   ];
   return rows.map((row) => {
+    if (key === "live_sneaker_star") {
+      return {
+        ...row,
+        printer: "printify",
+        printCost: printNzd,
+        shipping: usdToNzd(sneakerShipUsd(row.region)),
+        days: "12–22 days",
+      };
+    }
     const printer: PrintSupplier = row.region === "GB" || row.region === "EU" ? "gelato" : "printify";
     if (printer === "printify") {
       return {

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-test("live catalog is five products covering every mix", () => {
+test("live catalog covers every mix plus Southern Cross sneakers", () => {
   const catalog = readFileSync(new URL("./live-catalog.ts", import.meta.url), "utf8");
   const liveIds = [...catalog.matchAll(/^\s+id: "(live_[^"]+)"/gm)].map((row) => row[1]);
   assert.deepEqual(liveIds, [
@@ -11,6 +11,7 @@ test("live catalog is five products covering every mix", () => {
     "live_botanical_kowhai",
     "live_canvas_harbour",
     "live_frame_kind",
+    "live_sneaker_star",
   ]);
   assert.match(catalog, /LIVE_CATALOG_IDS/);
   assert.match(catalog, /collection: "original"/);

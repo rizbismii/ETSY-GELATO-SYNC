@@ -32,13 +32,14 @@ export const SHIP_COUNTRIES = [
 
 export const SHIP_BLURB = GELATO_SHIP_BLURB;
 
-/** One product per Catalog mix so All / Quotes / Botanical / Scenic / Home décor / Original fern stay filled. */
+/** Wall-art mixes stay filled; Southern Cross sneakers sit in Original fern. */
 export const LIVE_CATALOG_IDS = [
   "live_poster",
   "live_quote_breathe",
   "live_botanical_kowhai",
   "live_canvas_harbour",
   "live_frame_kind",
+  "live_sneaker_star",
 ] as const;
 
 export type LiveCatalogId = (typeof LIVE_CATALOG_IDS)[number];
@@ -293,6 +294,35 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     publishState: "ready",
     lanes: catalogLanes("live_frame_kind"),
     gallery: galleryForListing("live_frame_kind"),
+  }),
+  item({
+    id: "live_sneaker_star",
+    etsyListingId: "",
+    title: "Southern Cross Star · Mesh Sneakers",
+    description:
+      "Men’s mesh sneakers with an original Fernora star-and-fern print on forest green. Dye sublimation, white sole, memory-foam insole. Made to order.",
+    state: "inactive",
+    price: catalogPrice("live_sneaker_star"),
+    currency: "NZD",
+    quantity: 999,
+    views: 0,
+    favorites: 0,
+    tags: tagsForListing("live_sneaker_star"),
+    category: "sneakers",
+    collection: "original",
+    gelatoProductUid: "printify_mesh_sneakers_1072",
+    gelatoProductName: "Men’s mesh sneakers · white sole",
+    printFileUrl: "/catalog/print-star-sneakers.png",
+    imageUrl: "/catalog/catalog-star-sneakers.png",
+    gelatoUnitCost: catalogUnitCost("live_sneaker_star"),
+    drop: LIVE_DROP_ID,
+    issues: [],
+    taxonomyId: 1478,
+    shippingProfileId: 315080633003,
+    returnPolicyId: RETURN_POLICY_ID,
+    publishState: "ready",
+    lanes: catalogLanes("live_sneaker_star"),
+    gallery: galleryForListing("live_sneaker_star"),
   }),
 ];
 

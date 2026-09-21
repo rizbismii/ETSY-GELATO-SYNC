@@ -61,8 +61,9 @@ test("print templates keep a downloadable filename and surface for current produ
 });
 
 test("print files stay paired to their own listing mockup", () => {
-  assert.equal(CATALOG_ART_PAIRS.length, 5);
+  assert.equal(CATALOG_ART_PAIRS.length, 6);
   assert.equal(printFileForListing("live_poster"), "/catalog/print-poster-fern-arc.png");
+  assert.equal(printFileForListing("live_sneaker_star"), "/catalog/print-star-sneakers.png");
   assert.equal(
     printFileForListing("live_quote_breathe", "/catalog/print-poster-fern-arc.png"),
     "/catalog/print-breathe-here.png",

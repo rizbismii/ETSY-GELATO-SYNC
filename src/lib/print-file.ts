@@ -6,6 +6,7 @@ export const CATALOG_ART_PAIRS = [
   { key: "live_botanical_kowhai", mockup: "/catalog/catalog-kowhai-botanical.png", print: "/catalog/print-kowhai-botanical.png" },
   { key: "live_canvas_harbour", mockup: "/catalog/catalog-harbour-morning.png", print: "/catalog/print-harbour-morning.png" },
   { key: "live_frame_kind", mockup: "/catalog/catalog-kind-light.png", print: "/catalog/print-kind-light.png" },
+  { key: "live_sneaker_star", mockup: "/catalog/catalog-star-sneakers.png", print: "/catalog/print-star-sneakers.png" },
 ] as const;
 
 export function catalogArtPair(id?: string | null) {

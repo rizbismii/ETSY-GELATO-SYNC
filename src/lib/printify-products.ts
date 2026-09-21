@@ -27,9 +27,22 @@ function one(id: number, price: number): PrintifyVariantInput[] {
   return [{ id, price, is_enabled: true, is_default: true }];
 }
 
+/** Printify blueprint 1072 · Smart Printee 90 · White sole, every US size. */
+export const SNEAKER_WHITE_SOLE_IDS = [80915, 80917, 80919, 80921, 80923, 80925, 80927, 80929, 80931] as const;
+export const SNEAKER_WHITE_SOLE_DEFAULT = 80925;
+
+function whiteSoleSneakers(price: number): PrintifyVariantInput[] {
+  return SNEAKER_WHITE_SOLE_IDS.map((id) => ({
+    id,
+    price,
+    is_enabled: true,
+    ...(id === SNEAKER_WHITE_SOLE_DEFAULT ? { is_default: true } : {}),
+  }));
+}
+
 /**
- * Five Fernora catalog products, one per mix, one enabled variant each.
- * Not Gelato External migrations. Closest Printify size when A-series is not on the blueprint.
+ * Fernora catalog: five wall-art mixes (one enabled variant each) plus Southern Cross star sneakers
+ * (white sole, every US size). Not Gelato External migrations.
  */
 export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
   {
@@ -95,6 +108,20 @@ export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
     printProviderId: 99,
     variants: one(69671, printifyListCents(catalogPrice("live_frame_kind"))),
     positions: ["front"],
+  },
+  {
+    key: "live_sneaker_star",
+    title: "Southern Cross Star · Mesh Sneakers",
+    description:
+      "Men’s mesh sneakers with an original Fernora star-and-fern print. Dye sublimation on breathable mesh, white sole, memory-foam insole. Made to order.",
+    tags: CATALOG_LISTING_TAGS.live_sneaker_star,
+    printFile: "print-star-sneakers.png",
+    mockupFile: "catalog-star-sneakers.png",
+    blueprintId: 1072,
+    printProviderId: 90,
+    variants: whiteSoleSneakers(printifyListCents(catalogPrice("live_sneaker_star"))),
+    positions: ["left_shoe", "right_shoe"],
+    aliases: ["Southern Cross Star Mesh Sneakers"],
   },
 ];
 

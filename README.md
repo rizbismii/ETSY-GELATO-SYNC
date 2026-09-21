@@ -1,8 +1,8 @@
 # Pressroom
 
-Operations desk for **FERNORATRENDS** on Etsy and the **Fernora** shop (New Zealand, Australia, the United States, the United Kingdom, the European Union, and selected countries at checkout). **Printify** is the main print supplier except the United Kingdom and the European Union, where **Gelato** stays connected for GPSR. Saved connections stay as they are. The catalog is **one Printify product per item**, one enabled variant each. Etsy, Shopify, and website Catalog dropdowns match: All, Quotes, Botanical, Scenic, Home décor, Original fern.
+Operations desk for **FERNORATRENDS** on Etsy and the **Fernora** shop (New Zealand, Australia, the United States, the United Kingdom, the European Union, and selected countries at checkout). **Printify** is the main print supplier except the United Kingdom and the European Union, where **Gelato** stays connected for GPSR. Saved connections stay as they are. The catalog is **one Printify product per item**. Wall art keeps one enabled variant. Mesh sneakers keep every white-sole US size. Etsy, Shopify, and website Catalog dropdowns match: All, Quotes, Botanical, Scenic, Home décor, Original fern.
 
-There is no sample shop. Catalog is five Fernora products, one per mix.
+There is no sample shop. Catalog is five Fernora wall-art mixes plus Southern Cross star mesh sneakers.
 
 ## What it does
 
@@ -95,7 +95,7 @@ PRINTIFY_API_TOKEN=
 
 ## Live catalog
 
-The catalog in this repo is the Fernora mix in NZD: **five listing templates**, one per mix, **one Printify product per item** (one enabled variant). Printify is the main printer for non-EU/UK destinations; keep Gelato for UK and EU. Shop origin on Etsy is Wellington 6012. Advertising is a **Meta campaign** from Pressroom **Ads** to fernora.nz (daily cap 5, max 15). Etsy Offsite Ads were opted out on 19 September 2026 — listing prices are **not** padded for a 15% Offsite hit. Etsy Ads (CPC) are not activated (15-day new-shop wait as of 20 September 2026). Catalog dropdowns on Etsy, Shopify, and the website match Printify: All, Quotes, Botanical, Scenic, Home décor, Original fern. Catalog cost tables use live Printify print cost and shipping for NZ / AU / US, and Gelato for UK / EU. Each product stores 13 listing-health tags and extra gallery stills (lifestyle + print + detail).
+The catalog in this repo is the Fernora mix in NZD: **five wall-art listings**, one per mix, plus **Southern Cross star mesh sneakers**. **One Printify product per item** (wall art: one enabled variant; sneakers: white sole, every US size). Printify is the main printer for non-EU/UK destinations; keep Gelato for UK and EU wall art. Mesh sneakers print on Printify (Smart Printee) — there is no Gelato shoe. Shop origin on Etsy is Wellington 6012. Advertising is a **Meta campaign** from Pressroom **Ads** to fernora.nz (daily cap 5, max 15). Etsy Offsite Ads were opted out on 19 September 2026 — listing prices are **not** padded for a 15% Offsite hit. Etsy Ads (CPC) are not activated (15-day new-shop wait as of 20 September 2026). Catalog dropdowns on Etsy, Shopify, and the website match Printify: All, Quotes, Botanical, Scenic, Home décor, Original fern. Catalog cost tables use live Printify print cost and shipping for NZ / AU / US, and Gelato for UK / EU wall art. Each product stores 13 listing-health tags and extra gallery stills (lifestyle + print + detail).
 
 ### Printify
 
@@ -112,12 +112,13 @@ On **Ads**, create a Business app at [developers.facebook.com](https://developer
 | Kowhai Bells · 18×24 | botanical | 42.99 |
 | Harbour Morning Canvas · 12×12 | scenic | 64.99 |
 | Home is a kind light · oak frame | home | 98.99 |
+| Southern Cross Star · mesh sneakers | original | 133.99 |
 
 Publish options per product: **Save Etsy draft** or **Publish live**. **Delete** removes the product from Printify, Gelato, inactivates it on Etsy, deletes it from Shopify, and takes it out of Pressroom and `/shop`. Print files live at `/catalog/*.png` and must match the listing photo — never a different fern or quote. Rebuild with `npm run print-files`. **Create 5-product catalog · publish to shops** refreshes Printify print areas so the file customers receive is the design they bought.
 
 ### Design options (saved, not built yet)
 
-Do **not** import Printify’s full blueprint catalog into Pressroom. Pressroom only holds Fernora listings: five products now, one per mix, one enabled variant. A second artwork is a **new listing**, not another variant on Fern Arc.
+Do **not** import Printify’s full blueprint catalog into Pressroom. Pressroom only holds Fernora listings: five wall-art mixes plus the Southern Cross star sneakers. A second artwork is a **new listing**, not another variant on Fern Arc.
 
 AI design, when we pick it up: generate **up to five art directions per mix**, publish **one** winner. Generate mockups **from that print file** (hero shelf, flat, detail, room, scale) so the photo and the print stay the same fern or quote. Write title, description, and 13 tags once in Pressroom; publish copies them to Printify, Etsy, Shopify, and fernora.nz. Do not name the printer on customer copy. Extra Printify mockup scenes (toward 20) are still selected in Printify My products.
 
