@@ -58,8 +58,8 @@ test("prices use Printify costs and do not pad for opted-out Offsite Ads", () =>
   const sneakerGb = catalogLanes("live_sneaker_star").find((lane) => lane.region === "GB");
   assert.equal(sneakerNz?.printer, "printify");
   assert.equal(sneakerGb?.printer, "printify");
-  assert.equal(PRINTIFY_PRINT_NZD.live_sneaker_star, 63.08);
-  assert.equal(catalogPrice("live_sneaker_star"), 133.99);
+  assert.equal(PRINTIFY_PRINT_NZD.live_sneaker_star, 37.77);
+  assert.equal(catalogPrice("live_sneaker_star"), 83.99);
 });
 
 test("Catalog table shows Printify costs and current ads, not Offsite 15%", () => {

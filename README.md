@@ -112,7 +112,7 @@ On **Ads**, create a Business app at [developers.facebook.com](https://developer
 | Kowhai Bells · 18×24 | botanical | 42.99 |
 | Harbour Morning Canvas · 12×12 | scenic | 64.99 |
 | Home is a kind light · oak frame | home | 98.99 |
-| Southern Cross Star · mesh sneakers | original | 133.99 |
+| Southern Cross Star · mesh sneakers | original | 83.99 |
 
 Publish options per product: **Save Etsy draft** or **Publish live**. **Delete** removes the product from Printify, Gelato, inactivates it on Etsy, deletes it from Shopify, and takes it out of Pressroom and `/shop`. Print files live at `/catalog/*.png` and must match the listing photo — never a different fern or quote. Rebuild with `npm run print-files`. **Create 5-product catalog · publish to shops** refreshes Printify print areas so the file customers receive is the design they bought.
 

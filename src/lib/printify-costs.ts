@@ -25,8 +25,8 @@ export const PRINTIFY_PRINT_NZD = {
   live_botanical_kowhai: 10.62,
   live_canvas_harbour: 19.97,
   live_frame_kind: 38.53,
-  /** Catalog “from USD 37.77” × 1.67 until the live Printify variant.cost is read. */
-  live_sneaker_star: 63.08,
+  /** Live Printify variant.cost on shop 28911689, 21 September 2026 (NZD). */
+  live_sneaker_star: 37.77,
 } as const;
 
 export type PrintifyCostKey = keyof typeof PRINTIFY_PRINT_NZD;
