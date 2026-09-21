@@ -484,7 +484,7 @@ async function ensureShopifyProductGallery(
       `mutation ($id: ID!, $moves: [MoveInput!]!) {
         productReorderMedia(id: $id, moves: $moves) { userErrors { field message } }
       }`,
-      { id: productId, moves: [{ id: featured.id, newPosition: 0 }] },
+      { id: productId, moves: [{ id: featured.id, newPosition: "0" }] },
     );
   }
 }
