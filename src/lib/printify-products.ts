@@ -1,6 +1,7 @@
 import path from "node:path";
 import { CATALOG_LISTING_TAGS } from "./listing-health.ts";
 import { catalogPrice, printifyListCents } from "./printify-costs.ts";
+import { ZIP_HOODIE_WHITE, ZIP_HOODIE_WHITE_DEFAULT } from "./clothing.ts";
 import {
   SNEAKER_WHITE_SOLE,
   SNEAKER_WHITE_SOLE_DEFAULT,
@@ -36,6 +37,15 @@ function one(id: number, price: number): PrintifyVariantInput[] {
   return [{ id, price, is_enabled: true, is_default: true }];
 }
 
+function whiteZipHoodie(price: number): PrintifyVariantInput[] {
+  return ZIP_HOODIE_WHITE.map((row) => ({
+    id: row.printifyId,
+    price,
+    is_enabled: true,
+    ...(row.printifyId === ZIP_HOODIE_WHITE_DEFAULT ? { is_default: true } : {}),
+  }));
+}
+
 function whiteSoleSneakers(
   price: number,
   sizes: readonly SneakerSizeRow[] = SNEAKER_WHITE_SOLE,
@@ -50,8 +60,8 @@ function whiteSoleSneakers(
 }
 
 /**
- * Fernora catalog: five wall-art mixes (one enabled variant each) plus black-camo men’s
- * and Southern Cross women’s mesh sneakers (white sole, every US size). Not Gelato External migrations.
+ * Fernora catalog: five wall-art mixes, black-camo men’s and Southern Cross women’s
+ * mesh sneakers, and the embroidered Gildan 18600 zip hoodie. Not Gelato External migrations.
  */
 export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
   {
@@ -149,6 +159,19 @@ export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
     ),
     positions: ["left_shoe", "right_shoe"],
     aliases: ["Southern Cross Star Womens Mesh Sneakers", "Southern Cross Star Women’s Mesh Sneakers"],
+  },
+  {
+    key: "live_hoodie_bloom",
+    title: "Grow With Purpose · Embroidered Zip Hoodie",
+    description:
+      "Unisex Gildan 18600 full-zip hoodie with an original Fernora embroidered fern and the line “Grow with purpose, Bloom with grace.” Left-chest embroidery. Made to order.",
+    tags: CATALOG_LISTING_TAGS.live_hoodie_bloom,
+    printFile: "print-hoodie-bloom.png",
+    mockupFile: "catalog-hoodie-bloom.jpg",
+    blueprintId: 66,
+    printProviderId: 217,
+    variants: whiteZipHoodie(printifyListCents(catalogPrice("live_hoodie_bloom"))),
+    positions: ["front_left_chest"],
   },
 ];
 

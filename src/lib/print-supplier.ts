@@ -17,7 +17,7 @@ export const CATALOG_CLEARED_NOTE =
   "The live catalog is cleared. Recreate products on Printify for New Zealand, Australia, the United States, and other non-EU/UK destinations. Keep Gelato for the United Kingdom and the European Union only.";
 
 export const CATALOG_PRINTIFY_NOTE =
-  "The catalog is seven Printify products: five wall-art mixes plus black-camo men’s and Southern Cross women’s mesh sneakers. List prices and Printify costs are shop NZD. Shopify presentment currencies convert from that NZD price; Etsy and Printify stay NZD. Etsy, Shopify, and the website Catalog dropdowns use the same mix: All, Quotes, Botanical, Scenic, Home décor, Original fern. Do not migrate leftover External products. Gelato stays for EU/UK wall art; mesh sneakers print on Printify (Smart Printee).";
+  "The catalog is eight Printify products: five wall-art mixes, black-camo men’s and Southern Cross women’s mesh sneakers, and the embroidered Gildan 18600 zip hoodie. List prices and Printify costs are shop NZD. Shopify presentment currencies convert from that NZD price; Etsy and Printify stay NZD. Etsy, Shopify, and the website Catalog dropdowns use the same mix: All, Quotes, Botanical, Scenic, Home décor, Original fern. Do not migrate leftover External products. Gelato stays for EU/UK wall art; mesh sneakers and the zip hoodie print on Printify.";
 
 export function isGelatoComplianceLane(lane?: ShipLaneCode | string | null) {
   return lane === "GB" || lane === "EU";

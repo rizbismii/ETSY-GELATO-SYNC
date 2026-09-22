@@ -497,9 +497,9 @@ export async function createFernoraPrintifyProducts(input?: { shopId?: number; t
     gpsr,
     fullyConnected: gpsr.fullyConnected,
     notes: [
-      `Catalog is seven products on ${
+      `Catalog is eight products on ${
         gpsr.shopTitle || "Fernora Trends"
-      } (${shopId}): five wall-art mixes plus black-camo men’s and Southern Cross women’s mesh sneakers. Created ${createdCount}, published ${publishedCount} to the Etsy sales channel. Not migrated from Gelato.`,
+      } (${shopId}): five wall-art mixes, black-camo men’s and Southern Cross women’s mesh sneakers, and the embroidered zip hoodie. Created ${createdCount}, published ${publishedCount} to the Etsy sales channel. Not migrated from Gelato.`,
       "Older catalog products were removed from Printify, Etsy, Shopify, Gelato, and Pressroom.",
       "Catalog dropdowns match Printify: All, Quotes, Botanical, Scenic, Home décor, Original fern.",
       ...extraNotes,

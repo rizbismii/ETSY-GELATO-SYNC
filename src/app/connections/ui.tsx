@@ -1054,8 +1054,8 @@ export function ConnectionsClient() {
           <CardContent className="space-y-4">
             <p className="text-sm leading-6 text-muted-foreground">
               Printify is the main print supplier except the United Kingdom and the European Union.
-              Keep the token and the Etsy-connected Fernora Trends shop. Keep seven catalog products
-              (five wall-art mixes plus black-camo men’s and Southern Cross women’s mesh sneakers) and publish them to Etsy,
+              Keep the token and the Etsy-connected Fernora Trends shop. Keep eight catalog products
+              (five wall-art mixes, sneakers, and the embroidered zip hoodie) and publish them to Etsy,
               Shopify, and fernora.nz. Do not
               migrate leftover External products, and do not republish the old Gelato mix.
             </p>

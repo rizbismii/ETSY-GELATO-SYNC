@@ -1,5 +1,5 @@
 import { SNEAKER_WOMENS_WHITE_SOLE } from "@/lib/sneaker-sizes";
-import { resolveCatalogLine, sneakerVariants } from "@/lib/clothing";
+import { resolveCatalogLine, sneakerVariants, zipHoodieVariants } from "@/lib/clothing";
 import { GELATO_SHIP_BLURB } from "@/lib/gelato-countries";
 import { galleryForListing, tagsForListing } from "@/lib/listing-health";
 import {
@@ -34,7 +34,7 @@ export const SHIP_COUNTRIES = [
 
 export const SHIP_BLURB = GELATO_SHIP_BLURB;
 
-/** Wall-art mixes stay filled; Southern Cross sneakers (men’s and women’s) sit in Original fern. */
+/** Wall-art mixes stay filled; sneakers sit in Original fern; the zip hoodie sits in Quotes. */
 export const LIVE_CATALOG_IDS = [
   "live_poster",
   "live_quote_breathe",
@@ -43,6 +43,7 @@ export const LIVE_CATALOG_IDS = [
   "live_frame_kind",
   "live_sneaker_star",
   "live_sneaker_star_w",
+  "live_hoodie_bloom",
 ] as const;
 
 export type LiveCatalogId = (typeof LIVE_CATALOG_IDS)[number];
@@ -357,6 +358,37 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     lanes: catalogLanes("live_sneaker_star_w"),
     gallery: galleryForListing("live_sneaker_star_w"),
     variants: sneakerVariants("live_sneaker_star_w", "printify_mesh_sneakers_1219", SNEAKER_WOMENS_WHITE_SOLE),
+  }),
+  item({
+    id: "live_hoodie_bloom",
+    etsyListingId: "",
+    title: "Grow With Purpose · Embroidered Zip Hoodie",
+    description:
+      "Unisex Gildan 18600 full-zip hoodie with an original Fernora embroidered fern and the line “Grow with purpose, Bloom with grace.” Left-chest embroidery. Made to order.",
+    quote: "Grow with purpose, Bloom with grace.",
+    state: "inactive",
+    price: catalogPrice("live_hoodie_bloom"),
+    currency: SHOP_CURRENCY,
+    quantity: 999,
+    views: 0,
+    favorites: 0,
+    tags: tagsForListing("live_hoodie_bloom"),
+    category: "hoodie",
+    collection: "quote",
+    gelatoProductUid: "printify_gildan_18600",
+    gelatoProductName: "Gildan 18600 zip hoodie · embroidery",
+    printFileUrl: "/catalog/print-hoodie-bloom.png",
+    imageUrl: "/catalog/catalog-hoodie-bloom.jpg",
+    gelatoUnitCost: catalogUnitCost("live_hoodie_bloom"),
+    drop: LIVE_DROP_ID,
+    issues: [],
+    taxonomyId: 1738,
+    shippingProfileId: 315080633003,
+    returnPolicyId: RETURN_POLICY_ID,
+    publishState: "ready",
+    lanes: catalogLanes("live_hoodie_bloom"),
+    gallery: galleryForListing("live_hoodie_bloom"),
+    variants: zipHoodieVariants("live_hoodie_bloom"),
   }),
 ];
 

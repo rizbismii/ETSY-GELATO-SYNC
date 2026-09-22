@@ -41,6 +41,7 @@ const GALLERY_PAIRS: Record<string, { mockup: string; print: string }> = {
   live_frame_kind: { mockup: "/catalog/catalog-kind-light.png", print: "/catalog/print-kind-light.png" },
   live_sneaker_star: { mockup: "/catalog/catalog-camo-sneakers-angle.jpg", print: "/catalog/print-camo-sneakers.png" },
   live_sneaker_star_w: { mockup: "/catalog/catalog-star-sneakers-w-angle.jpg", print: "/catalog/print-star-sneakers.png" },
+  live_hoodie_bloom: { mockup: "/catalog/catalog-hoodie-bloom.jpg", print: "/catalog/print-hoodie-bloom.png" },
 };
 
 const GALLERY_EXTRA: Record<string, string[]> = {
@@ -59,6 +60,12 @@ const GALLERY_EXTRA: Record<string, string[]> = {
     "/catalog/gallery-live_sneaker_star_w-outside.jpg",
     "/catalog/gallery-live_sneaker_star_w-top.jpg",
     "/catalog/gallery-live_sneaker_star_w-back.jpg",
+  ],
+  live_hoodie_bloom: [
+    "/catalog/gallery-live_hoodie_bloom-model.jpg",
+    "/catalog/gallery-live_hoodie_bloom-back.jpg",
+    "/catalog/gallery-live_hoodie_bloom-sleeve.jpg",
+    "/catalog/gallery-live_hoodie_bloom-other.jpg",
   ],
 };
 
@@ -138,6 +145,10 @@ export const CATALOG_LISTING_TAGS: Record<string, string[]> = {
   live_sneaker_star_w: fillListingTags(
     ["Original fern", "sneakers", "mesh", "stars", "gold", "green"],
     ["womens shoes", "southern cross", "fern print", "white sole", "streetwear"],
+  ),
+  live_hoodie_bloom: fillListingTags(
+    ["Quotes", "zip hoodie", "embroidery", "fern", "grow", "bloom"],
+    ["unisex", "gildan", "white hoodie", "quote", "botanical"],
   ),
 };
 

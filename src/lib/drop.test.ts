@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-test("live catalog covers every mix plus black-camo men’s and Southern Cross women’s sneakers", () => {
+test("live catalog covers every mix plus sneakers and the embroidered zip hoodie", () => {
   const catalog = readFileSync(new URL("./live-catalog.ts", import.meta.url), "utf8");
   const liveIds = [...catalog.matchAll(/^\s+id: "(live_[^"]+)"/gm)].map((row) => row[1]);
   assert.deepEqual(liveIds, [
@@ -13,6 +13,7 @@ test("live catalog covers every mix plus black-camo men’s and Southern Cross w
     "live_frame_kind",
     "live_sneaker_star",
     "live_sneaker_star_w",
+    "live_hoodie_bloom",
   ]);
   assert.match(catalog, /LIVE_CATALOG_IDS/);
   assert.match(catalog, /collection: "original"/);
@@ -25,7 +26,9 @@ test("live catalog covers every mix plus black-camo men’s and Southern Cross w
   assert.match(catalog, /RETIRED_CATALOG_IDS/);
   assert.match(catalog, /title: "Black Camo · Men’s Mesh Sneakers"/);
   assert.match(catalog, /title: "Southern Cross Star · Women’s Mesh Sneakers"/);
+  assert.match(catalog, /title: "Grow With Purpose · Embroidered Zip Hoodie"/);
   assert.match(catalog, /variants: sneakerVariants\("live_sneaker_star"/);
+  assert.match(catalog, /variants: zipHoodieVariants\("live_hoodie_bloom"\)/);
   assert.doesNotMatch(catalog, /id: "live_hoodie"/);
 });
 

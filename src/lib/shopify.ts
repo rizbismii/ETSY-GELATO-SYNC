@@ -569,6 +569,7 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
     };
     if (found?.id) input.id = found.id;
     if (product.id === "live_sneaker_star") input.handle = "black-camo-mens-mesh-sneakers";
+    if (product.id === "live_hoodie_bloom") input.handle = "grow-with-purpose-embroidered-zip-hoodie";
     if (!found?.media.nodes.length && product.imageUrl) {
       input.files = [
         {

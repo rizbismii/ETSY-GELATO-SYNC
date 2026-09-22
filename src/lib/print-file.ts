@@ -8,6 +8,7 @@ export const CATALOG_ART_PAIRS = [
   { key: "live_frame_kind", mockup: "/catalog/catalog-kind-light.png", print: "/catalog/print-kind-light.png" },
   { key: "live_sneaker_star", mockup: "/catalog/catalog-camo-sneakers-angle.jpg", print: "/catalog/print-camo-sneakers.png" },
   { key: "live_sneaker_star_w", mockup: "/catalog/catalog-star-sneakers-w-angle.jpg", print: "/catalog/print-star-sneakers.png" },
+  { key: "live_hoodie_bloom", mockup: "/catalog/catalog-hoodie-bloom.jpg", print: "/catalog/print-hoodie-bloom.png" },
 ] as const;
 
 export function catalogArtPair(id?: string | null) {

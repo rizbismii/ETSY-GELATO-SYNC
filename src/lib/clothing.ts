@@ -18,6 +18,17 @@ export const CLOTHING_SIZES = [
   { name: "L", uid: "l" },
 ] as const;
 
+/** Printify Gildan 18600 · Fulfill Engine 217 · White S–2XL. */
+export const ZIP_HOODIE_WHITE = [
+  { printifyId: 31929, size: "S", sizeUid: "s" },
+  { printifyId: 31939, size: "M", sizeUid: "m" },
+  { printifyId: 31949, size: "L", sizeUid: "l" },
+  { printifyId: 31959, size: "XL", sizeUid: "xl" },
+  { printifyId: 31969, size: "2XL", sizeUid: "2xl" },
+] as const;
+
+export const ZIP_HOODIE_WHITE_DEFAULT = 31939;
+
 export type ApparelKind = "hoodie" | "t-shirt" | "sweatshirt";
 
 const KIND_BY_CATEGORY: Record<string, ApparelKind> = {
@@ -72,6 +83,19 @@ export function clothingVariants(productId: string, category: string): ClothingV
     }
   }
   return rows;
+}
+
+/** White Gildan 18600 zip hoodie sizes for Printify embroidery. */
+export function zipHoodieVariants(productId: string): ClothingVariant[] {
+  return ZIP_HOODIE_WHITE.map((row) => ({
+    id: `${productId}-white-${row.sizeUid}`,
+    color: "White",
+    colorUid: "white",
+    size: row.size,
+    sizeUid: row.sizeUid,
+    sku: `${productId}-white-${row.sizeUid}`,
+    gelatoProductUid: `printify_gildan_18600:${row.printifyId}`,
+  }));
 }
 
 /** White-sole US sizes for Printify mesh sneakers (1072 men’s or 1219 women’s). */
@@ -131,6 +155,10 @@ const SIZE_ALIASES: Record<string, string> = {
   medium: "m",
   l: "l",
   large: "l",
+  xl: "xl",
+  xlarge: "xl",
+  "2xl": "2xl",
+  xxl: "2xl",
 };
 
 export function matchClothingVariant(title: string, variants: ClothingVariant[] | undefined) {
@@ -198,7 +226,7 @@ export function resolveListingFulfillment(
   };
 }
 
-const CLOTHING_SKU_PATTERN = /^(.*)-(black|white|navy)-(s|m|l)$/i;
+const CLOTHING_SKU_PATTERN = /^(.*)-(black|white|navy)-(2xl|xl|s|m|l)$/i;
 const SNEAKER_SKU_PATTERN = /^(.*)-us-(\d+(?:-\d+)?)$/i;
 
 export function parseClothingSku(sku: string) {

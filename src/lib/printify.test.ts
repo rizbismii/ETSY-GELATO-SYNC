@@ -143,10 +143,10 @@ test("EU GPSR probe without stamps is available; stamps mark applied", () => {
   );
 });
 
-test("Fernora Printify catalog is seven products including men’s and women’s mesh sneakers", () => {
-  assert.equal(FERNORA_PRINTIFY_STARTERS.length, 7);
+test("Fernora Printify catalog is eight products including the embroidered zip hoodie", () => {
+  assert.equal(FERNORA_PRINTIFY_STARTERS.length, 8);
   const keys = FERNORA_PRINTIFY_STARTERS.map((row) => row.key);
-  assert.equal(new Set(keys).size, 7);
+  assert.equal(new Set(keys).size, 8);
   assert.deepEqual(keys, [
     "live_poster",
     "live_quote_breathe",
@@ -155,6 +155,7 @@ test("Fernora Printify catalog is seven products including men’s and women’s
     "live_frame_kind",
     "live_sneaker_star",
     "live_sneaker_star_w",
+    "live_hoodie_bloom",
   ]);
   const catalog = readFileSync(new URL("./live-catalog.ts", import.meta.url), "utf8");
   const liveIds = [...catalog.matchAll(/^\s+id: "(live_[^"]+)"/gm)].map((row) => row[1]);
@@ -166,6 +167,11 @@ test("Fernora Printify catalog is seven products including men’s and women’s
       assert.equal(spec.printProviderId, 90);
       assert.deepEqual(spec.positions, ["left_shoe", "right_shoe"]);
       assert.equal(spec.blueprintId, spec.key === "live_sneaker_star_w" ? 1219 : 1072);
+    } else if (spec.key === "live_hoodie_bloom") {
+      assert.equal(enabled.length, 5);
+      assert.equal(spec.printProviderId, 217);
+      assert.deepEqual(spec.positions, ["front_left_chest"]);
+      assert.equal(spec.blueprintId, 66);
     } else {
       assert.equal(enabled.length, 1);
     }

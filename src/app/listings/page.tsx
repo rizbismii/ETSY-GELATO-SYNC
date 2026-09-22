@@ -221,7 +221,7 @@ export default function ListingsPage() {
         <div>
           <h1 className="font-heading text-4xl tracking-tight">Catalog</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Mixed Fernora shop: five wall-art mixes plus black-camo men’s and Southern Cross women’s mesh sneakers — Quotes,
+            Mixed Fernora shop: five wall-art mixes, black-camo men’s and Southern Cross women’s mesh sneakers, and the embroidered zip hoodie — Quotes,
             Botanical, Scenic, Home décor, and Original fern. List, print, and profit figures are shop{" "}
             {currency}. Shopify and the website convert that NZD list price into USD, AUD, GBP, and EUR
             from the same table — never paste the NZD number into a USD field. Printify listing
@@ -304,8 +304,8 @@ export default function ListingsPage() {
       <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm leading-6">
         <p className="font-medium">Print file templates</p>
         <p className="mt-1 text-muted-foreground">
-          Each product stores its print file in this catalog. Printify holds seven products (wall art
-          one variant; sneakers every white-sole size). Publish them to Etsy, Shopify, and fernora.nz.
+          Each product stores its print file in this catalog. Printify holds eight products (wall art
+          one variant; sneakers every white-sole size; zip hoodie white S–2XL). Publish them to Etsy, Shopify, and fernora.nz.
           Gelato stays for UK and EU wall art. Download the template for the current mix.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">

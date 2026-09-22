@@ -48,6 +48,10 @@ test("gallery lists the listing photo, print file, and extra stills", () => {
   const womens = listingGallery("live_sneaker_star_w");
   assert.ok(womens.includes("/catalog/catalog-star-sneakers-w-angle.jpg"));
   assert.ok(womens.includes("/catalog/gallery-live_sneaker_star_w-model.jpg"));
+  const hoodie = listingGallery("live_hoodie_bloom");
+  assert.ok(hoodie.includes("/catalog/catalog-hoodie-bloom.jpg"));
+  assert.ok(hoodie.includes("/catalog/print-hoodie-bloom.png"));
+  assert.ok(hoodie.includes("/catalog/gallery-live_hoodie_bloom-model.jpg"));
 });
 
 test("prices use Printify costs and do not pad for opted-out Offsite Ads", () => {
@@ -73,6 +77,11 @@ test("prices use Printify costs and do not pad for opted-out Offsite Ads", () =>
   const womensGb = catalogLanes("live_sneaker_star_w").find((lane) => lane.region === "GB");
   assert.equal(womensGb?.printer, "printify");
   assert.equal(catalogPrice("live_sneaker_star_w"), catalogPrice("live_sneaker_star"));
+  assert.equal(PRINTIFY_PRINT_USD.live_hoodie_bloom, 41.23);
+  assert.equal(PRINTIFY_PRINT_NZD.live_hoodie_bloom, 68.85);
+  assert.equal(catalogPrice("live_hoodie_bloom"), 143.99);
+  const hoodieGb = catalogLanes("live_hoodie_bloom").find((lane) => lane.region === "GB");
+  assert.equal(hoodieGb?.printer, "printify");
 });
 
 test("Catalog table shows Printify costs and current ads, not Offsite 15%", () => {
