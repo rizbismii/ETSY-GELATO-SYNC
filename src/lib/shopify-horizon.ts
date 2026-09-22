@@ -542,7 +542,7 @@ async function upsertHorizonJson(themeId: string, heroRef: string) {
         }
       }
       if (section.blocks && !Object.values(section.blocks).some((block) => String(block.settings?.text || "").includes("Prints, apparel"))) {
-        section.blocks.caption_fernora = textBlock("<p>Prints, apparel, and objects — printed to order, priced in your currency.</p>", {
+        section.blocks.caption_fernora = textBlock("<p>Prints, apparel, and objects — priced in your currency.</p>", {
           type_preset: "rte",
           text_color: PALETTE.background,
           alignment: "center",
@@ -585,12 +585,6 @@ async function upsertHorizonJson(themeId: string, heroRef: string) {
         wrap: "nowrap",
         text_color: PALETTE.background,
       }),
-      line_print: textBlock("<p>Printed to order</p>", {
-        type_preset: "custom",
-        font_size: "var(--font-size--h4)",
-        wrap: "nowrap",
-        text_color: PALETTE.background,
-      }),
       line_currency: textBlock("<p>Prices follow your country and currency</p>", {
         type_preset: "custom",
         font_size: "var(--font-size--h4)",
@@ -604,12 +598,12 @@ async function upsertHorizonJson(themeId: string, heroRef: string) {
         text_color: PALETTE.background,
       }),
     },
-    block_order: ["line_studio", "line_print", "line_currency", "line_quality"],
+    block_order: ["line_studio", "line_currency", "line_quality"],
     settings: {
       movement_direction: "left",
       background_color: PALETTE.color1,
-      "padding-block-start": 16,
-      "padding-block-end": 16,
+      "padding-block-start": 8,
+      "padding-block-end": 8,
       gap_between_elements: 48,
     },
   };
@@ -794,7 +788,7 @@ async function upsertHorizonJson(themeId: string, heroRef: string) {
         }
         for (const block of Object.values(section.blocks || {})) {
           if (block.settings && "text" in block.settings) {
-            block.settings.text = "Printed to order · Quality guarantee · Prices in your local currency";
+            block.settings.text = "Quality guarantee · Prices in your local currency";
           }
         }
       }

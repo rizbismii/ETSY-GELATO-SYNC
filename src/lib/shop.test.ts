@@ -128,8 +128,9 @@ test("Horizon branding shows country · currency and made-to-order homepage copy
   assert.match(source, /page_width = "normal"/);
   assert.match(source, /story_fernora/);
   assert.match(source, /Nothing is stored in a warehouse/);
-  assert.match(source, /Printed to order/);
+  assert.doesNotMatch(source, /Printed to order/);
   assert.match(source, /Quality guarantee/);
+  assert.match(source, /"padding-block-start": 8/);
   assert.match(source, /title: series\.label/);
   assert.match(source, /CATALOG_SERIES/);
   assert.match(source, /All, Quotes, Botanical, Scenic, Home décor, and Original fern/);
