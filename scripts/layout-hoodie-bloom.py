@@ -15,11 +15,17 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "scripts" / "apparel-src" / "hoodie-bloom-source.png"
+BASE = ROOT / "scripts" / "apparel-src" / "hoodie-bloom-mockup-base.jpg"
 OUT = ROOT / "public" / "catalog" / "print-hoodie-bloom.png"
-MOCKUPS = (
-    ROOT / "public" / "catalog" / "catalog-hoodie-bloom.jpg",
-    ROOT / "public" / "catalog" / "gallery-live_hoodie_bloom-model.jpg",
+CATALOG = ROOT / "public" / "catalog"
+WHITE_MOCKUPS = (
+    CATALOG / "catalog-hoodie-bloom.jpg",
+    CATALOG / "gallery-live_hoodie_bloom-model.jpg",
 )
+COLOR_MOCKUPS = {
+    "black": CATALOG / "catalog-hoodie-bloom-black.jpg",
+    "navy": CATALOG / "catalog-hoodie-bloom-navy.jpg",
+}
 SIZE = 1200
 
 
@@ -143,23 +149,57 @@ def inpaint_logo(rgb: np.ndarray) -> tuple[np.ndarray, tuple[int, int, int, int]
     return out, (x0, y0, x1, y1)
 
 
-def paint_mockup(path: Path, design: np.ndarray) -> None:
-    base = np.array(Image.open(path).convert("RGB"))
+def trim_art(design: np.ndarray) -> Image.Image:
+    ys, xs = np.nonzero(design[:, :, 3] > 20)
+    x0, y0, x1, y1 = int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1
+    return Image.fromarray(design[y0:y1, x0:x1], "RGBA")
+
+
+def paint_on_base(design: np.ndarray) -> np.ndarray:
+    """Replace the side-by-side chest mark with the quote-under-fern file, large enough to read."""
+    base = np.array(Image.open(BASE).convert("RGB"))
     cleared, (x0, y0, x1, y1) = inpaint_logo(base)
-    logo_w = max(1, x1 - x0 + 1)
-    logo_h = max(1, y1 - y0 + 1)
-    art = Image.fromarray(design, "RGBA")
-    target_w = int(logo_w * 1.35)
-    scale = target_w / art.size[0]
-    target_h = max(1, int(art.size[1] * scale))
+    art = trim_art(design)
+    target_w = max(150, int((x1 - x0 + 1) * 2.4))
+    target_h = max(1, int(art.size[1] * target_w / art.size[0]))
     art = art.resize((target_w, target_h), Image.Resampling.LANCZOS)
-    # Keep the fern where the old mark sat; the line hangs below it.
     cx = (x0 + x1) // 2
     left = cx - target_w // 2
-    top = y0 - int(target_h * 0.08)
+    top = max(0, y0 - 8)
     canvas = Image.fromarray(cleared, "RGB")
     canvas.paste(art, (left, top), art)
-    canvas.save(path, "JPEG", quality=90, optimize=True)
+    return np.array(canvas)
+
+
+def background_mask(rgb: np.ndarray) -> np.ndarray:
+    luma = rgb.mean(axis=2)
+    chroma = np.max(rgb, axis=2) - np.min(rgb, axis=2)
+    light = (luma > 235) & (chroma < 12)
+    h, w = light.shape
+    bg = np.zeros(light.shape, dtype=bool)
+    stack = [(0, 0), (0, w - 1), (h - 1, 0), (h - 1, w - 1)]
+    while stack:
+        y, x = stack.pop()
+        if y < 0 or x < 0 or y >= h or x >= w or bg[y, x] or not light[y, x]:
+            continue
+        bg[y, x] = True
+        stack.extend(((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)))
+    return bg
+
+
+def recolor_garment(rgb: np.ndarray, garment: tuple[int, int, int]) -> np.ndarray:
+    out = rgb.astype(np.float32)
+    luma = 0.299 * out[:, :, 0] + 0.587 * out[:, :, 1] + 0.114 * out[:, :, 2]
+    chroma = np.max(out, axis=2) - np.min(out, axis=2)
+    fabric = ~background_mask(rgb) & (chroma < 28) & (luma > 90)
+    shade = np.clip((luma - 70) / 185, 0.15, 1)
+    tint = np.array(garment, np.float32).reshape(1, 1, 3) * (0.25 + 0.75 * shade[:, :, None])
+    out[fabric] = tint[fabric]
+    return np.clip(out, 0, 255).astype(np.uint8)
+
+
+def save_jpeg(path: Path, rgb: np.ndarray) -> None:
+    Image.fromarray(rgb, "RGB").save(path, "JPEG", quality=92, optimize=True)
 
 
 def main() -> None:
@@ -170,9 +210,12 @@ def main() -> None:
         raise SystemExit("wording did not land below the fern")
     OUT.parent.mkdir(parents=True, exist_ok=True)
     Image.fromarray(stacked, "RGBA").save(OUT, "PNG", optimize=True)
-    for mockup in MOCKUPS:
-        paint_mockup(mockup, stacked)
-    print(f"wrote {OUT.name} and {len(MOCKUPS)} mockups")
+    white = paint_on_base(stacked)
+    for path in WHITE_MOCKUPS:
+        save_jpeg(path, white)
+    save_jpeg(COLOR_MOCKUPS["black"], recolor_garment(white, (18, 18, 20)))
+    save_jpeg(COLOR_MOCKUPS["navy"], recolor_garment(white, (22, 34, 68)))
+    print(f"wrote {OUT.name}, white mockups, and {', '.join(COLOR_MOCKUPS)}")
 
 
 if __name__ == "__main__":

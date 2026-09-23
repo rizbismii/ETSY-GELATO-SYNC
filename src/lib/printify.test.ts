@@ -248,6 +248,9 @@ test("Fernora Printify catalog is eight products including the embroidered zip h
     CLOTHING_COLORS.map((row) => row.name).sort(),
   );
   assert.equal(defaultClothingVariant(shopHoodie)?.sku, "live_hoodie_bloom-white-m");
+  assert.equal(shopHoodie.find((row) => row.colorUid === "white")?.imageUrl, "/catalog/catalog-hoodie-bloom.jpg");
+  assert.equal(shopHoodie.find((row) => row.colorUid === "black")?.imageUrl, "/catalog/catalog-hoodie-bloom-black.jpg");
+  assert.equal(shopHoodie.find((row) => row.colorUid === "navy")?.imageUrl, "/catalog/catalog-hoodie-bloom-navy.jpg");
   const womens = FERNORA_PRINTIFY_STARTERS.find((row) => row.key === "live_sneaker_star_w");
   assert.equal(womens?.title, "Southern Cross Star · Women’s Mesh Sneakers");
   assert.equal(womens?.blueprintId, 1219);

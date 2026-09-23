@@ -63,6 +63,8 @@ const GALLERY_EXTRA: Record<string, string[]> = {
   ],
   live_hoodie_bloom: [
     "/catalog/gallery-live_hoodie_bloom-model.jpg",
+    "/catalog/catalog-hoodie-bloom-black.jpg",
+    "/catalog/catalog-hoodie-bloom-navy.jpg",
     "/catalog/gallery-live_hoodie_bloom-back.jpg",
     "/catalog/gallery-live_hoodie_bloom-sleeve.jpg",
     "/catalog/gallery-live_hoodie_bloom-other.jpg",

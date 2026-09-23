@@ -37,10 +37,14 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
   const [size, setSize] = useState(preferred?.sizeUid || clothingSizes[0]?.sizeUid || "m");
   const [view, setView] = useState<"mockup" | "print">("mockup");
   const [hero, setHero] = useState(product.imageUrl);
+  const colorImage = product.variants?.find((row) => row.colorUid === color)?.imageUrl;
   useEffect(() => {
     const saved = readProfile().country;
     if (saved) setCountry(saved);
   }, []);
+  useEffect(() => {
+    if (colorImage) setHero(colorImage);
+  }, [colorImage]);
   const variant = useMemo(
     () =>
       findClothingVariant(

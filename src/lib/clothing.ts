@@ -38,6 +38,13 @@ export const ZIP_HOODIE_WHITE = [
 
 export const ZIP_HOODIE_WHITE_DEFAULT = 31939;
 
+/** Photos for the shared apparel colours. New colours need a photo here before the storefront can show them. */
+export const ZIP_HOODIE_COLOR_IMAGE: Record<string, string> = {
+  white: "/catalog/catalog-hoodie-bloom.jpg",
+  black: "/catalog/catalog-hoodie-bloom-black.jpg",
+  navy: "/catalog/catalog-hoodie-bloom-navy.jpg",
+};
+
 export function zipHoodieColorways() {
   const colors = [
     ...CLOTHING_COLORS.filter((color) => color.uid === "white"),
@@ -125,6 +132,7 @@ export function zipHoodieVariants(productId: string): ClothingVariant[] {
     gelatoProductUid: row.printifyId
       ? `printify_gildan_18600:${row.printifyId}`
       : `printify_gildan_18600:${row.colorUid}:${row.sizeUid}`,
+    imageUrl: ZIP_HOODIE_COLOR_IMAGE[row.colorUid],
   }));
 }
 
