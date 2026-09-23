@@ -87,6 +87,15 @@ public_probe() {
   curl -fsS --max-time 10 "${origin}/api/health" >/dev/null 2>&1
 }
 
+# Quick-tunnel DNS is gone when 1.1.1.1 answers NXDOMAIN. A timeout or HTTP
+# error is not enough: those used to replace a hostname Cloudflare still served.
+hostname_nxdomain() {
+  local origin="$1"
+  local host="${origin#https://}"
+  host="${host%%/*}"
+  dig +time=3 +tries=1 @1.1.1.1 "$host" A 2>/dev/null | grep -q "status: NXDOMAIN"
+}
+
 wait_for_desk() {
   if local_ready; then
     return 0
@@ -172,7 +181,19 @@ while true; do
     fi
     if public_probe "$origin"; then
       fails=0
+    elif hostname_nxdomain "$origin"; then
+      if (( SECONDS - born < 90 )); then
+        echo "Public DNS still settling for ${origin}…"
+      else
+        fails=$((fails + 1))
+        echo "Public hostname ${origin} is NXDOMAIN (${fails}/4)."
+        if [[ "$fails" -ge 4 ]]; then
+          echo "Cloudflare dropped this quick tunnel. Starting a new .com hostname…"
+          break
+        fi
+      fi
     else
+      fails=0
       echo "Public DNS probe missed ${origin}; keeping this hostname while Cloudflare is registered."
     fi
     sleep 15

@@ -62,7 +62,7 @@ Etsy’s developer portal **will not accept** `127.0.0.1` or `localhost` as a Ca
 3. In [Manage your apps](https://www.etsy.com/developers/your-apps) → **fernora-etsgelto-app**, paste those exact values and save.
 4. On **Connections**, click **Authorize with Etsy**.
 
-The supervisor replaces a dead tunnel automatically (Cloudflare recycle or failed public health check) and pushes the new hostname to Etsy, Shopify, and Gelato. Old names cannot be reused — copy the live URL from **Connections**. Etsy still needs the Website + Callback URLs pasted into fernora-etsgelto-app if Authorize fails.
+The supervisor replaces a dead tunnel when Cloudflare recycles it or the hostname is NXDOMAIN, then pushes the new name to Etsy, Shopify, and Gelato. A probe miss while the name still resolves does not rotate the URL. Old names cannot be reused — copy the live URL from **Connections**. Etsy still needs the Website + Callback URLs pasted into fernora-etsgelto-app if Authorize fails.
 
 ### Gelato API key
 
