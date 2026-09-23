@@ -206,9 +206,10 @@ export function ConnectionsClient() {
     if (shopify === "invalid") toast.error("Shopify OAuth state did not match — try again");
     if (shopify === "error") {
       const reason = search.get("reason") || "Shopify connect failed";
-      toast.error(reason);
       if (/matching hosts|App URL|Redirect URL|application url|redirect_uri|your-app\.com|Credentials/i.test(reason)) {
-        setShopifyAuthOpen(true);
+        toast.error("Shopify OAuth rejected the App URL. Authorize Shopify uses the Admin token instead.");
+      } else {
+        toast.error(reason);
       }
     }
   }, [search]);
@@ -274,6 +275,7 @@ export function ConnectionsClient() {
         { method: "POST" },
       );
       if (result.ok) {
+        setShopifyAuthOpen(false);
         toast.success(
           result.shopify?.name
             ? `Shopify connected · ${result.shopify.name}`
@@ -561,8 +563,9 @@ export function ConnectionsClient() {
               {search.get("reason") ||
                 "Application URL is still https://your-app.com. Credentials Redirect URLs do not count. Create and Release a version with App URL + Allowed redirection URL, then Authorize."}
             </p>
-            <Button className="mt-3" onClick={() => setShopifyAuthOpen(true)}>
-              Copy matching URLs
+            <Button className="mt-3" onClick={() => void fetchAdminToken()} disabled={busy === "shopify-token"}>
+              {busy === "shopify-token" ? <Loader2 className="animate-spin" /> : null}
+              Authorize with Admin token
             </Button>
           </CardContent>
         </Card>
@@ -704,7 +707,7 @@ export function ConnectionsClient() {
           {data.connections.shopify.authorized
             ? data.shopify?.shop || "authorized"
             : data.shopify?.clientIdSet
-              ? "app keys saved · paste matching App URL + Redirect URL, then authorize"
+              ? "app keys saved · click Authorize Shopify"
               : "not connected"}
         </span>
         <StatusPill value={data.connections.meta.authorized ? "live" : "warning"} />
@@ -783,8 +786,8 @@ export function ConnectionsClient() {
                   ? ` · ${data.shopify?.shop || "authorized"}`
                   : data.shopify?.clientIdSet
                     ? data.shopify?.storefrontStatus === "frozen"
-                      ? " · fernora is frozen (unpaid plan). Paste matching App URL + Redirect URL, then Authorize"
-                      : " · paste matching App URL + Redirect URL in the Dev Dashboard, then Authorize"
+                      ? " · fernora is frozen (unpaid plan). Unfreeze the shop, then click Authorize Shopify"
+                      : " · click Authorize Shopify"
                     : live?.shopify && !live.shopify.ok
                       ? ` · ${live.shopify.error}`
                       : " · not authorized"}
@@ -1204,8 +1207,8 @@ export function ConnectionsClient() {
             <div className="rounded-lg border border-amber-500/40 bg-amber-50/40 p-3 text-sm leading-6 text-foreground">
               <p className="font-medium">Fernorav1 matching hosts</p>
               <p className="mt-1 text-muted-foreground">
-                Authorize Shopify still fails until App URL is this desk host. Skip that and install
-                from Dev Dashboard Home, then Get Admin token.
+                Shopify OAuth rejects this desk until the released App URL is the same host. Authorize
+                Shopify skips that and requests an Admin token for the installed app.
               </p>
             </div>
             <ol className="list-decimal space-y-3 pl-4 text-sm leading-6 text-muted-foreground">
@@ -1284,9 +1287,10 @@ export function ConnectionsClient() {
                 Save Shopify app
               </Button>
               <Button
-                onClick={() => setShopifyAuthOpen(true)}
-                disabled={!data.shopify?.clientIdSet || !callbackIsPublic}
+                onClick={() => void fetchAdminToken()}
+                disabled={!data.shopify?.clientIdSet || busy === "shopify-token"}
               >
+                {busy === "shopify-token" ? <Loader2 className="animate-spin" /> : null}
                 Authorize Shopify
               </Button>
               <Button
@@ -1358,12 +1362,11 @@ export function ConnectionsClient() {
               Cancel
             </Button>
             <Button
-              onClick={() => {
-                (window.top ?? window).location.assign("/api/shopify/connect");
-              }}
-              disabled={!data.shopify?.clientIdSet || !callbackIsPublic}
+              onClick={() => void fetchAdminToken()}
+              disabled={!data.shopify?.clientIdSet || busy === "shopify-token"}
             >
-              I released both — Authorize
+              {busy === "shopify-token" ? <Loader2 className="animate-spin" /> : null}
+              Authorize with Admin token
             </Button>
           </DialogFooter>
         </DialogContent>

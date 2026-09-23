@@ -168,7 +168,7 @@ export async function refreshShopifyClientCredentials() {
     let message = body.error_description || raw || `Shopify client credentials failed (${response.status})`;
     if (/app_not_installed/i.test(message) || /app_not_installed/i.test(JSON.stringify(body))) {
       message =
-        "The app is not installed on this shop yet. In Dev Dashboard open the app → Home → Install app → choose this shop → Install. Then click Get Admin token. Do not use Authorize Shopify for this.";
+        "The app is not installed on this shop yet. In Dev Dashboard open the app → Home → Install app → choose this shop → Install. Then click Authorize Shopify.";
     } else if (/shop_not_permitted/i.test(message)) {
       message =
         "Client credentials only work when this shop is in the same Shopify organization as the Dev Dashboard app.";
