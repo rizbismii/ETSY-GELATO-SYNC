@@ -27,6 +27,36 @@ export function normalizePixelId(value?: string | null) {
   return (value || "").replace(/\D/g, "");
 }
 
+export type MetaGraphPage = {
+  id: string;
+  name?: string;
+  instagramUserId?: string;
+};
+
+export type MetaGraphAssets = {
+  user?: string;
+  adAccounts: Array<{ id: string; name?: string; currency?: string; account_status?: number }>;
+  pages: MetaGraphPage[];
+  pixels: Array<{ id: string; name?: string }>;
+};
+
+export function pickMetaIds(
+  assets: MetaGraphAssets,
+  current: { adAccountId?: string; pageId?: string; pixelId?: string; instagramUserId?: string },
+) {
+  const adAccountId = normalizeAdAccountId(current.adAccountId) || assets.adAccounts[0]?.id || "";
+  const namedPage = assets.pages.find((page) => /fernora/i.test(page.name || ""));
+  const pageId = current.pageId?.trim() || namedPage?.id || assets.pages[0]?.id || "";
+  const page = assets.pages.find((row) => row.id === pageId);
+  const pixelId = normalizePixelId(current.pixelId) || assets.pixels[0]?.id || "";
+  const instagramUserId =
+    current.instagramUserId?.trim() ||
+    page?.instagramUserId ||
+    assets.pages.find((row) => row.instagramUserId)?.instagramUserId ||
+    "";
+  return { adAccountId, pageId, pixelId, instagramUserId };
+}
+
 export function metaPixelSnippet(pixelId: string) {
   const id = normalizePixelId(pixelId);
   if (!id) return "";

@@ -30,6 +30,7 @@ export type MetaCredentials = {
   adAccountId: string;
   pixelId?: string;
   pageId?: string;
+  instagramUserId?: string;
 };
 
 export type PrintifyCredentials = {
@@ -174,6 +175,7 @@ function hydrate(disk: StoredCredentials): StoredCredentials {
     adAccountId: pickSecret(process.env.META_AD_ACCOUNT_ID, disk.meta?.adAccountId),
     pixelId: pickSecret(process.env.META_PIXEL_ID, disk.meta?.pixelId),
     pageId: pickSecret(process.env.META_PAGE_ID, disk.meta?.pageId),
+    instagramUserId: pickSecret(process.env.META_INSTAGRAM_USER_ID, disk.meta?.instagramUserId),
   });
   const printify = mergePrintify(disk.printify, {
     apiToken: pickSecret(process.env.PRINTIFY_API_TOKEN, disk.printify?.apiToken),
@@ -204,8 +206,9 @@ function mergeMeta(current?: MetaCredentials, patch?: Partial<MetaCredentials>):
   const adAccountId = pickSecret(patch?.adAccountId, current?.adAccountId) || "";
   const pixelId = pickSecret(patch?.pixelId, current?.pixelId);
   const pageId = pickSecret(patch?.pageId, current?.pageId);
-  if (!accessToken && !adAccountId && !pixelId && !pageId) return current;
-  return { accessToken, adAccountId, pixelId, pageId };
+  const instagramUserId = pickSecret(patch?.instagramUserId, current?.instagramUserId);
+  if (!accessToken && !adAccountId && !pixelId && !pageId && !instagramUserId) return current;
+  return { accessToken, adAccountId, pixelId, pageId, instagramUserId };
 }
 
 function mergePrintify(

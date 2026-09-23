@@ -10,7 +10,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StatusPill } from "@/components/status-pill";
 import { api } from "@/lib/api";
-import { isMetaAccountDisabledError } from "@/lib/meta-connect-error";
+import {
+  FERNORA_META_APP_DASHBOARD_URL,
+  FERNORA_META_APP_ID,
+  FERNORA_META_APP_NAME,
+  FERNORA_META_BUSINESS_SUITE_URL,
+  FERNORA_META_EXPLORER_URL,
+  FERNORA_META_INSTAGRAM_ACCOUNTS_URL,
+  FERNORA_META_WAIT_ENDED_ON,
+} from "@/lib/meta-app";
+import { isMetaAccountDisabledError, isMetaTokenExpiredError } from "@/lib/meta-connect-error";
 import type { Connections, MetaAdsCampaign } from "@/lib/types";
 
 type Payload = {
@@ -27,7 +36,13 @@ type Payload = {
   etsyCpcWaitNotedOn?: string;
   etsyCpcWaitNote?: string;
   campaign: MetaAdsCampaign;
-  ping?: { user?: string; accountName?: string; currency?: string };
+  ping?: {
+    user?: string;
+    accountName?: string;
+    currency?: string;
+    instagramUserId?: string;
+    instagramConnected?: boolean;
+  };
   pingError?: string;
   meta: {
     accessTokenSet: boolean;
@@ -35,6 +50,7 @@ type Payload = {
     adAccountId: string;
     pixelId: string;
     pageId: string;
+    instagramUserId: string;
   };
 };
 
@@ -46,6 +62,7 @@ export default function AdsPage() {
   const [adAccountId, setAdAccountId] = useState("");
   const [pixelId, setPixelId] = useState("");
   const [pageId, setPageId] = useState("");
+  const [instagramUserId, setInstagramUserId] = useState("");
   const [dailyBudget, setDailyBudget] = useState(5);
 
   const load = useCallback(async () => {
@@ -56,6 +73,7 @@ export default function AdsPage() {
     setAdAccountId(next.meta.adAccountId);
     setPixelId(next.meta.pixelId);
     setPageId(next.meta.pageId);
+    setInstagramUserId(next.meta.instagramUserId);
     setDailyBudget(next.campaign.dailyBudget || next.dailyBudgetDefault);
   }, []);
 
@@ -70,7 +88,7 @@ export default function AdsPage() {
         "/api/meta/connect",
         {
           method: "POST",
-          body: JSON.stringify({ accessToken: token, adAccountId, pixelId, pageId }),
+          body: JSON.stringify({ accessToken: token, adAccountId, pixelId, pageId, instagramUserId }),
         },
       );
       if (result.live) toast.success("Meta ad account accepted");
@@ -127,6 +145,9 @@ export default function AdsPage() {
   const currency = data.ping?.currency || data.campaign.currency || "NZD";
   const status = data.campaign.status;
   const metaDisabled = isMetaAccountDisabledError(data.pingError);
+  const metaExpired = isMetaTokenExpiredError(data.pingError);
+  const metaLive = Boolean(data.ping?.accountName || data.ping?.user);
+  const instagramConnected = Boolean(data.ping?.instagramConnected || instagramUserId);
 
   return (
     <div className="flex flex-col gap-6">
@@ -183,68 +204,68 @@ export default function AdsPage() {
 
       <div
         className={`rounded-xl border px-4 py-3 text-sm leading-6 ${
-          metaDisabled ? "border-destructive/40 bg-destructive/5" : "border-border bg-background"
+          metaDisabled || metaExpired ? "border-destructive/40 bg-destructive/5" : "border-border bg-background"
         }`}
       >
-        <p className="font-medium">Get the API from Meta for Developers</p>
+        <p className="font-medium">
+          {FERNORA_META_APP_NAME} · 48-hour wait ended {FERNORA_META_WAIT_ENDED_ON}
+        </p>
         <p className="mt-1 text-muted-foreground">
-          Stay in{" "}
-          <a className="underline" href="https://developers.facebook.com/apps/" target="_blank" rel="noreferrer">
-            developers.facebook.com/apps
-          </a>
-          . Pressroom needs four values: access token, ad account ID, Pixel ID, and Page ID. Keep the
-          App Secret in Meta — never paste it here.
+          Use the existing app{" "}
+          <a className="underline" href={FERNORA_META_APP_DASHBOARD_URL} target="_blank" rel="noreferrer">
+            {FERNORA_META_APP_NAME}
+          </a>{" "}
+          ({FERNORA_META_APP_ID}) in Development mode — do not create a second app. The saved Explorer
+          token expired 19 September 2026. Generate a new User Token, Save, then create the paused
+          campaign in the same sitting. Keep the App Secret in Meta — never paste it here.
         </p>
         <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted-foreground">
           <li>
-            <strong>Create app</strong> at{" "}
-            <a className="underline" href="https://developers.facebook.com/apps/creation/" target="_blank" rel="noreferrer">
-              apps/creation
+            Open{" "}
+            <a className="underline" href={FERNORA_META_APP_DASHBOARD_URL} target="_blank" rel="noreferrer">
+              {FERNORA_META_APP_NAME}
             </a>
-            . Choose <strong>Other</strong> then <strong>Business</strong>, or the use case{" "}
-            <strong>Create &amp; manage ads with Marketing API</strong>. Name it Fernora Pressroom.
-          </li>
-          <li>
-            In the app dashboard add the <strong>Marketing API</strong> product if it is not already
-            there.
+            . Add the <strong>Marketing API</strong> product if it is not already there.
           </li>
           <li>
             Open{" "}
-            <a className="underline" href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noreferrer">
+            <a className="underline" href={FERNORA_META_EXPLORER_URL} target="_blank" rel="noreferrer">
               Graph API Explorer
             </a>
-            . Meta App = your new app. User or Page = <strong>User Token</strong>. Add permissions{" "}
+            . Meta App = {FERNORA_META_APP_NAME}. User or Page = <strong>User Token</strong>. Add{" "}
             <code>ads_management</code>, <code>ads_read</code>, <code>pages_show_list</code>,{" "}
             <code>pages_read_engagement</code>, <code>pages_manage_ads</code>,{" "}
-            <code>business_management</code>. Click <strong>Generate Access Token</strong> and allow
-            the login dialog. Copy the token (starts with EAAB) into Access token below.
+            <code>business_management</code>, <code>instagram_basic</code>. Click{" "}
+            <strong>Generate Access Token</strong> as the Fernora login (not Dealstic). Copy the token
+            (starts with EAAB) into Access token below.
           </li>
           <li>
-            In Explorer run <code>GET /me/adaccounts?fields=id,name,account_id,currency</code>. Copy the{" "}
-            <code>id</code> that looks like <code>act_…</code> into Ad account ID. If the list is
-            empty, create an ad account in{" "}
-            <a className="underline" href="https://adsmanager.facebook.com/" target="_blank" rel="noreferrer">
-              Ads Manager
+            Ad account, Pixel, and Page IDs are already saved. Save here and Pressroom will re-read
+            them from Graph. If an ID is empty, run{" "}
+            <code>GET /me/adaccounts?fields=id,name,account_id,currency</code>,{" "}
+            <code>GET /me/accounts?fields=id,name,instagram_business_account</code>, and{" "}
+            <code>GET /act_YOURID/adspixels?fields=id,name</code> in Explorer.
+          </li>
+          <li>
+            Connect Instagram in{" "}
+            <a className="underline" href={FERNORA_META_INSTAGRAM_ACCOUNTS_URL} target="_blank" rel="noreferrer">
+              Business Suite → Instagram accounts
             </a>{" "}
-            and run the query again.
+            to the Fernora Page. Then run{" "}
+            <code>GET /PAGE_ID?fields=instagram_business_account</code> and paste that id, or leave it
+            blank and Save so Graph can fill it.
           </li>
           <li>
-            Run <code>GET /me/accounts?fields=id,name</code>. Copy the Fernora Page <code>id</code> into
-            Facebook Page ID. If there is no Page, create one, then run the query again.
+            Save and install Pixel. Then Create paused campaign at {data.dailyBudgetDefault}{" "}
+            {currency}/day. Do not click Go live unless we decide to.
           </li>
-          <li>
-            Run <code>GET /act_YOURID/adspixels?fields=id,name</code> (use the digits after{" "}
-            <code>act_</code>). Copy the Pixel <code>id</code>. Or create a Pixel for fernora.nz in{" "}
-            <a className="underline" href="https://business.facebook.com/events_manager" target="_blank" rel="noreferrer">
-              Events Manager
-            </a>
-            .
-          </li>
-          <li>Save and install Pixel here. Explorer tokens expire in about an hour — generate a new one if Save fails.</li>
         </ol>
         <p className="mt-3 text-muted-foreground">
-          If any of those calls return a disabled / account-integrity error, that login is still the
-          blocked Dealstic identity and cannot issue ads API access.
+          If Graph returns a disabled / account-integrity error, that login is still the blocked
+          Dealstic identity — switch to the Fernora Facebook login that owns {FERNORA_META_APP_NAME}.{" "}
+          <a className="underline" href={FERNORA_META_BUSINESS_SUITE_URL} target="_blank" rel="noreferrer">
+            Business Suite
+          </a>
         </p>
       </div>
 
@@ -253,15 +274,15 @@ export default function AdsPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Meta account</CardTitle>
             <StatusPill
-              value={data.connections.meta.authorized ? "live" : metaDisabled ? "blocked" : "warning"}
+              value={metaLive ? "live" : metaDisabled ? "blocked" : metaExpired ? "warning" : "warning"}
             />
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-xs leading-5 text-muted-foreground">
-              Use the Graph API Explorer steps above. Paste only the user token, ad account ID, Pixel
-              ID, and Page ID.{" "}
-              <a className="underline" href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noreferrer">
-                developers.facebook.com/tools/explorer
+              Paste a fresh {FERNORA_META_APP_NAME} User Token. Ad account, Pixel, and Page stay as
+              saved unless Graph returns new ones.{" "}
+              <a className="underline" href={FERNORA_META_EXPLORER_URL} target="_blank" rel="noreferrer">
+                Graph API Explorer
               </a>
             </p>
             <div className="space-y-1">
@@ -301,10 +322,25 @@ export default function AdsPage() {
                 placeholder="Needed to publish the ad creative"
               />
             </div>
+            <div className="space-y-1">
+              <Label htmlFor="meta-instagram">Instagram professional ID</Label>
+              <Input
+                id="meta-instagram"
+                value={instagramUserId}
+                onChange={(event) => setInstagramUserId(event.target.value)}
+                placeholder="Filled from the Page after Instagram is linked"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                {instagramConnected
+                  ? "Instagram is linked — the paused campaign can use Facebook and Instagram placements."
+                  : "Not linked yet. Connect the Fernora Instagram account to the Page in Business Suite, then Save."}
+              </p>
+            </div>
             {data.pingError ? <p className="text-xs text-destructive">{data.pingError}</p> : null}
             {data.ping?.accountName ? (
               <p className="text-xs text-muted-foreground">
                 {data.ping.user} · {data.ping.accountName} · {data.ping.currency}
+                {data.ping.instagramConnected ? " · Instagram linked" : ""}
               </p>
             ) : null}
             <Button onClick={() => void saveMeta()} disabled={Boolean(busy)}>

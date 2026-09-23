@@ -13,6 +13,7 @@ import {
   metaPurchasePayload,
   normalizeAdAccountId,
   normalizePixelId,
+  type MetaGraphAssets,
 } from "@/lib/meta-budget";
 
 export {
@@ -29,12 +30,15 @@ export {
   metaPurchasePayload,
   normalizeAdAccountId,
   normalizePixelId,
+  pickMetaIds,
   withMetaPixelInTheme,
 } from "@/lib/meta-budget";
 export {
   explainMetaConnectError,
   isMetaAccountDisabledError,
+  isMetaTokenExpiredError,
   META_ACCOUNT_DISABLED_HELP,
+  META_TOKEN_EXPIRED_HELP,
 } from "@/lib/meta-connect-error";
 
 const GRAPH = "https://graph.facebook.com/v21.0";
@@ -78,6 +82,44 @@ async function graph<T>(
   return json as T;
 }
 
+export type { MetaGraphAssets, MetaGraphPage } from "@/lib/meta-budget";
+
+export async function discoverMetaAssets(token?: string): Promise<MetaGraphAssets> {
+  const me = await graph<{ id: string; name?: string }>("/me", { token, search: { fields: "id,name" } });
+  const accounts = await graph<{
+    data?: Array<{ id: string; name?: string; currency?: string; account_status?: number }>;
+  }>("/me/adaccounts", {
+    token,
+    search: { fields: "id,name,account_id,currency,account_status", limit: "25" },
+  });
+  const pages = await graph<{
+    data?: Array<{ id: string; name?: string; instagram_business_account?: { id: string } }>;
+  }>("/me/accounts", {
+    token,
+    search: { fields: "id,name,instagram_business_account", limit: "25" },
+  });
+  const creds = await getCredentials();
+  const prefer = normalizeAdAccountId(creds.meta?.adAccountId) || accounts.data?.[0]?.id || "";
+  let pixels: Array<{ id: string; name?: string }> = [];
+  if (prefer) {
+    const listed = await graph<{ data?: Array<{ id: string; name?: string }> }>(`/${prefer}/adspixels`, {
+      token,
+      search: { fields: "id,name" },
+    });
+    pixels = listed.data || [];
+  }
+  return {
+    user: me.name || me.id,
+    adAccounts: accounts.data || [],
+    pages: (pages.data || []).map((page) => ({
+      id: page.id,
+      name: page.name,
+      instagramUserId: page.instagram_business_account?.id,
+    })),
+    pixels,
+  };
+}
+
 export async function pingMetaAds() {
   const creds = await getCredentials();
   const accountId = normalizeAdAccountId(creds.meta?.adAccountId);
@@ -91,13 +133,27 @@ export async function pingMetaAds() {
     currency?: string;
     account_status?: number;
   }>(`/${accountId}`, { search: { fields: "id,name,account_id,currency,account_status" } });
+  const pageId = creds.meta.pageId?.trim() || "";
+  let instagramUserId = creds.meta.instagramUserId?.trim() || "";
+  if (pageId) {
+    try {
+      const page = await graph<{ instagram_business_account?: { id: string } }>(`/${pageId}`, {
+        search: { fields: "instagram_business_account" },
+      });
+      instagramUserId = page.instagram_business_account?.id || instagramUserId;
+    } catch {
+      // Page read can fail without pages_read_engagement; keep the saved Instagram id.
+    }
+  }
   return {
     user: me.name || me.id,
     accountId,
     accountName: account.name,
     currency: account.currency || "USD",
     pixelId: normalizePixelId(creds.meta.pixelId) || undefined,
-    pageId: creds.meta.pageId?.trim() || undefined,
+    pageId: pageId || undefined,
+    instagramUserId: instagramUserId || undefined,
+    instagramConnected: Boolean(instagramUserId),
   };
 }
 
@@ -189,24 +245,30 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
   let adId = current.adId;
   if (ping.pageId) {
     if (!creativeId) {
+      const storySpec: Record<string, unknown> = {
+        page_id: ping.pageId,
+        link_data: {
+          message: "Original botanicals for considered homes.",
+          link: META_ADS_LANDING_URL,
+          name: "Fernora",
+          description: "Prints, apparel, and objects — priced in your currency.",
+          call_to_action: { type: "SHOP_NOW", value: { link: META_ADS_LANDING_URL } },
+        },
+      };
+      if (ping.instagramUserId) storySpec.instagram_user_id = ping.instagramUserId;
       const created = await graph<{ id: string }>(`/${accountId}/adcreatives`, {
         method: "POST",
         body: {
           name: META_ADS_AD_NAME,
-          object_story_spec: {
-            page_id: ping.pageId,
-            link_data: {
-              message: "Original botanicals for considered homes.",
-              link: META_ADS_LANDING_URL,
-              name: "Fernora",
-              description: "Prints, apparel, and objects — priced in your currency.",
-              call_to_action: { type: "SHOP_NOW", value: { link: META_ADS_LANDING_URL } },
-            },
-          },
+          object_story_spec: storySpec,
         },
       });
       creativeId = created.id;
-      notes.push("Ad creative points shoppers to fernora.nz.");
+      notes.push(
+        ping.instagramUserId
+          ? "Ad creative points shoppers to fernora.nz on Facebook and Instagram."
+          : "Ad creative points shoppers to fernora.nz.",
+      );
     }
     if (!adId && creativeId) {
       const created = await graph<{ id: string }>(`/${accountId}/ads`, {
@@ -225,6 +287,11 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
     }
   } else {
     notes.push("Add a Facebook Page ID to publish the ad creative. The campaign budget is ready without it.");
+  }
+  if (ping.pageId && !ping.instagramUserId) {
+    notes.push(
+      "Instagram is not linked to the Fernora Page yet. Facebook placements still work. In Business Suite, connect the Instagram professional account to the Page, then Save again.",
+    );
   }
 
   if (current.campaignId) {

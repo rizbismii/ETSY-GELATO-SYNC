@@ -715,11 +715,11 @@ export function ConnectionsClient() {
           Meta ads{" "}
           {data.connections.meta.authorized ? (
             <a className="underline" href="/ads">
-              campaign desk
+              campaign desk — refresh the Fernora Pressroom token if Graph says it expired
             </a>
           ) : (
             <a className="underline" href="/ads">
-              not connected — get token + IDs from developers.facebook.com on Ads
+              not connected — generate a Fernora Pressroom token on Ads
             </a>
           )}
         </span>
@@ -807,8 +807,10 @@ export function ConnectionsClient() {
               <span>
                 Meta ads
                 {data.connections.meta.authorized
-                  ? " · ad account linked · low daily cap on Ads"
-                  : " · not connected · get the token from developers.facebook.com · open Ads"}
+                  ? data.connections.meta.instagramUserId
+                    ? " · ad account linked · Instagram on the Fernora Page · low daily cap on Ads"
+                    : " · ad account linked · connect Instagram on Ads · low daily cap"
+                  : " · not connected · generate a Fernora Pressroom token on Ads"}
               </span>
             </li>
             <li className="flex flex-wrap items-center gap-2">

@@ -72,6 +72,8 @@ export async function connectionStatus(): Promise<Connections> {
       mode: creds.meta?.accessToken ? "live" : "demo",
       adAccountId: creds.meta?.adAccountId,
       pixelId: creds.meta?.pixelId,
+      pageId: creds.meta?.pageId,
+      instagramUserId: creds.meta?.instagramUserId,
     },
     printify: {
       configured: Boolean(creds.printify?.apiToken),
@@ -260,7 +262,17 @@ export function collectIssues(shop: ShopState, connections: Connections): OpsIss
       id: "meta-ads",
       severity: "info",
       title: "Meta ads are not running",
-      detail: "Pressroom can send a low daily-budget campaign to fernora.nz. On Ads, create a Meta app, generate a Graph API Explorer token, and paste ad account, Pixel, and Page IDs. Etsy Offsite Ads were opted out on 19 September 2026 — leave them off. Etsy Ads (CPC) are not activated (15-day new-shop wait).",
+      detail:
+        "The 48-hour Fernora Pressroom wait ended 23 September 2026. On Ads, generate a new Graph Explorer User Token for Fernora Pressroom, Save, and create the paused NZ/AU campaign at 5/day. Connect Instagram to the Fernora Page in Business Suite. Do not Go live yet. Leave Etsy Offsite Ads off. Do not turn on Etsy Ads (CPC).",
+      action: { label: "Open Ads", href: "/ads", kind: "connect" },
+    });
+  } else if (!shop.metaAds?.campaignId) {
+    issues.push({
+      id: "meta-campaign",
+      severity: "info",
+      title: "Meta campaign is not created",
+      detail:
+        "Ad account IDs are saved but the Graph token expired 19 September 2026. Generate a new Fernora Pressroom User Token on Ads, Save, then Create paused campaign at 5/day. Link Instagram to the Fernora Page so placements can run there. Do not Go live unless we decide to.",
       action: { label: "Open Ads", href: "/ads", kind: "connect" },
     });
   }
