@@ -90,6 +90,12 @@ test("expired Graph Explorer tokens ask for a Fernora Pressroom refresh", () => 
   assert.equal(isMetaAccountDisabledError(expired, 190, 463), false);
 });
 
+test("campaign create keeps a hard ad-set cap and does not share budget", () => {
+  const source = readFileSync(new URL("./meta-ads.ts", import.meta.url), "utf8");
+  assert.match(source, /is_adset_budget_sharing_enabled: false/);
+  assert.doesNotMatch(source, /is_adset_budget_sharing_enabled: true/);
+});
+
 test("Ads page uses the existing Fernora Pressroom app after the 48-hour wait", () => {
   const page = readFileSync(new URL("../app/ads/page.tsx", import.meta.url), "utf8");
   const app = readFileSync(new URL("./meta-app.ts", import.meta.url), "utf8");

@@ -203,6 +203,8 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
           objective: "OUTCOME_TRAFFIC",
           status: "PAUSED",
           special_ad_categories: [],
+          // Ad-set daily cap (not CBO). False keeps the 5/day limit on this one ad set.
+          is_adset_budget_sharing_enabled: false,
         },
       })
     ).id;
@@ -295,7 +297,13 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
   }
 
   if (current.campaignId) {
-    await graph(`/${campaignId}`, { method: "POST", body: { status: input.live ? "ACTIVE" : "PAUSED" } });
+    await graph(`/${campaignId}`, {
+      method: "POST",
+      body: {
+        status: input.live ? "ACTIVE" : "PAUSED",
+        is_adset_budget_sharing_enabled: false,
+      },
+    });
   }
 
   const saved = await saveMetaCampaign({
