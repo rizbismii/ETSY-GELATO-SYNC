@@ -1,7 +1,7 @@
 import { getCredentials } from "@/lib/credentials";
 import { getShop, updateShop } from "@/lib/store";
 import type { MetaAdsCampaign } from "@/lib/types";
-import { explainMetaConnectError } from "@/lib/meta-connect-error";
+import { explainMetaConnectError, isMetaAppDevelopmentError } from "@/lib/meta-connect-error";
 import {
   clampMetaDailyBudget,
   dailyBudgetToMinor,
@@ -38,6 +38,7 @@ export {
   isMetaAccountDisabledError,
   isMetaTokenExpiredError,
   META_ACCOUNT_DISABLED_HELP,
+  META_APP_DEVELOPMENT_HELP,
   META_TOKEN_EXPIRED_HELP,
 } from "@/lib/meta-connect-error";
 
@@ -193,8 +194,13 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
   const status = input.live ? "ACTIVE" : "PAUSED";
   const notes: string[] = [];
 
+  const existingCampaigns = await graph<{ data?: Array<{ id: string; name?: string }> }>(`/${accountId}/campaigns`, {
+    search: { fields: "id,name", limit: "25" },
+  });
+  const namedCampaignId = existingCampaigns.data?.find((row) => row.name === META_ADS_CAMPAIGN_NAME)?.id;
   const campaignId =
     current.campaignId ||
+    namedCampaignId ||
     (
       await graph<{ id: string }>(`/${accountId}/campaigns`, {
         method: "POST",
@@ -215,8 +221,16 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
     age_min: 25,
     age_max: 65,
   };
+  const existingAdSets = await graph<{ data?: Array<{ id: string; name?: string; campaign_id?: string }> }>(
+    `/${accountId}/adsets`,
+    { search: { fields: "id,name,campaign_id", limit: "25" } },
+  );
+  const namedAdSetId = existingAdSets.data?.find(
+    (row) => row.name === META_ADS_ADSET_NAME && row.campaign_id === campaignId,
+  )?.id;
   const adSetId =
     current.adSetId ||
+    namedAdSetId ||
     (
       await graph<{ id: string }>(`/${accountId}/adsets`, {
         method: "POST",
@@ -246,46 +260,50 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
   let creativeId = current.creativeId;
   let adId = current.adId;
   if (ping.pageId) {
-    if (!creativeId) {
-      const storySpec: Record<string, unknown> = {
-        page_id: ping.pageId,
-        link_data: {
-          message: "Original botanicals for considered homes.",
-          link: META_ADS_LANDING_URL,
-          name: "Fernora",
-          description: "Prints, apparel, and objects — priced in your currency.",
-          call_to_action: { type: "SHOP_NOW", value: { link: META_ADS_LANDING_URL } },
-        },
-      };
-      if (ping.instagramUserId) storySpec.instagram_user_id = ping.instagramUserId;
-      const created = await graph<{ id: string }>(`/${accountId}/adcreatives`, {
-        method: "POST",
-        body: {
-          name: META_ADS_AD_NAME,
-          object_story_spec: storySpec,
-        },
-      });
-      creativeId = created.id;
-      notes.push(
-        ping.instagramUserId
-          ? "Ad creative points shoppers to fernora.nz on Facebook and Instagram."
-          : "Ad creative points shoppers to fernora.nz.",
-      );
-    }
-    if (!adId && creativeId) {
-      const created = await graph<{ id: string }>(`/${accountId}/ads`, {
-        method: "POST",
-        body: {
-          name: META_ADS_AD_NAME,
-          adset_id: adSetId,
-          creative: { creative_id: creativeId },
-          status,
-        },
-      });
-      adId = created.id;
-      notes.push("Meta ad created and linked to Pressroom.");
-    } else if (adId) {
-      await graph(`/${adId}`, { method: "POST", body: { status } });
+    try {
+      if (!creativeId) {
+        const storySpec: Record<string, unknown> = {
+          page_id: ping.pageId,
+          link_data: {
+            message: "Original botanicals for considered homes.",
+            link: META_ADS_LANDING_URL,
+            name: "Fernora",
+            description: "Prints, apparel, and objects — priced in your currency.",
+            call_to_action: { type: "SHOP_NOW", value: { link: META_ADS_LANDING_URL } },
+          },
+        };
+        if (ping.instagramUserId) storySpec.instagram_user_id = ping.instagramUserId;
+        const created = await graph<{ id: string }>(`/${accountId}/adcreatives`, {
+          method: "POST",
+          body: {
+            name: META_ADS_AD_NAME,
+            object_story_spec: storySpec,
+          },
+        });
+        creativeId = created.id;
+        notes.push(
+          ping.instagramUserId
+            ? "Ad creative points shoppers to fernora.nz on Facebook and Instagram."
+            : "Ad creative points shoppers to fernora.nz.",
+        );
+      }
+      if (!adId && creativeId) {
+        const created = await graph<{ id: string }>(`/${accountId}/ads`, {
+          method: "POST",
+          body: {
+            name: META_ADS_AD_NAME,
+            adset_id: adSetId,
+            creative: { creative_id: creativeId },
+            status,
+          },
+        });
+        adId = created.id;
+        notes.push("Meta ad created and linked to Pressroom.");
+      } else if (adId) {
+        await graph(`/${adId}`, { method: "POST", body: { status } });
+      }
+    } catch (error) {
+      notes.push((error as Error).message);
     }
   } else {
     notes.push("Add a Facebook Page ID to publish the ad creative. The campaign budget is ready without it.");
@@ -315,7 +333,7 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
     currency: ping.currency,
     landingUrl: META_ADS_LANDING_URL,
     status: input.live ? "active" : "paused",
-    lastError: undefined,
+    lastError: notes.find((note) => isMetaAppDevelopmentError(note)),
     pixelInstalled: Boolean(ping.pixelId),
   });
   return { campaign: saved, notes, live: Boolean(input.live), currency: ping.currency };

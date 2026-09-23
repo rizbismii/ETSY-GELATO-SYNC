@@ -6,6 +6,7 @@ import {
   isMetaAccountDisabledError,
   isMetaTokenExpiredError,
   META_ACCOUNT_DISABLED_HELP,
+  META_APP_DEVELOPMENT_HELP,
   META_TOKEN_EXPIRED_HELP,
 } from "./meta-connect-error.ts";
 import {
@@ -90,6 +91,14 @@ test("expired Graph Explorer tokens ask for a Fernora Pressroom refresh", () => 
   assert.equal(isMetaAccountDisabledError(expired, 190, 463), false);
 });
 
+test("development-mode Page ads get a Pressroom-safe Meta error", () => {
+  const raw = "Ads creative post was created by an app that is in development mode. It must be in public to create this ad.";
+  assert.equal(explainMetaConnectError(raw), META_APP_DEVELOPMENT_HELP);
+  assert.match(META_APP_DEVELOPMENT_HELP, /switch the app to Live/);
+  assert.match(META_APP_DEVELOPMENT_HELP, /fernora.nz\/policies\/privacy-policy/);
+  assert.match(META_APP_DEVELOPMENT_HELP, /Do not Go live/);
+});
+
 test("campaign create keeps a hard ad-set cap and does not share budget", () => {
   const source = readFileSync(new URL("./meta-ads.ts", import.meta.url), "utf8");
   assert.match(source, /is_adset_budget_sharing_enabled: false/);
@@ -106,7 +115,8 @@ test("Ads page uses the existing Fernora Pressroom app after the 48-hour wait", 
   assert.match(page, /FERNORA_META_WAIT_ENDED_ON/);
   assert.match(page, /instagram_basic/);
   assert.match(page, /Instagram professional ID/);
-  assert.match(page, /Do not click Go live/);
+  assert.match(page, /Do not click/);
+  assert.match(page, /switch the app to/);
   assert.doesNotMatch(page, /Create app/);
   assert.doesNotMatch(page, /\bGelato\b/);
 });

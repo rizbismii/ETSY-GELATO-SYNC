@@ -257,7 +257,16 @@ export default function AdsPage() {
           </li>
           <li>
             Save and install Pixel. Then Create paused campaign at {data.dailyBudgetDefault}{" "}
-            {currency}/day. Do not click Go live unless we decide to.
+            {currency}/day. If Meta says the app is in Development, open{" "}
+            <a className="underline" href={FERNORA_META_APP_DASHBOARD_URL} target="_blank" rel="noreferrer">
+              {FERNORA_META_APP_NAME}
+            </a>
+            , add privacy policy{" "}
+            <a className="underline" href="https://fernora.nz/policies/privacy-policy" target="_blank" rel="noreferrer">
+              fernora.nz/policies/privacy-policy
+            </a>
+            , switch the app to <strong>Live</strong>, then Create paused campaign again. Do not click
+            Go live on the campaign unless we decide to.
           </li>
         </ol>
         <p className="mt-3 text-muted-foreground">
