@@ -13,8 +13,19 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   try {
     const origin = await publicOrigin(request);
-    const catalogOnly = new URL(request.url).searchParams.get("catalog") === "1";
-    const catalog = await syncFernoraCatalogToShopify(request);
+    const url = new URL(request.url);
+    const catalogOnly = url.searchParams.get("catalog") === "1";
+    const only = url.searchParams.get("only")?.split(",").filter(Boolean);
+    const catalog = await syncFernoraCatalogToShopify(request, only);
+    if (only?.length) {
+      const ping = await pingShopify();
+      return Response.json({
+        ok: true,
+        ping,
+        notes: catalog.notes,
+        products: Object.keys(catalog.catalog).length,
+      });
+    }
     if (catalogOnly) {
       const collections = await fillShopifyCollections().catch((error: Error) => [
         `Collections: ${error.message}`,

@@ -505,6 +505,80 @@ async function ensureShopifyProductGallery(
   }
 }
 
+function mediaStem(name: string) {
+  const base = (name.split("?")[0].split("/").pop() || "").toLowerCase();
+  return base.replace(/\.[a-z0-9]+$/, "").replace(/_[0-9a-f]{8}-[0-9a-f-]{20,}$/i, "");
+}
+
+/** Horizon swaps the photo only when the selected variant has its own media. */
+async function attachShopifyVariantColorMedia(
+  productId: string,
+  product: ReturnType<typeof fernoraCatalog>[number],
+) {
+  const stemByColor = new Map<string, string>();
+  for (const row of product.variants || []) {
+    if (!row.color || !row.imageUrl || stemByColor.has(row.color)) continue;
+    stemByColor.set(row.color, mediaStem(row.imageUrl));
+  }
+  if (stemByColor.size < 2) return;
+  type ListedProduct = {
+    product?: {
+      variants: { nodes: Array<{ id: string; selectedOptions: Array<{ name: string; value: string }> }> };
+      media: {
+        nodes: Array<{
+          id: string;
+          alt?: string | null;
+          status?: string | null;
+          preview?: { image?: { url?: string | null } | null } | null;
+        }>;
+      };
+    } | null;
+  };
+  const mediaQuery = `query ($id: ID!) {
+    product(id: $id) {
+      variants(first: 50) { nodes { id selectedOptions { name value } } }
+      media(first: 30) { nodes { id alt status preview { image { url } } } }
+    }
+  }`;
+  let listed = await shopifyGraphql<ListedProduct>(mediaQuery, { id: productId });
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const pending = (listed.product?.media.nodes || []).some(
+      (row) => row.status && row.status !== "READY" && row.status !== "FAILED",
+    );
+    if (!pending) break;
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    listed = await shopifyGraphql<ListedProduct>(mediaQuery, { id: productId });
+  }
+  const media = listed.product?.media.nodes || [];
+  const variantMedia: Array<{ variantId: string; mediaIds: string[] }> = [];
+  for (const variant of listed.product?.variants.nodes || []) {
+    const color = variant.selectedOptions.find((option) => option.name === "Color")?.value;
+    const stem = color ? stemByColor.get(color) : undefined;
+    if (!stem) continue;
+    const match = media.find((row) => {
+      const fromUrl = mediaStem(row.preview?.image?.url || "");
+      const alt = (row.alt || "").toLowerCase();
+      return fromUrl === stem || alt.endsWith(`${stem}.jpg`) || alt.endsWith(`${stem}.png`);
+    });
+    if (!match) continue;
+    variantMedia.push({ variantId: variant.id, mediaIds: [match.id] });
+  }
+  if (!variantMedia.length) return;
+  const attached = await shopifyGraphql<{
+    productVariantAppendMedia: { userErrors: Array<{ message: string }> };
+  }>(
+    `mutation ($productId: ID!, $variantMedia: [ProductVariantAppendMediaInput!]!) {
+      productVariantAppendMedia(productId: $productId, variantMedia: $variantMedia) {
+        userErrors { field message }
+      }
+    }`,
+    { productId, variantMedia },
+  );
+  if (attached.productVariantAppendMedia.userErrors.length) {
+    throw new Error(attached.productVariantAppendMedia.userErrors.map((row) => row.message).join("; "));
+  }
+}
+
 async function shopifyVariantsWithColorPhotos(
   product: ReturnType<typeof fernoraCatalog>[number],
   clothing: ReturnType<typeof shopifyProductOptions>,
@@ -535,10 +609,13 @@ async function shopifyVariantsWithColorPhotos(
   };
 }
 
-export async function syncFernoraCatalogToShopify(request?: Request) {
+export async function syncFernoraCatalogToShopify(request?: Request, onlyIds?: string[]) {
   const notes: string[] = [];
   const catalog: ShopifyCatalogMap = {};
-  const products = fernoraCatalog().filter((product) => !getDeletedListingIds().includes(product.id));
+  const wanted = new Set((onlyIds || []).map((id) => id.trim()).filter(Boolean));
+  const products = fernoraCatalog().filter(
+    (product) => !getDeletedListingIds().includes(product.id) && (!wanted.size || wanted.has(product.id)),
+  );
   if (!products.length) {
     notes.push(
       "Catalog is cleared. Not publishing Gelato products to Shopify. Recreate on Printify first; Gelato stays for EU/UK only.",
@@ -600,7 +677,23 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
     if (found?.id) input.id = found.id;
     if (product.id === "live_sneaker_star") input.handle = "black-camo-mens-mesh-sneakers";
     if (product.id === "live_hoodie_bloom") input.handle = "grow-with-purpose-embroidered-zip-hoodie";
-    if (!found?.media.nodes.length && product.imageUrl) {
+    const colorFiles = clothing.variants.flatMap((variant) =>
+      "file" in variant && variant.file ? [variant.file] : [],
+    );
+    const files: Array<{ originalSource: string; alt?: string; contentType: string }> = [];
+    const seenSources = new Set<string>();
+    for (const file of colorFiles) {
+      if (seenSources.has(file.originalSource)) continue;
+      seenSources.add(file.originalSource);
+      files.push({
+        originalSource: file.originalSource,
+        alt: file.alt,
+        contentType: file.contentType || "IMAGE",
+      });
+    }
+    if (files.length) {
+      input.files = files;
+    } else if (!found?.media.nodes.length && product.imageUrl) {
       input.files = [
         {
           originalSource: await catalogProductImageSource(product.imageUrl, request),
@@ -657,6 +750,7 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
     }
     try {
       await ensureShopifyProductGallery(node.id, product, request);
+      await attachShopifyVariantColorMedia(node.id, product);
     } catch (error) {
       notes.push(`${product.title}: mockups (${(error as Error).message})`);
     }
