@@ -535,10 +535,13 @@ async function shopifyVariantsWithColorPhotos(
   };
 }
 
-export async function syncFernoraCatalogToShopify(request?: Request) {
+export async function syncFernoraCatalogToShopify(request?: Request, onlyIds?: string[]) {
   const notes: string[] = [];
   const catalog: ShopifyCatalogMap = {};
-  const products = fernoraCatalog().filter((product) => !getDeletedListingIds().includes(product.id));
+  const wanted = new Set((onlyIds || []).map((id) => id.trim()).filter(Boolean));
+  const products = fernoraCatalog().filter(
+    (product) => !getDeletedListingIds().includes(product.id) && (!wanted.size || wanted.has(product.id)),
+  );
   if (!products.length) {
     notes.push(
       "Catalog is cleared. Not publishing Gelato products to Shopify. Recreate on Printify first; Gelato stays for EU/UK only.",
@@ -600,7 +603,23 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
     if (found?.id) input.id = found.id;
     if (product.id === "live_sneaker_star") input.handle = "black-camo-mens-mesh-sneakers";
     if (product.id === "live_hoodie_bloom") input.handle = "grow-with-purpose-embroidered-zip-hoodie";
-    if (!found?.media.nodes.length && product.imageUrl) {
+    const colorFiles = clothing.variants.flatMap((variant) =>
+      "file" in variant && variant.file ? [variant.file] : [],
+    );
+    const files: Array<{ originalSource: string; alt?: string; contentType: string }> = [];
+    const seenSources = new Set<string>();
+    for (const file of colorFiles) {
+      if (seenSources.has(file.originalSource)) continue;
+      seenSources.add(file.originalSource);
+      files.push({
+        originalSource: file.originalSource,
+        alt: file.alt,
+        contentType: file.contentType || "IMAGE",
+      });
+    }
+    if (files.length) {
+      input.files = files;
+    } else if (!found?.media.nodes.length && product.imageUrl) {
       input.files = [
         {
           originalSource: await catalogProductImageSource(product.imageUrl, request),
