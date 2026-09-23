@@ -1,7 +1,7 @@
 import path from "node:path";
 import { CATALOG_LISTING_TAGS } from "./listing-health.ts";
 import { catalogPrice, printifyListCents } from "./printify-costs.ts";
-import { ZIP_HOODIE_WHITE, ZIP_HOODIE_WHITE_DEFAULT } from "./clothing.ts";
+import { ZIP_HOODIE_WHITE_DEFAULT, zipHoodieColorways } from "./clothing.ts";
 import {
   SNEAKER_WHITE_SOLE,
   SNEAKER_WHITE_SOLE_DEFAULT,
@@ -13,10 +13,18 @@ import {
 export { SNEAKER_WHITE_SOLE_DEFAULT, SNEAKER_WHITE_SOLE_IDS } from "./sneaker-sizes.ts";
 
 export type PrintifyVariantInput = {
-  id: number;
+  id?: number;
   price: number;
   is_enabled: boolean;
   is_default?: boolean;
+  color?: string;
+  size?: string;
+};
+
+export type PrintifyCatalogVariant = {
+  id?: number;
+  title?: string;
+  options?: { color?: string; size?: string };
 };
 
 export type PrintifyStarterSpec = {
@@ -37,13 +45,79 @@ function one(id: number, price: number): PrintifyVariantInput[] {
   return [{ id, price, is_enabled: true, is_default: true }];
 }
 
-function whiteZipHoodie(price: number): PrintifyVariantInput[] {
-  return ZIP_HOODIE_WHITE.map((row) => ({
-    id: row.printifyId,
+function zipHoodiePrintifyVariants(price: number): PrintifyVariantInput[] {
+  return zipHoodieColorways().map((row) => ({
+    ...(row.printifyId ? { id: row.printifyId } : {}),
+    color: row.color,
+    size: row.size,
     price,
     is_enabled: true,
     ...(row.printifyId === ZIP_HOODIE_WHITE_DEFAULT ? { is_default: true } : {}),
   }));
+}
+
+const SIZE_TOKENS: Record<string, string> = {
+  s: "s",
+  small: "s",
+  m: "m",
+  medium: "m",
+  l: "l",
+  large: "l",
+  xl: "xl",
+  xlarge: "xl",
+  "2xl": "2xl",
+  xxl: "2xl",
+  "2xlarge": "2xl",
+  xxlarge: "2xl",
+};
+
+const COLOR_TOKENS: Record<string, string> = {
+  black: "black",
+  white: "white",
+  navy: "navy",
+  navyblue: "navy",
+};
+
+function optionToken(kind: "color" | "size", value: string) {
+  const raw = value.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const table = kind === "size" ? SIZE_TOKENS : COLOR_TOKENS;
+  return table[raw] || raw;
+}
+
+export function catalogOption(variant: PrintifyCatalogVariant, kind: "color" | "size") {
+  const direct = variant.options?.[kind];
+  if (direct) {
+    const token = optionToken(kind, direct);
+    const table = kind === "size" ? SIZE_TOKENS : COLOR_TOKENS;
+    if (table[direct.toLowerCase().replace(/[^a-z0-9]+/g, "")]) return token;
+  }
+  for (const part of (variant.title || "").split("/")) {
+    const raw = part.toLowerCase().replace(/[^a-z0-9]+/g, "");
+    const table = kind === "size" ? SIZE_TOKENS : COLOR_TOKENS;
+    if (table[raw]) return table[raw];
+  }
+  return direct ? optionToken(kind, direct) : "";
+}
+
+/** Fill garment colour/size rows from a Printify blueprint. Known ids stay if the catalog has no match. */
+export function matchPrintifyColorSizes(wanted: PrintifyVariantInput[], catalog: PrintifyCatalogVariant[]) {
+  const missing: string[] = [];
+  const variants = wanted.map((row) => {
+    if (!row.color || !row.size) return row;
+    const color = optionToken("color", row.color);
+    const size = optionToken("size", row.size);
+    const found = catalog.find(
+      (item) => item.id && catalogOption(item, "color") === color && catalogOption(item, "size") === size,
+    );
+    if (found?.id) return { ...row, id: found.id };
+    if (typeof row.id === "number") return row;
+    missing.push(`${row.color} / ${row.size}`);
+    return row;
+  });
+  if (missing.length) {
+    throw new Error(`Printify catalog is missing ${missing.join(", ")}`);
+  }
+  return variants;
 }
 
 function whiteSoleSneakers(
@@ -164,13 +238,13 @@ export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
     key: "live_hoodie_bloom",
     title: "Grow With Purpose · Embroidered Zip Hoodie",
     description:
-      "Unisex Gildan 18600 full-zip hoodie with an original Fernora embroidered fern and the line “Grow with purpose, Bloom with grace.” Left-chest embroidery. Made to order.",
+      "Unisex Gildan 18600 full-zip hoodie with an original Fernora embroidered fern and the line “Grow with purpose, Bloom with grace” beneath the leaf. Left-chest embroidery. Black, White, and Navy. Made to order.",
     tags: CATALOG_LISTING_TAGS.live_hoodie_bloom,
     printFile: "print-hoodie-bloom.png",
     mockupFile: "catalog-hoodie-bloom.jpg",
     blueprintId: 66,
     printProviderId: 217,
-    variants: whiteZipHoodie(printifyListCents(catalogPrice("live_hoodie_bloom"))),
+    variants: zipHoodiePrintifyVariants(printifyListCents(catalogPrice("live_hoodie_bloom"))),
     positions: ["front_left_chest"],
   },
 ];
@@ -185,8 +259,15 @@ export function printifyImageFileName(fileName: string, bytes: Uint8Array) {
   return fileName.replace(/\.png$/i, ".jpg");
 }
 
+export function printifyVariantsWithIds(spec: PrintifyStarterSpec) {
+  return spec.variants.filter(
+    (variant): variant is PrintifyVariantInput & { id: number } => variant.is_enabled && typeof variant.id === "number",
+  );
+}
+
 export function buildPrintifyProductPayload(spec: PrintifyStarterSpec, imageId: string) {
-  const variantIds = spec.variants.map((variant) => variant.id);
+  const ready = printifyVariantsWithIds(spec);
+  const variantIds = ready.map((variant) => variant.id);
   return {
     title: spec.title,
     description: spec.description,
@@ -194,7 +275,7 @@ export function buildPrintifyProductPayload(spec: PrintifyStarterSpec, imageId: 
     blueprint_id: spec.blueprintId,
     print_provider_id: spec.printProviderId,
     visible: true,
-    variants: spec.variants.map((variant) => ({
+    variants: ready.map((variant) => ({
       id: variant.id,
       price: variant.price,
       is_enabled: variant.is_enabled,

@@ -6,6 +6,7 @@ import {
 } from "./sneaker-sizes.ts";
 import type { ClothingVariant, Listing } from "@/lib/types";
 
+/** Shared garment colours for the live hoodie and for apparel added later. */
 export const CLOTHING_COLORS = [
   { name: "Black", uid: "black" },
   { name: "White", uid: "white" },
@@ -18,7 +19,15 @@ export const CLOTHING_SIZES = [
   { name: "L", uid: "l" },
 ] as const;
 
-/** Printify Gildan 18600 · Fulfill Engine 217 · White S–2XL. */
+/** Printify Gildan 18600 · Fulfill Engine 217 · S–2XL. White ids are known; other colours match the blueprint at publish. */
+export const ZIP_HOODIE_SIZES = [
+  { size: "S", sizeUid: "s" },
+  { size: "M", sizeUid: "m" },
+  { size: "L", sizeUid: "l" },
+  { size: "XL", sizeUid: "xl" },
+  { size: "2XL", sizeUid: "2xl" },
+] as const;
+
 export const ZIP_HOODIE_WHITE = [
   { printifyId: 31929, size: "S", sizeUid: "s" },
   { printifyId: 31939, size: "M", sizeUid: "m" },
@@ -28,6 +37,32 @@ export const ZIP_HOODIE_WHITE = [
 ] as const;
 
 export const ZIP_HOODIE_WHITE_DEFAULT = 31939;
+
+/** Photos for the shared apparel colours. New colours need a photo here before the storefront can show them. */
+export const ZIP_HOODIE_COLOR_IMAGE: Record<string, string> = {
+  white: "/catalog/catalog-hoodie-bloom.jpg",
+  black: "/catalog/catalog-hoodie-bloom-black.jpg",
+  navy: "/catalog/catalog-hoodie-bloom-navy.jpg",
+};
+
+export function zipHoodieColorways() {
+  const colors = [
+    ...CLOTHING_COLORS.filter((color) => color.uid === "white"),
+    ...CLOTHING_COLORS.filter((color) => color.uid !== "white"),
+  ];
+  return colors.flatMap((color) =>
+    ZIP_HOODIE_SIZES.map((size) => {
+      const known = color.uid === "white" ? ZIP_HOODIE_WHITE.find((row) => row.sizeUid === size.sizeUid) : undefined;
+      return {
+        color: color.name,
+        colorUid: color.uid,
+        size: size.size,
+        sizeUid: size.sizeUid,
+        printifyId: known?.printifyId,
+      };
+    }),
+  );
+}
 
 export type ApparelKind = "hoodie" | "t-shirt" | "sweatshirt";
 
@@ -85,16 +120,19 @@ export function clothingVariants(productId: string, category: string): ClothingV
   return rows;
 }
 
-/** White Gildan 18600 zip hoodie sizes for Printify embroidery. */
+/** Gildan 18600 zip hoodie in the shared apparel colours, S–2XL. */
 export function zipHoodieVariants(productId: string): ClothingVariant[] {
-  return ZIP_HOODIE_WHITE.map((row) => ({
-    id: `${productId}-white-${row.sizeUid}`,
-    color: "White",
-    colorUid: "white",
+  return zipHoodieColorways().map((row) => ({
+    id: `${productId}-${row.colorUid}-${row.sizeUid}`,
+    color: row.color,
+    colorUid: row.colorUid,
     size: row.size,
     sizeUid: row.sizeUid,
-    sku: `${productId}-white-${row.sizeUid}`,
-    gelatoProductUid: `printify_gildan_18600:${row.printifyId}`,
+    sku: `${productId}-${row.colorUid}-${row.sizeUid}`,
+    gelatoProductUid: row.printifyId
+      ? `printify_gildan_18600:${row.printifyId}`
+      : `printify_gildan_18600:${row.colorUid}:${row.sizeUid}`,
+    imageUrl: ZIP_HOODIE_COLOR_IMAGE[row.colorUid],
   }));
 }
 
@@ -117,6 +155,11 @@ export function sneakerVariants(
 
 export function defaultClothingVariant(variants: ClothingVariant[] | undefined) {
   if (!variants?.length) return undefined;
+  const zipWhite = variants.find(
+    (row) =>
+      row.gelatoProductUid.startsWith("printify_gildan_18600:") && row.colorUid === "white" && row.sizeUid === "m",
+  );
+  if (zipWhite) return zipWhite;
   return (
     variants.find((row) => row.colorUid === "black" && row.sizeUid === "m") ||
     variants.find((row) => row.sizeUid === "m") ||

@@ -17,11 +17,14 @@ import {
   buildPrintifyProductPayload,
   existingPrintifyProductId,
   FERNORA_PRINTIFY_STARTERS,
+  matchPrintifyColorSizes,
   mergePrintAreaVariantIds,
   printAreasForExistingVariants,
   printifyCatalogFile,
   printifyEnabledVariantIds,
   printifyImageFileName,
+  printifyVariantsWithIds,
+  type PrintifyCatalogVariant,
   type PrintifyStarterSpec,
 } from "@/lib/printify-products";
 import { restoreLiveCatalogInShop } from "@/lib/drop";
@@ -186,7 +189,7 @@ async function refreshPrintifyPrintFile(
       method: "PUT",
       token,
       body: {
-        variants: spec.variants.map((variant) => ({
+        variants: printifyVariantsWithIds(spec).map((variant) => ({
           id: variant.id,
           price: variant.price,
           is_enabled: variant.is_enabled,
@@ -214,12 +217,25 @@ async function getPrintifyProduct(shopId: number, productId: string, token?: str
   return printify<PrintifyProduct>(`/shops/${shopId}/products/${productId}.json`, { token });
 }
 
-async function listBlueprintVariantIds(blueprintId: number, printProviderId: number, token?: string) {
-  const catalog = await printify<{ variants?: Array<{ id?: number }> }>(
+async function listBlueprintCatalog(blueprintId: number, printProviderId: number, token?: string) {
+  const catalog = await printify<{ variants?: PrintifyCatalogVariant[] }>(
     `/catalog/blueprints/${blueprintId}/print_providers/${printProviderId}/variants.json`,
     { token },
   );
-  return (catalog.variants || []).map((variant) => variant.id).filter((id): id is number => Boolean(id));
+  return catalog.variants || [];
+}
+
+async function listBlueprintVariantIds(blueprintId: number, printProviderId: number, token?: string) {
+  const catalog = await listBlueprintCatalog(blueprintId, printProviderId, token);
+  return catalog.map((variant) => variant.id).filter((id): id is number => Boolean(id));
+}
+
+/** Colour rows without a saved Printify id are matched on the blueprint so later apparel gets the same colours. */
+async function resolveStarterSpec(spec: PrintifyStarterSpec, token?: string) {
+  const needsMatch = spec.variants.some((variant) => variant.color && variant.size && typeof variant.id !== "number");
+  if (!needsMatch) return spec;
+  const catalog = await listBlueprintCatalog(spec.blueprintId, spec.printProviderId, token);
+  return { ...spec, variants: matchPrintifyColorSizes(spec.variants, catalog) };
 }
 
 async function deletePrintifyProduct(shopId: number, productId: string, token?: string) {
@@ -310,7 +326,7 @@ async function attachPrintifyEtsyIds(
 }
 
 function wantedVariantIds(spec: PrintifyStarterSpec) {
-  return spec.variants.filter((variant) => variant.is_enabled).map((variant) => variant.id);
+  return printifyVariantsWithIds(spec).map((variant) => variant.id);
 }
 
 function sameWantedVariants(spec: PrintifyStarterSpec, product: PrintifyProduct, title: string) {
@@ -361,7 +377,18 @@ export async function createFernoraPrintifyProducts(input?: { shopId?: number; t
   const products: CreatedPrintifyProduct[] = [];
   const extraNotes: string[] = [];
   const claimed = new Set<string>();
-  for (const spec of FERNORA_PRINTIFY_STARTERS) {
+  const unresolvedTitles = new Set<string>();
+  for (const starter of FERNORA_PRINTIFY_STARTERS) {
+    let spec = starter;
+    try {
+      spec = await resolveStarterSpec(starter, input?.token);
+    } catch (error) {
+      extraNotes.push(`${starter.title}: ${(error as Error).message}`);
+      for (const title of [starter.title, ...(starter.aliases || [])]) {
+        unresolvedTitles.add(title.trim().toLowerCase());
+      }
+      continue;
+    }
     const already = existingPrintifyProductId(
       existing.filter((row) => row.id && !claimed.has(row.id)),
       spec.title,
@@ -405,7 +432,9 @@ export async function createFernoraPrintifyProducts(input?: { shopId?: number; t
       replaced: Boolean(already),
     });
   }
-  const extras = existing.filter((row) => row.id && !claimed.has(row.id));
+  const extras = existing.filter(
+    (row) => row.id && !claimed.has(row.id) && !unresolvedTitles.has((row.title || "").trim().toLowerCase()),
+  );
   let removedPrintify = 0;
   for (const extra of extras) {
     if (!extra.id) continue;

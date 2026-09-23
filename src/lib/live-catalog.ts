@@ -364,7 +364,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     etsyListingId: "",
     title: "Grow With Purpose · Embroidered Zip Hoodie",
     description:
-      "Unisex Gildan 18600 full-zip hoodie with an original Fernora embroidered fern and the line “Grow with purpose, Bloom with grace.” Left-chest embroidery. Made to order.",
+      "Unisex Gildan 18600 full-zip hoodie with an original Fernora embroidered fern and the line “Grow with purpose, Bloom with grace” beneath the leaf. Left-chest embroidery. Black, White, and Navy. Made to order.",
     quote: "Grow with purpose, Bloom with grace.",
     state: "inactive",
     price: catalogPrice("live_hoodie_bloom"),

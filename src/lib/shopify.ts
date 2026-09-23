@@ -390,11 +390,11 @@ async function catalogProductImageSource(assetPath: string, request?: Request) {
 
 function customerGalleryPaths(product: ReturnType<typeof fernoraCatalog>[number]) {
   const skip = new Set([product.printFileUrl].filter(Boolean) as string[]);
-  return [...new Set(
-    [product.imageUrl, ...(product.gallery || [])].filter(
-      (file): file is string => Boolean(file) && !skip.has(file),
-    ),
-  )].filter((file) => {
+  const variantImages = (product.variants || []).map((row) => row.imageUrl);
+  const files = [product.imageUrl, ...variantImages, ...(product.gallery || [])].filter(
+    (file): file is string => typeof file === "string" && !skip.has(file),
+  );
+  return [...new Set(files)].filter((file) => {
     const rel = file.replace(/^\//, "").split("?")[0];
     return existsSync(path.join(process.cwd(), "public", rel));
   });
@@ -505,6 +505,36 @@ async function ensureShopifyProductGallery(
   }
 }
 
+async function shopifyVariantsWithColorPhotos(
+  product: ReturnType<typeof fernoraCatalog>[number],
+  clothing: ReturnType<typeof shopifyProductOptions>,
+  request?: Request,
+) {
+  const colors = [...new Set((product.variants || []).map((row) => row.color))];
+  if (colors.length < 2) return clothing;
+  const sourceByColor = new Map<string, string>();
+  for (const row of product.variants || []) {
+    if (!row.imageUrl || sourceByColor.has(row.color)) continue;
+    sourceByColor.set(row.color, await catalogProductImageSource(row.imageUrl, request));
+  }
+  return {
+    ...clothing,
+    variants: clothing.variants.map((variant) => {
+      const color = variant.optionValues.find((option) => option.optionName === "Color")?.name;
+      const originalSource = color ? sourceByColor.get(color) : undefined;
+      if (!originalSource) return variant;
+      return {
+        ...variant,
+        file: {
+          originalSource,
+          contentType: "IMAGE",
+          alt: `${product.title} · ${color}`,
+        },
+      };
+    }),
+  };
+}
+
 export async function syncFernoraCatalogToShopify(request?: Request) {
   const notes: string[] = [];
   const catalog: ShopifyCatalogMap = {};
@@ -538,7 +568,7 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
       { q: skuQuery },
     );
     const found = existing.products.nodes[0];
-    const clothing = shopifyProductOptions(product);
+    const clothing = await shopifyVariantsWithColorPhotos(product, shopifyProductOptions(product), request);
     const input: Record<string, unknown> = {
       title: product.title,
       descriptionHtml: shopifyProductHtml(product),

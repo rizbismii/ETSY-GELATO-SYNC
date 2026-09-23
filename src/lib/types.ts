@@ -67,6 +67,8 @@ export type ClothingVariant = {
   sizeUid: string;
   sku: string;
   gelatoProductUid: string;
+  /** Garment photo for this colour. Shared by every size of that colour. */
+  imageUrl?: string;
 };
 
 export type Listing = {
