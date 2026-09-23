@@ -76,6 +76,9 @@ export function printFileName(printFileUrl?: string, title?: string) {
 }
 
 export function printTemplateLabel(category: string, listingId?: string) {
+  if (listingId === "live_hoodie_bloom") {
+    return "Embroidery · 1200×1200 left chest (transparent ground, official Printify mockups)";
+  }
   const surface = printSurface(category);
   const treatment = printTreatment(category, listingId);
   if (surface === "dtg") return `DTG RGBA · ${treatment} (transparent ground, matches mockup)`;

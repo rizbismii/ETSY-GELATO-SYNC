@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ProductArt } from "@/components/product-art";
 import { formatMoney } from "@/lib/money";
-import { findClothingVariant, defaultClothingVariant } from "@/lib/clothing";
+import { clothingColor, findClothingVariant, defaultClothingVariant } from "@/lib/clothing";
 import { shopLane } from "@/lib/shop";
 import { gelatoCountryName } from "@/lib/gelato-countries";
 import { POLICY_PATHS } from "@/lib/shop-policies";
@@ -17,9 +17,14 @@ import { CountrySelect } from "../../country-select";
 import { readProfile } from "../../account-store";
 
 const COLOR_SWATCH: Record<string, string> = {
-  black: "bg-zinc-900",
-  white: "bg-white",
-  navy: "bg-[#1d2a4d]",
+  white: "#ffffff",
+  ash: "#F6F6F6",
+  black: "#000000",
+  "sport-grey": "#CACACA",
+  navy: "#1a2237",
+  "light-pink": "#FEE0EB",
+  "cardinal-red": "#911a30",
+  "dark-heather": "#3a3d42",
 };
 
 export function ProductDetail({ product }: { product: LiveProduct }) {
@@ -54,7 +59,8 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
     [product.variants, color, size],
   );
   const lane = shopLane(product, country);
-  const dtg = printSurface(product.category) === "dtg";
+  const embroidery = product.id === "live_hoodie_bloom";
+  const dtg = !embroidery && printSurface(product.category) === "dtg";
 
   function addToBag() {
     add(product.id, 1, variant?.id);
@@ -108,7 +114,7 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
           </Button>
           {product.printFileUrl ? (
             <Button size="sm" variant={view === "print" ? "default" : "outline"} onClick={() => setView("print")}>
-              Print file {dtg ? "· ink only" : ""}
+              Print file {embroidery ? "· chest embroidery" : dtg ? "· ink only" : ""}
             </Button>
           ) : null}
         </div>
@@ -138,7 +144,13 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
                       variant={color === option.colorUid ? "default" : "outline"}
                       onClick={() => setColor(option.colorUid)}
                     >
-                      <span className={`mr-2 inline-block size-3 rounded-full border border-black/10 ${COLOR_SWATCH[option.colorUid] || "bg-zinc-900"}`} />
+                      <span
+                        className="mr-2 inline-block size-3 rounded-full border border-black/10"
+                        style={{
+                          background:
+                            clothingColor(option.colorUid)?.hex || COLOR_SWATCH[option.colorUid] || "#18181b",
+                        }}
+                      />
                       {option.color}
                     </Button>
                   ))}

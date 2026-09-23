@@ -1,5 +1,8 @@
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { CLOTHING_COLORS, ZIP_HOODIE_COLOR_IMAGE, ZIP_HOODIE_PRINTIFY } from "@/lib/clothing";
 import { getCredentials, patchCredentials } from "@/lib/credentials";
+import { galleryForListing } from "@/lib/listing-health";
 import {
   formatPrintifySafetyInformation,
   pickPrintifyShop,
@@ -28,7 +31,12 @@ import {
   type PrintifyStarterSpec,
 } from "@/lib/printify-products";
 import { restoreLiveCatalogInShop } from "@/lib/drop";
-import { inactivateOlderEtsyListings, listEtsyShopListings, syncEtsyCatalogSections } from "@/lib/etsy";
+import {
+  inactivateOlderEtsyListings,
+  listEtsyShopListings,
+  syncEtsyCatalogSections,
+  uploadEtsyListingImage,
+} from "@/lib/etsy";
 import { deleteOlderGelatoProducts } from "@/lib/gelato-store";
 import { etsyListingUrl } from "@/lib/live-catalog";
 import { deleteOlderShopifyProducts, syncFernoraCatalogToShopify } from "@/lib/shopify";
@@ -331,11 +339,10 @@ function wantedVariantIds(spec: PrintifyStarterSpec) {
 
 function sameWantedVariants(spec: PrintifyStarterSpec, product: PrintifyProduct, title: string) {
   if ((product.title || "").trim() !== title.trim()) return false;
-  const enabled = printifyEnabledVariantIds(product);
+  const enabled = new Set(printifyEnabledVariantIds(product));
   const wanted = wantedVariantIds(spec);
-  if (enabled.length !== wanted.length) return false;
-  const want = new Set(wanted);
-  return enabled.every((id) => typeof id === "number" && want.has(id));
+  if (!wanted.length) return false;
+  return wanted.every((id) => enabled.has(id));
 }
 
 async function deleteLeftoverDisconnectedPrintifyProducts(token?: string) {
@@ -612,5 +619,99 @@ export async function applyPrintifyGpsr(input?: { shopId?: number; token?: strin
     shopSummaries: ping.shopSummaries,
     fullyConnected: ping.fullyConnected,
     notes: [...printifyGpsrNotes(gpsrStatus, products.length, updated), ...extraNotes],
+  };
+}
+
+const PRINTIFY_FRONT_CAMERA = 108335;
+const PRINTIFY_BACK_CAMERA = 108336;
+const HOODIE_PRINTIFY_ID = "6ab311b3f483ddf88402ac9b";
+
+async function downloadPrintifyMockup(url: string, dest: string) {
+  const response = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" }, cache: "no-store" });
+  if (!response.ok) throw new Error(`Printify mockup ${response.status}`);
+  await mkdir(path.dirname(dest), { recursive: true });
+  await writeFile(dest, Buffer.from(await response.arrayBuffer()));
+}
+
+/** Official Printify colour photos — never homemade garment composites. */
+export async function pullPrintifyVariantPhotos(productId = HOODIE_PRINTIFY_ID) {
+  const destDir = path.join(process.cwd(), "public", "catalog");
+  const written: string[] = [];
+  for (const color of CLOTHING_COLORS) {
+    const variantId = ZIP_HOODIE_PRINTIFY[color.uid]?.m;
+    if (!variantId) continue;
+    const file = ZIP_HOODIE_COLOR_IMAGE[color.uid]?.replace("/catalog/", "") || `catalog-hoodie-bloom-${color.uid}.jpg`;
+    const url = `https://images.printify.com/mockup/${productId}/${variantId}/${PRINTIFY_FRONT_CAMERA}/grow-with-purpose-embroidered-zip-hoodie.jpg`;
+    await downloadPrintifyMockup(url, path.join(destDir, file));
+    written.push(`/catalog/${file}`);
+  }
+  const whiteM = ZIP_HOODIE_PRINTIFY.white?.m;
+  if (whiteM) {
+    await downloadPrintifyMockup(
+      `https://images.printify.com/mockup/${productId}/${whiteM}/${PRINTIFY_BACK_CAMERA}/grow-with-purpose-embroidered-zip-hoodie.jpg`,
+      path.join(destDir, "gallery-live_hoodie_bloom-back.jpg"),
+    );
+    written.push("/catalog/gallery-live_hoodie_bloom-back.jpg");
+    const whiteFront = path.join(destDir, "catalog-hoodie-bloom.jpg");
+    const model = path.join(destDir, "gallery-live_hoodie_bloom-model.jpg");
+    await writeFile(model, await readFile(whiteFront));
+    written.push("/catalog/gallery-live_hoodie_bloom-model.jpg");
+  }
+  return written;
+}
+
+async function pushOfficialPhotosToEtsy(key: string, listingId: string) {
+  const notes: string[] = [];
+  const files = galleryForListing(key)
+    .filter((file) => !file.includes("/print-"))
+    .slice(0, 9);
+  const print = galleryForListing(key).find((file) => file.includes("/print-"));
+  const ordered = print ? [...files, print] : files;
+  for (const [index, file] of ordered.entries()) {
+    const imagePath = path.join(process.cwd(), "public", file.replace(/^\//, ""));
+    try {
+      await uploadEtsyListingImage(listingId, imagePath, index + 1);
+    } catch (error) {
+      notes.push(`${file}: ${(error as Error).message}`);
+    }
+  }
+  return notes;
+}
+
+/** Refresh one catalog product on Printify without recreating the rest. */
+export async function refreshPrintifyCatalogItem(key: string) {
+  const starter = FERNORA_PRINTIFY_STARTERS.find((row) => row.key === key);
+  if (!starter) throw new Error(`Unknown catalog product ${key}`);
+  const spec = await resolveStarterSpec(starter);
+  const ping = await pingPrintify();
+  const shopId = ping.shopId;
+  if (!shopId) throw new Error("No Printify shop on this token");
+  const existing = await listShopProducts(shopId);
+  const already = existingPrintifyProductId(existing, spec.title, spec.aliases);
+  if (!already) throw new Error(`${spec.title} is not on Printify yet`);
+  await refreshPrintifyPrintFile(shopId, already, spec);
+  if (spec.key === "live_hoodie_bloom") {
+    await new Promise((resolve) => setTimeout(resolve, 12000));
+  }
+  const photos = spec.key === "live_hoodie_bloom" ? await pullPrintifyVariantPhotos(already) : [];
+  await publishPrintifyProduct(shopId, already);
+  const shopify = await syncFernoraCatalogToShopify(undefined, [key]);
+  let etsyNotes: string[] = [];
+  try {
+    const current = await getPrintifyProduct(shopId, already);
+    const listingId = String(current.external?.id || "");
+    if (listingId) etsyNotes = await pushOfficialPhotosToEtsy(key, listingId);
+  } catch (error) {
+    etsyNotes.push(`Etsy photos: ${(error as Error).message}`);
+  }
+  return {
+    productId: already,
+    photos,
+    notes: [
+      `Refreshed ${spec.title} print file on Printify.`,
+      photos.length ? `Pulled ${photos.length} official Printify photos.` : "",
+      ...shopify.notes,
+      ...etsyNotes,
+    ].filter(Boolean),
   };
 }

@@ -52,6 +52,8 @@ test("gallery lists the listing photo, print file, and extra stills", () => {
   assert.ok(hoodie.includes("/catalog/catalog-hoodie-bloom.jpg"));
   assert.ok(hoodie.includes("/catalog/print-hoodie-bloom.png"));
   assert.ok(hoodie.includes("/catalog/gallery-live_hoodie_bloom-model.jpg"));
+  assert.ok(hoodie.includes("/catalog/catalog-hoodie-bloom-ash.jpg"));
+  assert.ok(hoodie.includes("/catalog/catalog-hoodie-bloom-light-pink.jpg"));
 });
 
 test("prices use Printify costs and do not pad for opted-out Offsite Ads", () => {
