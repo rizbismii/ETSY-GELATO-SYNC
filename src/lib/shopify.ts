@@ -677,13 +677,14 @@ export async function syncFernoraCatalogToShopify(request?: Request, onlyIds?: s
     if (found?.id) input.id = found.id;
     if (product.id === "live_sneaker_star") input.handle = "black-camo-mens-mesh-sneakers";
     if (product.id === "live_hoodie_bloom") input.handle = "grow-with-purpose-embroidered-zip-hoodie";
-    const colorFiles = clothing.variants.flatMap((variant) =>
-      "file" in variant && variant.file ? [variant.file] : [],
-    );
     const files: Array<{ originalSource: string; alt?: string; contentType: string }> = [];
     const seenSources = new Set<string>();
-    for (const file of colorFiles) {
-      if (seenSources.has(file.originalSource)) continue;
+    for (const variant of clothing.variants) {
+      const file =
+        "file" in variant
+          ? (variant.file as { originalSource?: string; alt?: string; contentType?: string } | undefined)
+          : undefined;
+      if (!file?.originalSource || seenSources.has(file.originalSource)) continue;
       seenSources.add(file.originalSource);
       files.push({
         originalSource: file.originalSource,

@@ -1,10 +1,19 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { readFileSync } from "node:fs";
 import {
   explainMetaConnectError,
   isMetaAccountDisabledError,
+  isMetaTokenExpiredError,
   META_ACCOUNT_DISABLED_HELP,
+  META_APP_DEVELOPMENT_HELP,
+  META_TOKEN_EXPIRED_HELP,
 } from "./meta-connect-error.ts";
+import {
+  FERNORA_META_APP_ID,
+  FERNORA_META_APP_NAME,
+  FERNORA_META_WAIT_ENDED_ON,
+} from "./meta-app.ts";
 import {
   clampMetaDailyBudget,
   dailyBudgetToMinor,
@@ -16,6 +25,7 @@ import {
   metaPurchasePayload,
   normalizeAdAccountId,
   normalizePixelId,
+  pickMetaIds,
   withMetaPixelInTheme,
 } from "./meta-budget.ts";
 import {
@@ -69,6 +79,63 @@ test("disabled Facebook logins get a Pressroom-safe Meta error", () => {
   assert.match(META_ACCOUNT_DISABLED_HELP, /same email cannot open Business Suite/i);
   assert.equal(explainMetaConnectError("Invalid OAuth access token"), "Invalid OAuth access token");
   assert.equal(isMetaAccountDisabledError("Invalid OAuth access token"), false);
+});
+
+test("expired Graph Explorer tokens ask for a Fernora Pressroom refresh", () => {
+  const expired =
+    "Error validating access token: Session has expired on Saturday, 19-Sep-26 03:00:00 PDT.";
+  assert.equal(isMetaTokenExpiredError(expired, 190, 463), true);
+  assert.equal(explainMetaConnectError(expired, 190, 463), META_TOKEN_EXPIRED_HELP);
+  assert.match(META_TOKEN_EXPIRED_HELP, new RegExp(FERNORA_META_APP_ID));
+  assert.match(META_TOKEN_EXPIRED_HELP, /Generate a new User Token/i);
+  assert.equal(isMetaAccountDisabledError(expired, 190, 463), false);
+});
+
+test("development-mode Page ads get a Pressroom-safe Meta error", () => {
+  const raw = "Ads creative post was created by an app that is in development mode. It must be in public to create this ad.";
+  assert.equal(explainMetaConnectError(raw), META_APP_DEVELOPMENT_HELP);
+  assert.match(META_APP_DEVELOPMENT_HELP, /switch the app to Live/);
+  assert.match(META_APP_DEVELOPMENT_HELP, /fernora.nz\/policies\/privacy-policy/);
+  assert.match(META_APP_DEVELOPMENT_HELP, /fernora.nz\/pages\/data-deletion/);
+  assert.match(META_APP_DEVELOPMENT_HELP, /Do not Go live/);
+});
+
+test("campaign create keeps a hard ad-set cap and does not share budget", () => {
+  const source = readFileSync(new URL("./meta-ads.ts", import.meta.url), "utf8");
+  assert.match(source, /is_adset_budget_sharing_enabled: false/);
+  assert.doesNotMatch(source, /is_adset_budget_sharing_enabled: true/);
+});
+
+test("Ads page uses the existing Fernora Pressroom app after the 48-hour wait", () => {
+  const page = readFileSync(new URL("../app/ads/page.tsx", import.meta.url), "utf8");
+  const app = readFileSync(new URL("./meta-app.ts", import.meta.url), "utf8");
+  assert.match(app, new RegExp(FERNORA_META_APP_ID));
+  assert.match(app, new RegExp(FERNORA_META_APP_NAME));
+  assert.match(app, new RegExp(FERNORA_META_WAIT_ENDED_ON));
+  assert.match(page, /FERNORA_META_APP_ID/);
+  assert.match(page, /FERNORA_META_WAIT_ENDED_ON/);
+  assert.match(page, /instagram_basic/);
+  assert.match(page, /Instagram professional ID/);
+  assert.match(page, /Do not click/);
+  assert.match(page, /switch the app to/i);
+  assert.match(page, /FERNORA_META_DATA_DELETION_URL/);
+  assert.doesNotMatch(page, /Create app/);
+  assert.doesNotMatch(page, /\bGelato\b/);
+});
+
+test("pickMetaIds keeps saved Fernora IDs and fills Instagram from the Page", () => {
+  const picked = pickMetaIds(
+    {
+      adAccounts: [{ id: "act_999" }],
+      pages: [{ id: "page_other", name: "Other" }, { id: "page_fernora", name: "Fernora", instagramUserId: "ig_1" }],
+      pixels: [{ id: "px_2" }],
+    },
+    { adAccountId: "act_1081027171182996", pageId: "page_fernora", pixelId: "1435089141828956" },
+  );
+  assert.equal(picked.adAccountId, "act_1081027171182996");
+  assert.equal(picked.pageId, "page_fernora");
+  assert.equal(picked.pixelId, "1435089141828956");
+  assert.equal(picked.instagramUserId, "ig_1");
 });
 
 test("CAPI purchase hashes email and keeps the shop URL", () => {

@@ -33,6 +33,8 @@ export type MetaConnection = {
   mode: ConnectionMode;
   adAccountId?: string;
   pixelId?: string;
+  pageId?: string;
+  instagramUserId?: string;
   error?: string;
 };
 

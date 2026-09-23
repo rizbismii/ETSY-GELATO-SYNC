@@ -70,6 +70,7 @@ export async function GET(request: Request) {
       adAccountId: creds.meta?.adAccountId || "",
       pixelId: creds.meta?.pixelId || "",
       pageId: creds.meta?.pageId || "",
+      instagramUserId: creds.meta?.instagramUserId || "",
     },
     printify: {
       apiTokenSet: Boolean(creds.printify?.apiToken),

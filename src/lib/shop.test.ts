@@ -112,6 +112,8 @@ test("returns policy follows made-to-order rules without naming the printer", ()
   assert.match(source, /do not provide a return address/);
   assert.match(source, /country name and currency code/);
   assert.doesNotMatch(source, /Gelato/);
+  assert.match(source, /Delete my data/);
+  assert.match(source, /data-deletion/);
 });
 
 test("Horizon branding shows country · currency and made-to-order homepage copy", () => {

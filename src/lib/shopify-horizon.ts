@@ -996,6 +996,7 @@ export async function publishGelatoLegalPages() {
   const notes: string[] = [];
   const pages: Array<{ handle: string; title: string; body: string }> = [
     { handle: "privacy", title: "Privacy", body: policyHtml("privacy") },
+    { handle: "data-deletion", title: "User data deletion", body: policyHtml("dataDeletion") },
     { handle: "returns", title: "Returns & refunds", body: policyHtml("returns") },
     { handle: "shipping", title: "Shipping", body: policyHtml("shipping") },
   ];
@@ -1049,6 +1050,9 @@ export async function publishGelatoLegalPages() {
   const menuItems: Array<{ title: string; type: string; resourceId?: string }> = [
     { title: "Search", type: "SEARCH" },
     ...(ids.privacy ? [{ title: "Privacy", type: "PAGE", resourceId: ids.privacy }] : []),
+    ...(ids["data-deletion"]
+      ? [{ title: "Data deletion", type: "PAGE", resourceId: ids["data-deletion"] }]
+      : []),
     ...(ids.returns ? [{ title: "Returns & refunds", type: "PAGE", resourceId: ids.returns }] : []),
     ...(ids.shipping ? [{ title: "Shipping", type: "PAGE", resourceId: ids.shipping }] : []),
     ...(contact ? [{ title: "Contact", type: "PAGE", resourceId: contact }] : []),

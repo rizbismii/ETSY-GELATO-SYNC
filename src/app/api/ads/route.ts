@@ -49,6 +49,7 @@ export async function GET() {
       adAccountId: creds.meta?.adAccountId || "",
       pixelId: creds.meta?.pixelId || "",
       pageId: creds.meta?.pageId || "",
+      instagramUserId: creds.meta?.instagramUserId || "",
     },
   });
 }
