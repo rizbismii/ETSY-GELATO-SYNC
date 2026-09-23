@@ -155,6 +155,7 @@ test("customer-facing shop copy does not name Gelato as the supplier", () => {
   assert.match(shopifySource, /stagedUploadsCreate/);
   assert.match(shopifySource, /name: "Size"/);
   assert.match(shopifySource, /shopifyVariantsWithColorPhotos/);
+  assert.match(shopifySource, /productVariantAppendMedia/);
   assert.match(shopifySource, /optionName === "Color"/);
   assert.match(shopifySource, /productDeleteMedia/);
   assert.match(shopifySource, /existsSync/);

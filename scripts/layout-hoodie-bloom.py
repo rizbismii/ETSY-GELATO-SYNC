@@ -172,9 +172,10 @@ def paint_on_base(design: np.ndarray) -> np.ndarray:
 
 
 def background_mask(rgb: np.ndarray) -> np.ndarray:
+    """Studio backdrop only. The white hoodie itself is about 230–248, so a looser cut paints just the shadows."""
     luma = rgb.mean(axis=2)
     chroma = np.max(rgb, axis=2) - np.min(rgb, axis=2)
-    light = (luma > 235) & (chroma < 12)
+    light = (luma > 252) & (chroma < 6)
     h, w = light.shape
     bg = np.zeros(light.shape, dtype=bool)
     stack = [(0, 0), (0, w - 1), (h - 1, 0), (h - 1, w - 1)]
@@ -191,9 +192,10 @@ def recolor_garment(rgb: np.ndarray, garment: tuple[int, int, int]) -> np.ndarra
     out = rgb.astype(np.float32)
     luma = 0.299 * out[:, :, 0] + 0.587 * out[:, :, 1] + 0.114 * out[:, :, 2]
     chroma = np.max(out, axis=2) - np.min(out, axis=2)
-    fabric = ~background_mask(rgb) & (chroma < 28) & (luma > 90)
-    shade = np.clip((luma - 70) / 185, 0.15, 1)
-    tint = np.array(garment, np.float32).reshape(1, 1, 3) * (0.25 + 0.75 * shade[:, :, None])
+    # Keep the fern and the dark quote. Recolor the rest of the garment, including the bright panels.
+    fabric = ~background_mask(rgb) & (chroma < 28) & (luma > 130)
+    shade = np.clip((luma - 160) / 95, 0.35, 1)
+    tint = np.array(garment, np.float32).reshape(1, 1, 3) * (0.45 + 0.55 * shade[:, :, None])
     out[fabric] = tint[fabric]
     return np.clip(out, 0, 255).astype(np.uint8)
 
