@@ -96,6 +96,7 @@ test("development-mode Page ads get a Pressroom-safe Meta error", () => {
   assert.equal(explainMetaConnectError(raw), META_APP_DEVELOPMENT_HELP);
   assert.match(META_APP_DEVELOPMENT_HELP, /switch the app to Live/);
   assert.match(META_APP_DEVELOPMENT_HELP, /fernora.nz\/policies\/privacy-policy/);
+  assert.match(META_APP_DEVELOPMENT_HELP, /fernora.nz\/pages\/data-deletion/);
   assert.match(META_APP_DEVELOPMENT_HELP, /Do not Go live/);
 });
 
@@ -116,7 +117,8 @@ test("Ads page uses the existing Fernora Pressroom app after the 48-hour wait", 
   assert.match(page, /instagram_basic/);
   assert.match(page, /Instagram professional ID/);
   assert.match(page, /Do not click/);
-  assert.match(page, /switch the app to/);
+  assert.match(page, /switch the app to/i);
+  assert.match(page, /FERNORA_META_DATA_DELETION_URL/);
   assert.doesNotMatch(page, /Create app/);
   assert.doesNotMatch(page, /\bGelato\b/);
 });

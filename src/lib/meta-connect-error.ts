@@ -5,7 +5,7 @@ export const META_TOKEN_EXPIRED_HELP =
   "The Graph Explorer user token expired. Open Graph API Explorer, set Meta App to Fernora Pressroom (2165594861508604), generate a new User Token, and paste it on Ads. Explorer tokens last about an hour — Save, then create the paused campaign in the same sitting.";
 
 export const META_APP_DEVELOPMENT_HELP =
-  "The paused Fernora · Pressroom campaign and NZ/AU ad set are ready. Meta will not attach the Page ad while Fernora Pressroom is in Development mode. In the app dashboard open App settings → Basic, add the privacy policy https://fernora.nz/policies/privacy-policy, then switch the app to Live. Create paused campaign again after that. Do not Go live on the campaign until we decide to.";
+  "The paused Fernora · Pressroom campaign and NZ/AU ad set are ready. Meta will not attach the Page ad while Fernora Pressroom is in Development mode. In App settings → Basic set Category to Business, privacy policy https://fernora.nz/policies/privacy-policy, user data deletion https://fernora.nz/pages/data-deletion, and the 1024×1024 Fernora icon, then switch the app to Live. Create paused campaign again after that. Do not Go live on the campaign until we decide to.";
 
 export function isMetaAccountDisabledError(message?: string | null, code?: number, subcode?: number) {
   if (code === 190 && (subcode === 459 || subcode === 464 || subcode === 490)) return true;

@@ -12,6 +12,7 @@ export const POLICY_PATHS = {
   shipping: "/shop/policies/shipping",
   payments: "/shop/policies/payments",
   contact: "/shop/contact",
+  dataDeletion: "/shop/policies/data-deletion",
 } as const;
 
 export function storefrontPath(path: string) {
@@ -41,6 +42,19 @@ export const POLICY_COPY = {
       "Pressroom, our operations desk, keeps order records so we can reprint defects, push tracking, and answer support. Production files and delivery events are stored only as needed to print and ship. We do not sell, rent, or share customer lists for advertising.",
       "Cookies and similar storage remember your bag, country, and currency on this device. You can clear them in the browser. If we add analytics later, this policy will name the provider.",
       "To access, correct, or delete personal information we hold, email hello@fernora.nz. Shopify account holders can also manage data from the order email or Shopify customer account. We retain order records as long as tax, fulfilment, and dispute rules require.",
+      "How to delete your data: email hello@fernora.nz with the subject “Delete my data” and the email or order number used at checkout. We delete or anonymise Pressroom, Pixel, and fulfilment records we control within 30 days, except records we must keep for tax, shipping, or disputes. The same request is published at fernora.nz/pages/data-deletion.",
+    ],
+  },
+  dataDeletion: {
+    title: "User data deletion",
+    summary:
+      "Email hello@fernora.nz to delete personal information Fernora holds from a shop order or from Meta ads.",
+    body: [
+      "This page is the user-data-deletion instruction URL for the Fernora Pressroom Meta app and for fernora.nz.",
+      "Send one email to hello@fernora.nz with the subject “Delete my data”. Include the email address used at checkout or in a Facebook/Instagram comment, and any Shopify order number you have.",
+      "We will delete or anonymise your name, email, phone, address, and ad-event identifiers that Pressroom stores, and we will ask our print and checkout processors to do the same where they hold a copy. Pixel events already sent to Meta are deleted through Meta’s tools when you use Facebook or Instagram’s own off-Facebook activity controls.",
+      "We complete requests within 30 days. We may keep a minimal order record where New Zealand tax, shipping-claim, or payment-dispute rules require it. We will say so in the reply.",
+      "This does not delete your Facebook, Instagram, or Shopify account. Those are closed in those products’ own settings.",
     ],
   },
   terms: {

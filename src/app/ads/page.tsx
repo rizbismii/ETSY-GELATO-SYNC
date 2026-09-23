@@ -16,7 +16,9 @@ import {
   FERNORA_META_APP_NAME,
   FERNORA_META_BUSINESS_SUITE_URL,
   FERNORA_META_EXPLORER_URL,
+  FERNORA_META_DATA_DELETION_URL,
   FERNORA_META_INSTAGRAM_ACCOUNTS_URL,
+  FERNORA_META_PRIVACY_POLICY_URL,
   FERNORA_META_WAIT_ENDED_ON,
 } from "@/lib/meta-app";
 import { isMetaAccountDisabledError, isMetaTokenExpiredError } from "@/lib/meta-connect-error";
@@ -261,12 +263,16 @@ export default function AdsPage() {
             <a className="underline" href={FERNORA_META_APP_DASHBOARD_URL} target="_blank" rel="noreferrer">
               {FERNORA_META_APP_NAME}
             </a>
-            , add privacy policy{" "}
-            <a className="underline" href="https://fernora.nz/policies/privacy-policy" target="_blank" rel="noreferrer">
+            . In App settings → Basic set Category to <strong>Business</strong>, privacy policy{" "}
+            <a className="underline" href={FERNORA_META_PRIVACY_POLICY_URL} target="_blank" rel="noreferrer">
               fernora.nz/policies/privacy-policy
             </a>
-            , switch the app to <strong>Live</strong>, then Create paused campaign again. Do not click
-            Go live on the campaign unless we decide to.
+            , user data deletion{" "}
+            <a className="underline" href={FERNORA_META_DATA_DELETION_URL} target="_blank" rel="noreferrer">
+              fernora.nz/pages/data-deletion
+            </a>
+            , and the 1024×1024 Fernora icon. Switch the app to <strong>Live</strong>, then Create
+            paused campaign again. Do not click Go live on the campaign unless we decide to.
           </li>
         </ol>
         <p className="mt-3 text-muted-foreground">
