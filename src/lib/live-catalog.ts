@@ -1,4 +1,5 @@
-import { resolveCatalogLine } from "@/lib/clothing";
+import { SNEAKER_WOMENS_WHITE_SOLE } from "@/lib/sneaker-sizes";
+import { resolveCatalogLine, sneakerVariants, zipHoodieVariants } from "@/lib/clothing";
 import { GELATO_SHIP_BLURB } from "@/lib/gelato-countries";
 import { galleryForListing, tagsForListing } from "@/lib/listing-health";
 import {
@@ -7,6 +8,7 @@ import {
   catalogUnitCost,
   type CostLane,
 } from "@/lib/printify-costs";
+import { SHOP_CURRENCY } from "@/lib/shop-currency";
 import type { Listing } from "@/lib/types";
 
 export const ETSY_SHOP_URL = "https://www.etsy.com/shop/FERNORATRENDS";
@@ -18,7 +20,7 @@ export function etsyListingUrl(listingId?: string | null) {
 export const LIVE_DROP_ID = "fernora-live";
 export const LIVE_DROP_NAME = "Fernora mix";
 export const SHOP_NAME = "FERNORATRENDS";
-export const SHOP_CURRENCY = "NZD";
+export { SHOP_CURRENCY } from "@/lib/shop-currency";
 export const RETURN_POLICY_ID = 1515682339963;
 export const READINESS_STATE_ID = 1514454820482;
 
@@ -32,13 +34,16 @@ export const SHIP_COUNTRIES = [
 
 export const SHIP_BLURB = GELATO_SHIP_BLURB;
 
-/** One product per Catalog mix so All / Quotes / Botanical / Scenic / Home décor / Original fern stay filled. */
+/** Wall-art mixes stay filled; sneakers sit in Original fern; the zip hoodie sits in Quotes. */
 export const LIVE_CATALOG_IDS = [
   "live_poster",
   "live_quote_breathe",
   "live_botanical_kowhai",
   "live_canvas_harbour",
   "live_frame_kind",
+  "live_sneaker_star",
+  "live_sneaker_star_w",
+  "live_hoodie_bloom",
 ] as const;
 
 export type LiveCatalogId = (typeof LIVE_CATALOG_IDS)[number];
@@ -154,7 +159,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
       "A tall botanical study of a New Zealand fern, printed to order on premium 200 gsm semi-gloss A3 paper. Unframed. Made to order.",
     state: "inactive",
     price: catalogPrice("live_poster"),
-    currency: "NZD",
+    currency: SHOP_CURRENCY,
     quantity: 999,
     views: 0,
     favorites: 0,
@@ -184,7 +189,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     quote: "Breathe. You are here.",
     state: "inactive",
     price: catalogPrice("live_quote_breathe"),
-    currency: "NZD",
+    currency: SHOP_CURRENCY,
     quantity: 999,
     views: 0,
     favorites: 0,
@@ -213,7 +218,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
       "Large 18×24 in painterly study of New Zealand kōwhai bells on cream. Botanical, not abstract. Unframed.",
     state: "inactive",
     price: catalogPrice("live_botanical_kowhai"),
-    currency: "NZD",
+    currency: SHOP_CURRENCY,
     quantity: 999,
     views: 0,
     favorites: 0,
@@ -242,7 +247,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
       "Square slim-wrap canvas of a quiet New Zealand harbour at first light. Scenic, not geometric abstract.",
     state: "inactive",
     price: catalogPrice("live_canvas_harbour"),
-    currency: "NZD",
+    currency: SHOP_CURRENCY,
     quantity: 999,
     views: 0,
     favorites: 0,
@@ -272,7 +277,7 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     quote: "Home is a kind light.",
     state: "inactive",
     price: catalogPrice("live_frame_kind"),
-    currency: "NZD",
+    currency: SHOP_CURRENCY,
     quantity: 999,
     views: 0,
     favorites: 0,
@@ -293,6 +298,97 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     publishState: "ready",
     lanes: catalogLanes("live_frame_kind"),
     gallery: galleryForListing("live_frame_kind"),
+  }),
+  item({
+    id: "live_sneaker_star",
+    etsyListingId: "",
+    title: "Black Camo · Men’s Mesh Sneakers",
+    description:
+      "Men’s mesh sneakers with an original Fernora black-camo print. Dye sublimation, white sole, memory-foam insole. Made to order.",
+    state: "inactive",
+    price: catalogPrice("live_sneaker_star"),
+    currency: SHOP_CURRENCY,
+    quantity: 999,
+    views: 0,
+    favorites: 0,
+    tags: tagsForListing("live_sneaker_star"),
+    category: "sneakers",
+    collection: "original",
+    gelatoProductUid: "printify_mesh_sneakers_1072",
+    gelatoProductName: "Men’s mesh sneakers · white sole",
+    printFileUrl: "/catalog/print-camo-sneakers.png",
+    imageUrl: "/catalog/catalog-camo-sneakers-angle.jpg",
+    gelatoUnitCost: catalogUnitCost("live_sneaker_star"),
+    drop: LIVE_DROP_ID,
+    issues: [],
+    taxonomyId: 1478,
+    shippingProfileId: 315080633003,
+    returnPolicyId: RETURN_POLICY_ID,
+    publishState: "ready",
+    lanes: catalogLanes("live_sneaker_star"),
+    gallery: galleryForListing("live_sneaker_star"),
+    variants: sneakerVariants("live_sneaker_star", "printify_mesh_sneakers_1072"),
+  }),
+  item({
+    id: "live_sneaker_star_w",
+    etsyListingId: "",
+    title: "Southern Cross Star · Women’s Mesh Sneakers",
+    description:
+      "Women’s mesh sneakers with an original Fernora star-and-fern print on forest green. Dye sublimation, white sole, memory-foam insole. Made to order.",
+    state: "inactive",
+    price: catalogPrice("live_sneaker_star_w"),
+    currency: SHOP_CURRENCY,
+    quantity: 999,
+    views: 0,
+    favorites: 0,
+    tags: tagsForListing("live_sneaker_star_w"),
+    category: "sneakers",
+    collection: "original",
+    gelatoProductUid: "printify_mesh_sneakers_1219",
+    gelatoProductName: "Women’s mesh sneakers · white sole",
+    printFileUrl: "/catalog/print-star-sneakers.png",
+    imageUrl: "/catalog/catalog-star-sneakers-w-angle.jpg",
+    gelatoUnitCost: catalogUnitCost("live_sneaker_star_w"),
+    drop: LIVE_DROP_ID,
+    issues: [],
+    taxonomyId: 1478,
+    shippingProfileId: 315080633003,
+    returnPolicyId: RETURN_POLICY_ID,
+    publishState: "ready",
+    lanes: catalogLanes("live_sneaker_star_w"),
+    gallery: galleryForListing("live_sneaker_star_w"),
+    variants: sneakerVariants("live_sneaker_star_w", "printify_mesh_sneakers_1219", SNEAKER_WOMENS_WHITE_SOLE),
+  }),
+  item({
+    id: "live_hoodie_bloom",
+    etsyListingId: "",
+    title: "Grow With Purpose · Embroidered Zip Hoodie",
+    description:
+      "Unisex Gildan 18600 full-zip hoodie with an original Fernora embroidered fern and the line “Grow with purpose, Bloom with grace.” Left-chest embroidery. Made to order.",
+    quote: "Grow with purpose, Bloom with grace.",
+    state: "inactive",
+    price: catalogPrice("live_hoodie_bloom"),
+    currency: SHOP_CURRENCY,
+    quantity: 999,
+    views: 0,
+    favorites: 0,
+    tags: tagsForListing("live_hoodie_bloom"),
+    category: "hoodie",
+    collection: "quote",
+    gelatoProductUid: "printify_gildan_18600",
+    gelatoProductName: "Gildan 18600 zip hoodie · embroidery",
+    printFileUrl: "/catalog/print-hoodie-bloom.png",
+    imageUrl: "/catalog/catalog-hoodie-bloom.jpg",
+    gelatoUnitCost: catalogUnitCost("live_hoodie_bloom"),
+    drop: LIVE_DROP_ID,
+    issues: [],
+    taxonomyId: 1738,
+    shippingProfileId: 315080633003,
+    returnPolicyId: RETURN_POLICY_ID,
+    publishState: "ready",
+    lanes: catalogLanes("live_hoodie_bloom"),
+    gallery: galleryForListing("live_hoodie_bloom"),
+    variants: zipHoodieVariants("live_hoodie_bloom"),
   }),
 ];
 

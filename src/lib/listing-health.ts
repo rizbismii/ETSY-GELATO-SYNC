@@ -39,6 +39,34 @@ const GALLERY_PAIRS: Record<string, { mockup: string; print: string }> = {
     print: "/catalog/print-harbour-morning.png",
   },
   live_frame_kind: { mockup: "/catalog/catalog-kind-light.png", print: "/catalog/print-kind-light.png" },
+  live_sneaker_star: { mockup: "/catalog/catalog-camo-sneakers-angle.jpg", print: "/catalog/print-camo-sneakers.png" },
+  live_sneaker_star_w: { mockup: "/catalog/catalog-star-sneakers-w-angle.jpg", print: "/catalog/print-star-sneakers.png" },
+  live_hoodie_bloom: { mockup: "/catalog/catalog-hoodie-bloom.jpg", print: "/catalog/print-hoodie-bloom.png" },
+};
+
+const GALLERY_EXTRA: Record<string, string[]> = {
+  live_sneaker_star: [
+    "/catalog/gallery-live_sneaker_star-camo-model.jpg",
+    "/catalog/gallery-live_sneaker_star-camo-model-2.jpg",
+    "/catalog/gallery-live_sneaker_star-camo-outside.jpg",
+    "/catalog/gallery-live_sneaker_star-camo-top.jpg",
+    "/catalog/gallery-live_sneaker_star-camo-back.jpg",
+    "/catalog/gallery-live_sneaker_star-camo-detail.png",
+    "/catalog/gallery-live_sneaker_star-camo-close.png",
+  ],
+  live_sneaker_star_w: [
+    "/catalog/gallery-live_sneaker_star_w-model.jpg",
+    "/catalog/gallery-live_sneaker_star_w-model-2.jpg",
+    "/catalog/gallery-live_sneaker_star_w-outside.jpg",
+    "/catalog/gallery-live_sneaker_star_w-top.jpg",
+    "/catalog/gallery-live_sneaker_star_w-back.jpg",
+  ],
+  live_hoodie_bloom: [
+    "/catalog/gallery-live_hoodie_bloom-model.jpg",
+    "/catalog/gallery-live_hoodie_bloom-back.jpg",
+    "/catalog/gallery-live_hoodie_bloom-sleeve.jpg",
+    "/catalog/gallery-live_hoodie_bloom-other.jpg",
+  ],
 };
 
 export function clipListingTag(tag: string) {
@@ -68,6 +96,7 @@ export function listingGallery(id?: string | null, mockup?: string | null, print
   const pair = id ? GALLERY_PAIRS[id] : undefined;
   const files = [
     pair?.mockup || mockup || "",
+    ...(id ? GALLERY_EXTRA[id] || [] : []),
     pair?.print || print || "",
     id ? `/catalog/gallery-${id}-detail.png` : "",
     id ? `/catalog/gallery-${id}-close.png` : "",
@@ -108,6 +137,18 @@ export const CATALOG_LISTING_TAGS: Record<string, string[]> = {
   live_frame_kind: fillListingTags(
     ["home", "framed", "kind", "quote", "homedecor", "Home décor"],
     ["oak frame", "ready to hang", "kind light"],
+  ),
+  live_sneaker_star: fillListingTags(
+    ["Original fern", "sneakers", "mesh", "camo", "black", "mens"],
+    ["mens shoes", "black camo", "streetwear", "white sole", "fernora"],
+  ),
+  live_sneaker_star_w: fillListingTags(
+    ["Original fern", "sneakers", "mesh", "stars", "gold", "green"],
+    ["womens shoes", "southern cross", "fern print", "white sole", "streetwear"],
+  ),
+  live_hoodie_bloom: fillListingTags(
+    ["Quotes", "zip hoodie", "embroidery", "fern", "grow", "bloom"],
+    ["unisex", "gildan", "white hoodie", "quote", "botanical"],
   ),
 };
 

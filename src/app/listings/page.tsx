@@ -221,13 +221,18 @@ export default function ListingsPage() {
         <div>
           <h1 className="font-heading text-4xl tracking-tight">Catalog</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Mixed Fernora shop: five products, one per mix — Quotes, Botanical, Scenic, Home décor,
-            and Original fern. Prices in {currency}. Printify is the main supplier except the United
-            Kingdom and the European Union. One variant each. Catalog dropdowns on Etsy, Shopify, and
-            this desk match Printify: All, Quotes, Botanical, Scenic, Home décor, Original fern.
-            Print and ship costs are Printify for NZ / AU / US and Gelato for UK / EU. Prices keep
-            40% after Etsy fees and print — Offsite Ads are off, so listings are not padded for 15%.
-            Ad spend is the Meta daily cap (NZ${dailyCap}) on Ads. Etsy Ads (CPC) are not activated.
+            Mixed Fernora shop: five wall-art mixes, black-camo men’s and Southern Cross women’s mesh sneakers, and the embroidered zip hoodie — Quotes,
+            Botanical, Scenic, Home décor, and Original fern. List, print, and profit figures are shop{" "}
+            {currency}. Shopify and the website convert that NZD list price into USD, AUD, GBP, and EUR
+            from the same table — never paste the NZD number into a USD field. Printify listing
+            health always shows a USD prefix: retail there is the Etsy NZD number, production cost
+            is real USD and must be converted before pricing. Printify is the
+            main supplier except the United Kingdom and the European Union (wall art). Mesh sneakers
+            print on Printify. Catalog dropdowns on Etsy, Shopify, and this desk match Printify: All,
+            Quotes, Botanical, Scenic, Home décor, Original fern. Print and ship costs are Printify
+            for NZ / AU / US and Gelato for UK / EU wall art. Prices keep 40% after Etsy fees and
+            print — Offsite Ads are off, so listings are not padded for 15%. Ad spend is the Meta
+            daily cap (NZ${dailyCap}) on Ads. Etsy Ads (CPC) are not activated.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -299,9 +304,9 @@ export default function ListingsPage() {
       <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm leading-6">
         <p className="font-medium">Print file templates</p>
         <p className="mt-1 text-muted-foreground">
-          Each product stores its print file in this catalog. Printify holds five products (one
-          variant). Publish them to Etsy, Shopify, and fernora.nz. Gelato stays for UK and EU only.
-          Download the template for the current mix.
+          Each product stores its print file in this catalog. Printify holds eight products (wall art
+          one variant; sneakers every white-sole size; zip hoodie white S–2XL). Publish them to Etsy, Shopify, and fernora.nz.
+          Gelato stays for UK and EU wall art. Download the template for the current mix.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {visible
@@ -460,7 +465,7 @@ export default function ListingsPage() {
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Buyer pays destination shipping. Print and ship for New Zealand, Australia, and
-                      the United States are live Printify costs (shipping converted from USD at 1.67).
+                      the United States are live Printify costs (print and shipping converted from USD at 1.67).
                       United Kingdom and European Union stay on Gelato for GPSR. Net is price minus
                       Etsy fees and print. Ads are the Meta daily cap — not a per-sale 15%.
                     </p>

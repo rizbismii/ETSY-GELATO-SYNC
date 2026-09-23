@@ -17,6 +17,7 @@ import {
   buildPrintifyProductPayload,
   existingPrintifyProductId,
   FERNORA_PRINTIFY_STARTERS,
+  mergePrintAreaVariantIds,
   printAreasForExistingVariants,
   printifyCatalogFile,
   printifyEnabledVariantIds,
@@ -29,6 +30,7 @@ import { deleteOlderGelatoProducts } from "@/lib/gelato-store";
 import { etsyListingUrl } from "@/lib/live-catalog";
 import { deleteOlderShopifyProducts, syncFernoraCatalogToShopify } from "@/lib/shopify";
 import { syncShopifyCatalogMenu } from "@/lib/shopify-horizon";
+import { fillShopifyCollections, syncShopifyPresentmentPrices } from "@/lib/shopify-storefront";
 import { updateShop } from "@/lib/store";
 
 export {
@@ -166,11 +168,15 @@ async function refreshPrintifyPrintFile(
 ) {
   const current = await getPrintifyProduct(shopId, productId, token);
   const image = await uploadPrintifyImage(spec.printFile, token);
-  const variantIds = (current.variants || []).map((variant) => variant.id).filter((id): id is number => Boolean(id));
+  const currentIds = (current.variants || []).map((variant) => variant.id).filter((id): id is number => Boolean(id));
+  const catalogIds = await listBlueprintVariantIds(spec.blueprintId, spec.printProviderId, token);
+  const variantIds = mergePrintAreaVariantIds(catalogIds, currentIds);
   await printify(`/shops/${shopId}/products/${productId}.json`, {
     method: "PUT",
     token,
     body: {
+      title: spec.title,
+      description: spec.description,
       tags: spec.tags,
       print_areas: printAreasForExistingVariants(spec, image.id, variantIds),
     },
@@ -206,6 +212,14 @@ async function createPrintifyProduct(shopId: number, spec: PrintifyStarterSpec, 
 
 async function getPrintifyProduct(shopId: number, productId: string, token?: string) {
   return printify<PrintifyProduct>(`/shops/${shopId}/products/${productId}.json`, { token });
+}
+
+async function listBlueprintVariantIds(blueprintId: number, printProviderId: number, token?: string) {
+  const catalog = await printify<{ variants?: Array<{ id?: number }> }>(
+    `/catalog/blueprints/${blueprintId}/print_providers/${printProviderId}/variants.json`,
+    { token },
+  );
+  return (catalog.variants || []).map((variant) => variant.id).filter((id): id is number => Boolean(id));
 }
 
 async function deletePrintifyProduct(shopId: number, productId: string, token?: string) {
@@ -299,11 +313,13 @@ function wantedVariantIds(spec: PrintifyStarterSpec) {
   return spec.variants.filter((variant) => variant.is_enabled).map((variant) => variant.id);
 }
 
-function sameOneVariant(spec: PrintifyStarterSpec, product: PrintifyProduct, title: string) {
+function sameWantedVariants(spec: PrintifyStarterSpec, product: PrintifyProduct, title: string) {
   if ((product.title || "").trim() !== title.trim()) return false;
   const enabled = printifyEnabledVariantIds(product);
   const wanted = wantedVariantIds(spec);
-  return enabled.length === 1 && wanted.length === 1 && enabled[0] === wanted[0];
+  if (enabled.length !== wanted.length) return false;
+  const want = new Set(wanted);
+  return enabled.every((id) => typeof id === "number" && want.has(id));
 }
 
 async function deleteLeftoverDisconnectedPrintifyProducts(token?: string) {
@@ -353,7 +369,7 @@ export async function createFernoraPrintifyProducts(input?: { shopId?: number; t
     );
     if (already) {
       const current = await getPrintifyProduct(shopId, already, input?.token);
-      if (sameOneVariant(spec, current, spec.title)) {
+      if (sameWantedVariants(spec, current, spec.title)) {
         claimed.add(already);
         try {
           await refreshPrintifyPrintFile(shopId, already, spec, input?.token);
@@ -375,7 +391,7 @@ export async function createFernoraPrintifyProducts(input?: { shopId?: number; t
       await deletePrintifyProduct(shopId, already, input?.token);
       const idx = existing.findIndex((row) => row.id === already);
       if (idx >= 0) existing.splice(idx, 1);
-      extraNotes.push(`Replaced ${current.title || spec.title} with one enabled variant.`);
+      extraNotes.push(`Replaced ${current.title || spec.title} with the catalog variants.`);
     }
     const image = await uploadPrintifyImage(spec.printFile, input?.token);
     const created = await createPrintifyProduct(shopId, spec, image.id, input?.token);
@@ -444,6 +460,8 @@ export async function createFernoraPrintifyProducts(input?: { shopId?: number; t
   }
   try {
     extraNotes.push(...(await syncFernoraCatalogToShopify()).notes);
+    extraNotes.push(...(await fillShopifyCollections()));
+    extraNotes.push(...(await syncShopifyPresentmentPrices()));
   } catch (error) {
     extraNotes.push(`Shopify catalog: ${(error as Error).message}`);
   }
@@ -479,9 +497,9 @@ export async function createFernoraPrintifyProducts(input?: { shopId?: number; t
     gpsr,
     fullyConnected: gpsr.fullyConnected,
     notes: [
-      `Catalog is five products (one per mix) on ${
+      `Catalog is eight products on ${
         gpsr.shopTitle || "Fernora Trends"
-      } (${shopId}), one enabled variant each. Created ${createdCount}, published ${publishedCount} to the Etsy sales channel. Not migrated from Gelato.`,
+      } (${shopId}): five wall-art mixes, black-camo men’s and Southern Cross women’s mesh sneakers, and the embroidered zip hoodie. Created ${createdCount}, published ${publishedCount} to the Etsy sales channel. Not migrated from Gelato.`,
       "Older catalog products were removed from Printify, Etsy, Shopify, Gelato, and Pressroom.",
       "Catalog dropdowns match Printify: All, Quotes, Botanical, Scenic, Home décor, Original fern.",
       ...extraNotes,

@@ -1,6 +1,16 @@
 import path from "node:path";
 import { CATALOG_LISTING_TAGS } from "./listing-health.ts";
 import { catalogPrice, printifyListCents } from "./printify-costs.ts";
+import { ZIP_HOODIE_WHITE, ZIP_HOODIE_WHITE_DEFAULT } from "./clothing.ts";
+import {
+  SNEAKER_WHITE_SOLE,
+  SNEAKER_WHITE_SOLE_DEFAULT,
+  SNEAKER_WOMENS_WHITE_SOLE,
+  SNEAKER_WOMENS_WHITE_SOLE_DEFAULT,
+  type SneakerSizeRow,
+} from "./sneaker-sizes.ts";
+
+export { SNEAKER_WHITE_SOLE_DEFAULT, SNEAKER_WHITE_SOLE_IDS } from "./sneaker-sizes.ts";
 
 export type PrintifyVariantInput = {
   id: number;
@@ -27,9 +37,31 @@ function one(id: number, price: number): PrintifyVariantInput[] {
   return [{ id, price, is_enabled: true, is_default: true }];
 }
 
+function whiteZipHoodie(price: number): PrintifyVariantInput[] {
+  return ZIP_HOODIE_WHITE.map((row) => ({
+    id: row.printifyId,
+    price,
+    is_enabled: true,
+    ...(row.printifyId === ZIP_HOODIE_WHITE_DEFAULT ? { is_default: true } : {}),
+  }));
+}
+
+function whiteSoleSneakers(
+  price: number,
+  sizes: readonly SneakerSizeRow[] = SNEAKER_WHITE_SOLE,
+  defaultId: number = SNEAKER_WHITE_SOLE_DEFAULT,
+): PrintifyVariantInput[] {
+  return sizes.map((row) => ({
+    id: row.printifyId,
+    price,
+    is_enabled: true,
+    ...(row.printifyId === defaultId ? { is_default: true } : {}),
+  }));
+}
+
 /**
- * Five Fernora catalog products, one per mix, one enabled variant each.
- * Not Gelato External migrations. Closest Printify size when A-series is not on the blueprint.
+ * Fernora catalog: five wall-art mixes, black-camo men’s and Southern Cross women’s
+ * mesh sneakers, and the embroidered Gildan 18600 zip hoodie. Not Gelato External migrations.
  */
 export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
   {
@@ -96,6 +128,51 @@ export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
     variants: one(69671, printifyListCents(catalogPrice("live_frame_kind"))),
     positions: ["front"],
   },
+  {
+    key: "live_sneaker_star",
+    title: "Black Camo · Men’s Mesh Sneakers",
+    description:
+      "Men’s mesh sneakers with an original Fernora black-camo print. Dye sublimation on breathable mesh, white sole, memory-foam insole. Made to order.",
+    tags: CATALOG_LISTING_TAGS.live_sneaker_star,
+    printFile: "print-camo-sneakers.png",
+    mockupFile: "catalog-camo-sneakers-angle.jpg",
+    blueprintId: 1072,
+    printProviderId: 90,
+    variants: whiteSoleSneakers(printifyListCents(catalogPrice("live_sneaker_star"))),
+    positions: ["left_shoe", "right_shoe"],
+    aliases: ["Southern Cross Star · Mesh Sneakers", "Southern Cross Star Mesh Sneakers"],
+  },
+  {
+    key: "live_sneaker_star_w",
+    title: "Southern Cross Star · Women’s Mesh Sneakers",
+    description:
+      "Women’s mesh sneakers with an original Fernora star-and-fern print. Dye sublimation on breathable mesh, white sole, memory-foam insole. Made to order.",
+    tags: CATALOG_LISTING_TAGS.live_sneaker_star_w,
+    printFile: "print-star-sneakers.png",
+    mockupFile: "catalog-star-sneakers-w-angle.jpg",
+    blueprintId: 1219,
+    printProviderId: 90,
+    variants: whiteSoleSneakers(
+      printifyListCents(catalogPrice("live_sneaker_star_w")),
+      SNEAKER_WOMENS_WHITE_SOLE,
+      SNEAKER_WOMENS_WHITE_SOLE_DEFAULT,
+    ),
+    positions: ["left_shoe", "right_shoe"],
+    aliases: ["Southern Cross Star Womens Mesh Sneakers", "Southern Cross Star Women’s Mesh Sneakers"],
+  },
+  {
+    key: "live_hoodie_bloom",
+    title: "Grow With Purpose · Embroidered Zip Hoodie",
+    description:
+      "Unisex Gildan 18600 full-zip hoodie with an original Fernora embroidered fern and the line “Grow with purpose, Bloom with grace.” Left-chest embroidery. Made to order.",
+    tags: CATALOG_LISTING_TAGS.live_hoodie_bloom,
+    printFile: "print-hoodie-bloom.png",
+    mockupFile: "catalog-hoodie-bloom.jpg",
+    blueprintId: 66,
+    printProviderId: 217,
+    variants: whiteZipHoodie(printifyListCents(catalogPrice("live_hoodie_bloom"))),
+    positions: ["front_left_chest"],
+  },
 ];
 
 export function printifyCatalogFile(fileName: string) {
@@ -160,4 +237,9 @@ export function printAreasForExistingVariants(spec: PrintifyStarterSpec, imageId
   const areas = buildPrintifyProductPayload(spec, imageId).print_areas;
   if (!variantIds.length) return areas;
   return areas.map((area) => ({ ...area, variant_ids: variantIds }));
+}
+
+/** Printify error 8251 if print_areas omit any blueprint variant, even disabled ones. */
+export function mergePrintAreaVariantIds(...groups: Array<Array<number | undefined | null>>) {
+  return [...new Set(groups.flat().filter((id): id is number => typeof id === "number" && id > 0))];
 }

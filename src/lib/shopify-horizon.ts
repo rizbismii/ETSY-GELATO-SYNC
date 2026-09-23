@@ -11,6 +11,8 @@ const COUNTRY_CURRENCY_MARK = "localization.country.name }} · {{ localization.c
 const PICKER_CSS_MARK = "/* fernora-country-currency */";
 const MOBILE_LAYOUT_MARK = "/* fernora-mobile-layout */";
 const STUDIO_LAYOUT_MARK = "/* fernora-studio-layout */";
+const PRODUCT_LAYOUT_MARK = "/* fernora-product-layout */";
+const GALLERY_LAYOUT_MARK = "/* fernora-product-gallery */";
 const COLLECTION_HANDLES = CATALOG_SERIES.map((series) => series.handle);
 const SERIES_COLLECTIONS = CATALOG_SERIES.map((series) => ({
   handle: series.handle,
@@ -151,11 +153,24 @@ function withVisiblePickerCss(header: string) {
       ? next.replace("{% endstylesheet %}", `${mobile}{% endstylesheet %}`)
       : `${next}\n{% stylesheet %}${mobile}{% endstylesheet %}\n`;
   }
-  if (next.includes(STUDIO_LAYOUT_MARK)) return next;
-  const studio = `
-  ${STUDIO_LAYOUT_MARK}
-  #MainContent .section--page-width,
+  if (next.includes(STUDIO_LAYOUT_MARK)) {
+    next = next.replace(
+      `#MainContent .section--page-width,
   #MainContent .section-content-wrapper {
+    width: 100%;
+    max-width: 100%;
+  }`,
+      `body.template-index #MainContent .section--page-width,
+  #MainContent [id$="__story_fernora"] .section-content-wrapper {
+    width: 100%;
+    max-width: 100%;
+  }`,
+    );
+  } else {
+    const studio = `
+  ${STUDIO_LAYOUT_MARK}
+  body.template-index #MainContent .section--page-width,
+  #MainContent [id$="__story_fernora"] .section-content-wrapper {
     width: 100%;
     max-width: 100%;
   }
@@ -200,9 +215,67 @@ function withVisiblePickerCss(header: string) {
     }
   }
 `;
-  return next.includes("{% endstylesheet %}")
-    ? next.replace("{% endstylesheet %}", `${studio}{% endstylesheet %}`)
-    : `${next}\n{% stylesheet %}${studio}{% endstylesheet %}\n`;
+    next = next.includes("{% endstylesheet %}")
+      ? next.replace("{% endstylesheet %}", `${studio}{% endstylesheet %}`)
+      : `${next}\n{% stylesheet %}${studio}{% endstylesheet %}\n`;
+  }
+  if (!next.includes(PRODUCT_LAYOUT_MARK)) {
+    const product = `
+  ${PRODUCT_LAYOUT_MARK}
+  html {
+    overflow-x: clip;
+  }
+  .product-information.section--page-width {
+    max-width: var(--page-width, 75rem);
+    margin-inline: auto;
+    width: 100%;
+    padding-inline: clamp(1rem, 4vw, 2.5rem);
+    box-sizing: border-box;
+  }
+  .product-information__grid {
+    align-items: start;
+    min-width: 0;
+  }
+  .product-information__media,
+  .product-details {
+    min-width: 0;
+    max-width: 100%;
+  }
+  @media screen and (min-width: 750px) {
+    .product-details.sticky-content--desktop,
+    .product-details.sticky-content {
+      top: calc(var(--header-height, 7.5rem) + 1rem);
+    }
+  }
+`;
+    next = next.includes("{% endstylesheet %}")
+      ? next.replace("{% endstylesheet %}", `${product}{% endstylesheet %}`)
+      : `${next}\n{% stylesheet %}${product}{% endstylesheet %}\n`;
+  }
+  if (!next.includes(GALLERY_LAYOUT_MARK)) {
+    const gallery = `
+  ${GALLERY_LAYOUT_MARK}
+  .product-information .media-gallery {
+    min-width: 0;
+  }
+  .product-information .media-gallery__grid,
+  .product-information .thumbnail-list,
+  .product-information .resource-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(4.75rem, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+  .product-information .media-gallery__grid > :first-child,
+  .product-information .media-gallery__grid .media-gallery__featured {
+    grid-column: 1 / -1;
+  }
+`;
+    next = next.includes("{% endstylesheet %}")
+      ? next.replace("{% endstylesheet %}", `${gallery}{% endstylesheet %}`)
+      : `${next}\n{% stylesheet %}${gallery}{% endstylesheet %}\n`;
+  }
+  return next;
 }
 
 async function patchHorizonLocalization(themeId: string) {
@@ -469,7 +542,7 @@ async function upsertHorizonJson(themeId: string, heroRef: string) {
         }
       }
       if (section.blocks && !Object.values(section.blocks).some((block) => String(block.settings?.text || "").includes("Prints, apparel"))) {
-        section.blocks.caption_fernora = textBlock("<p>Prints, apparel, and objects — printed to order, priced in your currency.</p>", {
+        section.blocks.caption_fernora = textBlock("<p>Prints, apparel, and objects — priced in your currency.</p>", {
           type_preset: "rte",
           text_color: PALETTE.background,
           alignment: "center",
@@ -512,12 +585,6 @@ async function upsertHorizonJson(themeId: string, heroRef: string) {
         wrap: "nowrap",
         text_color: PALETTE.background,
       }),
-      line_print: textBlock("<p>Printed to order</p>", {
-        type_preset: "custom",
-        font_size: "var(--font-size--h4)",
-        wrap: "nowrap",
-        text_color: PALETTE.background,
-      }),
       line_currency: textBlock("<p>Prices follow your country and currency</p>", {
         type_preset: "custom",
         font_size: "var(--font-size--h4)",
@@ -531,12 +598,12 @@ async function upsertHorizonJson(themeId: string, heroRef: string) {
         text_color: PALETTE.background,
       }),
     },
-    block_order: ["line_studio", "line_print", "line_currency", "line_quality"],
+    block_order: ["line_studio", "line_currency", "line_quality"],
     settings: {
       movement_direction: "left",
       background_color: PALETTE.color1,
-      "padding-block-start": 16,
-      "padding-block-end": 16,
+      "padding-block-start": 8,
+      "padding-block-end": 8,
       gap_between_elements: 48,
     },
   };
@@ -721,7 +788,7 @@ async function upsertHorizonJson(themeId: string, heroRef: string) {
         }
         for (const block of Object.values(section.blocks || {})) {
           if (block.settings && "text" in block.settings) {
-            block.settings.text = "Printed to order · Quality guarantee · Prices in your local currency";
+            block.settings.text = "Quality guarantee · Prices in your local currency";
           }
         }
       }
@@ -744,6 +811,7 @@ async function upsertHorizonJson(themeId: string, heroRef: string) {
   }
 
   notes.push(...(await patchCollectionTemplate(themeId)));
+  notes.push(...(await patchProductTemplate(themeId)));
   notes.push(...(await patchFooterCopy(themeId)));
   return notes;
 }
@@ -771,6 +839,44 @@ async function patchCollectionTemplate(themeId: string) {
   }
   const errors = await upsertThemeText(themeId, "templates/collection.json", JSON.stringify(template, null, 2));
   notes.push(errors.length ? `Catalog grid: ${errors.join("; ")}` : "Catalog product grid uses the full page width.");
+  return notes;
+}
+
+async function patchProductTemplate(themeId: string) {
+  const notes: string[] = [];
+  const raw = await themeFileText(themeId, "templates/product.json");
+  const start = raw.indexOf("{");
+  if (start < 0) {
+    notes.push("Product template could not be read.");
+    return notes;
+  }
+  const template = JSON.parse(raw.slice(start)) as { sections?: Record<string, ThemeSection> };
+  const main = template.sections?.main;
+  if (main?.settings) {
+    main.settings.limit_details_width = true;
+    main.settings["padding-block-start"] = 40;
+    main.settings["padding-block-end"] = 40;
+  }
+  const details = main?.blocks?.["product-details"];
+  if (details?.settings) {
+    details.settings.sticky_details_desktop = false;
+    details.settings.width = "fill";
+    details.settings["padding-inline-start"] = 8;
+  }
+  const gallery = main?.blocks?.["media-gallery"];
+  if (gallery?.settings) {
+    gallery.settings.media_presentation = "grid";
+    gallery.settings.thumbnail_position = "below";
+    gallery.settings.large_first_image = true;
+    gallery.settings.extend_media = false;
+    gallery.settings.constrain_to_viewport = true;
+  }
+  const errors = await upsertThemeText(themeId, "templates/product.json", JSON.stringify(template, null, 2));
+  notes.push(
+    errors.length
+      ? `Product page: ${errors.join("; ")}`
+      : "Product page keeps title, sizes, and mockups in the column instead of sliding left under the header.",
+  );
   return notes;
 }
 

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-test("live catalog is five products covering every mix", () => {
+test("live catalog covers every mix plus sneakers and the embroidered zip hoodie", () => {
   const catalog = readFileSync(new URL("./live-catalog.ts", import.meta.url), "utf8");
   const liveIds = [...catalog.matchAll(/^\s+id: "(live_[^"]+)"/gm)].map((row) => row[1]);
   assert.deepEqual(liveIds, [
@@ -11,6 +11,9 @@ test("live catalog is five products covering every mix", () => {
     "live_botanical_kowhai",
     "live_canvas_harbour",
     "live_frame_kind",
+    "live_sneaker_star",
+    "live_sneaker_star_w",
+    "live_hoodie_bloom",
   ]);
   assert.match(catalog, /LIVE_CATALOG_IDS/);
   assert.match(catalog, /collection: "original"/);
@@ -21,6 +24,11 @@ test("live catalog is five products covering every mix", () => {
   assert.match(catalog, /export const ETSY_KNOWN_LISTINGS[\s\S]*= \{\}/);
   assert.match(catalog, /STALE_ETSY_LISTINGS/);
   assert.match(catalog, /RETIRED_CATALOG_IDS/);
+  assert.match(catalog, /title: "Black Camo · Men’s Mesh Sneakers"/);
+  assert.match(catalog, /title: "Southern Cross Star · Women’s Mesh Sneakers"/);
+  assert.match(catalog, /title: "Grow With Purpose · Embroidered Zip Hoodie"/);
+  assert.match(catalog, /variants: sneakerVariants\("live_sneaker_star"/);
+  assert.match(catalog, /variants: zipHoodieVariants\("live_hoodie_bloom"\)/);
   assert.doesNotMatch(catalog, /id: "live_hoodie"/);
 });
 
@@ -37,6 +45,7 @@ test("Pressroom catalog strips stale Etsy IDs and keeps retired products tombsto
   assert.match(printify, /inactivateOlderEtsyListings/);
   assert.match(printify, /deleteOlderShopifyProducts/);
   assert.match(printify, /syncFernoraCatalogToShopify/);
+  assert.match(printify, /fillShopifyCollections/);
   assert.match(printify, /attachPrintifyEtsyIds/);
   assert.doesNotMatch(printify, /clearDeletedListings/);
 });

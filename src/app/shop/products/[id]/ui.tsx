@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ProductArt } from "@/components/product-art";
 import { formatMoney } from "@/lib/money";
-import { findClothingVariant } from "@/lib/clothing";
+import { findClothingVariant, defaultClothingVariant } from "@/lib/clothing";
 import { shopLane } from "@/lib/shop";
 import { gelatoCountryName } from "@/lib/gelato-countries";
 import { POLICY_PATHS } from "@/lib/shop-policies";
@@ -28,10 +28,15 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
   const clothing = Boolean(product.variants?.length);
   const clothingColors = [...new Map((product.variants || []).map((row) => [row.colorUid, row])).values()];
   const clothingSizes = [...new Map((product.variants || []).map((row) => [row.sizeUid, row])).values()];
+  const preferred = defaultClothingVariant(product.variants);
+  const gallery = [...new Set([product.imageUrl, ...(product.gallery || [])])].filter(
+    (file) => file && file !== product.printFileUrl,
+  );
   const [country, setCountry] = useState("NZ");
-  const [color, setColor] = useState(clothingColors[0]?.colorUid || "black");
-  const [size, setSize] = useState(clothingSizes[0]?.sizeUid || "m");
+  const [color, setColor] = useState(preferred?.colorUid || clothingColors[0]?.colorUid || "black");
+  const [size, setSize] = useState(preferred?.sizeUid || clothingSizes[0]?.sizeUid || "m");
   const [view, setView] = useState<"mockup" | "print">("mockup");
+  const [hero, setHero] = useState(product.imageUrl);
   useEffect(() => {
     const saved = readProfile().country;
     if (saved) setCountry(saved);
@@ -60,13 +65,39 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
               id={product.id}
               title={product.title}
               category={product.category}
-              imageUrl={view === "print" ? product.printFileUrl || product.imageUrl : product.imageUrl}
+              imageUrl={view === "print" ? product.printFileUrl || product.imageUrl : hero || product.imageUrl}
               kind={view === "print" ? "print" : "mockup"}
               fit="contain"
               className="size-full"
             />
           </div>
         </div>
+        {view === "mockup" && gallery.length > 1 ? (
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+            {gallery.map((file) => (
+              <button
+                key={file}
+                type="button"
+                onClick={() => setHero(file)}
+                className={`overflow-hidden rounded-2xl border bg-card ${
+                  hero === file ? "border-foreground" : "border-border/70"
+                }`}
+              >
+                <div className="aspect-square">
+                  <ProductArt
+                    id={`${product.id}-${file}`}
+                    title={product.title}
+                    category={product.category}
+                    imageUrl={file}
+                    kind="mockup"
+                    fit="contain"
+                    className="size-full"
+                  />
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : null}
         <div className="flex gap-2">
           <Button size="sm" variant={view === "mockup" ? "default" : "outline"} onClick={() => setView("mockup")}>
             Product
@@ -92,22 +123,24 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
         <p className="text-2xl">{formatMoney(product.price, product.currency)}</p>
         {clothing ? (
           <div className="space-y-4">
-            <div>
-              <p className="mb-2 text-xs uppercase tracking-[0.16em] text-muted-foreground">Colour</p>
-              <div className="flex flex-wrap gap-2">
-                {clothingColors.map((option) => (
-                  <Button
-                    key={option.colorUid}
-                    size="sm"
-                    variant={color === option.colorUid ? "default" : "outline"}
-                    onClick={() => setColor(option.colorUid)}
-                  >
-                    <span className={`mr-2 inline-block size-3 rounded-full border border-black/10 ${COLOR_SWATCH[option.colorUid] || "bg-zinc-900"}`} />
-                    {option.color}
-                  </Button>
-                ))}
+            {clothingColors.length > 1 ? (
+              <div>
+                <p className="mb-2 text-xs uppercase tracking-[0.16em] text-muted-foreground">Colour</p>
+                <div className="flex flex-wrap gap-2">
+                  {clothingColors.map((option) => (
+                    <Button
+                      key={option.colorUid}
+                      size="sm"
+                      variant={color === option.colorUid ? "default" : "outline"}
+                      onClick={() => setColor(option.colorUid)}
+                    >
+                      <span className={`mr-2 inline-block size-3 rounded-full border border-black/10 ${COLOR_SWATCH[option.colorUid] || "bg-zinc-900"}`} />
+                      {option.color}
+                    </Button>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : null}
             <div>
               <p className="mb-2 text-xs uppercase tracking-[0.16em] text-muted-foreground">Size</p>
               <div className="flex flex-wrap gap-2">

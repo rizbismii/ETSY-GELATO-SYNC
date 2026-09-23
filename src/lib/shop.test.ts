@@ -61,8 +61,11 @@ test("print templates keep a downloadable filename and surface for current produ
 });
 
 test("print files stay paired to their own listing mockup", () => {
-  assert.equal(CATALOG_ART_PAIRS.length, 5);
+  assert.equal(CATALOG_ART_PAIRS.length, 8);
   assert.equal(printFileForListing("live_poster"), "/catalog/print-poster-fern-arc.png");
+  assert.equal(printFileForListing("live_sneaker_star"), "/catalog/print-camo-sneakers.png");
+  assert.equal(printFileForListing("live_sneaker_star_w"), "/catalog/print-star-sneakers.png");
+  assert.equal(printFileForListing("live_hoodie_bloom"), "/catalog/print-hoodie-bloom.png");
   assert.equal(
     printFileForListing("live_quote_breathe", "/catalog/print-poster-fern-arc.png"),
     "/catalog/print-breathe-here.png",
@@ -126,11 +129,17 @@ test("Horizon branding shows country · currency and made-to-order homepage copy
   assert.match(source, /page_width = "normal"/);
   assert.match(source, /story_fernora/);
   assert.match(source, /Nothing is stored in a warehouse/);
-  assert.match(source, /Printed to order/);
+  assert.doesNotMatch(source, /Printed to order/);
   assert.match(source, /Quality guarantee/);
+  assert.match(source, /"padding-block-start": 8/);
   assert.match(source, /title: series\.label/);
   assert.match(source, /CATALOG_SERIES/);
   assert.match(source, /All, Quotes, Botanical, Scenic, Home décor, and Original fern/);
+  assert.match(source, /fernora-product-layout/);
+  assert.match(source, /fernora-product-gallery/);
+  assert.match(source, /body\.template-index #MainContent \.section--page-width/);
+  assert.match(source, /sticky_details_desktop = false/);
+  assert.match(source, /media_presentation = "grid"/);
   assert.doesNotMatch(source, /by Gelato/);
   assert.doesNotMatch(source, /Gelato quality/);
 });
@@ -143,6 +152,11 @@ test("customer-facing shop copy does not name Gelato as the supplier", () => {
   const shopifySource = readFileSync(new URL("./shopify.ts", import.meta.url), "utf8");
   assert.match(shopifySource, /title: "Standard delivery"/);
   assert.match(shopifySource, /name: "Standard delivery"/);
+  assert.match(shopifySource, /stagedUploadsCreate/);
+  assert.match(shopifySource, /name: "Size"/);
+  assert.match(shopifySource, /productDeleteMedia/);
+  assert.match(shopifySource, /existsSync/);
+  assert.match(shopifySource, /black-camo-mens-mesh-sneakers/);
   assert.doesNotMatch(shopifySource, /escapeHtml\(GELATO_SHIP_BLURB\)/);
   const carrierSource = readFileSync(new URL("./shopify-storefront.ts", import.meta.url), "utf8");
   assert.match(carrierSource, /FERNORA_CARRIER_NAME = "Fernora"/);
@@ -160,6 +174,8 @@ test("customer-facing shop copy does not name Gelato as the supplier", () => {
     const source = readFileSync(new URL(file, import.meta.url), "utf8");
     assert.doesNotMatch(source, /\bGelato\b/, file);
   }
+  const productPage = readFileSync(new URL("../app/shop/products/[id]/ui.tsx", import.meta.url), "utf8");
+  assert.match(productPage, /clothingColors\.length > 1/);
 });
 
 test("Catalog dropdown order is All, Quotes, Botanical, Scenic, Home décor, Original fern", () => {
@@ -184,4 +200,5 @@ test("markets pin countries without presentment currency to USD", () => {
   assert.match(source, /international-usd/);
   assert.match(source, /localCurrencies: false/);
   assert.match(source, /"AR"/);
+  assert.match(source, /syncShopifyPresentmentPrices/);
 });

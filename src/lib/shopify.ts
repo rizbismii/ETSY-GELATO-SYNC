@@ -1,4 +1,8 @@
 import crypto from "node:crypto";
+import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { defaultClothingVariant } from "@/lib/clothing";
 import { getCredentials, normalizeShopDomain, patchCredentials } from "@/lib/credentials";
 import { fernoraCatalog, FERNORA_NAME, gelatoShipFamilies, shopLane } from "@/lib/shop";
 import { FERNORA_SHOPIFY_SHOP, FERNORA_STOREFRONT_ORIGIN } from "@/lib/shopify-shop";
@@ -272,6 +276,235 @@ function escapeHtml(value: string) {
     .replaceAll('"', "&quot;");
 }
 
+function shopifyProductOptions(product: ReturnType<typeof fernoraCatalog>[number]) {
+  if (!product.variants?.length) {
+    return {
+      productOptions: [{ name: "Title", values: [{ name: "Default Title" }] }],
+      variants: [
+        {
+          optionValues: [{ optionName: "Title", name: "Default Title" }],
+          price: product.price.toFixed(2),
+          sku: product.id,
+          inventoryPolicy: "CONTINUE",
+        },
+      ],
+    };
+  }
+  const colors = [...new Map(product.variants.map((row) => [row.color, { name: row.color }])).values()];
+  const sizes = [...new Map(product.variants.map((row) => [row.size, { name: row.size }])).values()];
+  if (colors.length > 1) {
+    return {
+      productOptions: [
+        { name: "Color", values: colors },
+        { name: "Size", values: sizes },
+      ],
+      variants: product.variants.map((variant) => ({
+        optionValues: [
+          { optionName: "Color", name: variant.color },
+          { optionName: "Size", name: variant.size },
+        ],
+        price: product.price.toFixed(2),
+        sku: variant.sku,
+        inventoryPolicy: "CONTINUE",
+      })),
+    };
+  }
+  return {
+    productOptions: [{ name: "Size", values: sizes }],
+    variants: product.variants.map((variant) => ({
+      optionValues: [{ optionName: "Size", name: variant.size }],
+      price: product.price.toFixed(2),
+      sku: variant.sku,
+      inventoryPolicy: "CONTINUE",
+    })),
+  };
+}
+
+function defaultProductSku(product: ReturnType<typeof fernoraCatalog>[number]) {
+  return defaultClothingVariant(product.variants)?.sku || product.id;
+}
+
+function productSkuQuery(product: ReturnType<typeof fernoraCatalog>[number]) {
+  const defaultSku = defaultProductSku(product);
+  if (!product.variants?.length) return `sku:${product.id}`;
+  const firstSku = product.variants[0].sku;
+  const parts = [`sku:${product.id}`, `sku:${firstSku}`];
+  if (defaultSku !== product.id && defaultSku !== firstSku) parts.push(`sku:${defaultSku}`);
+  return parts.join(" OR ");
+}
+
+async function stageLocalCatalogImage(assetPath: string) {
+  const rel = assetPath.replace(/^\//, "").split("?")[0];
+  const filename = path.basename(rel);
+  const bytes = await readFile(path.join(process.cwd(), "public", rel));
+  const mimeType = /\.jpe?g$/i.test(filename) ? "image/jpeg" : "image/png";
+  const staged = await shopifyGraphql<{
+    stagedUploadsCreate: {
+      stagedTargets: Array<{
+        url: string;
+        resourceUrl?: string | null;
+        parameters: Array<{ name: string; value: string }>;
+      }>;
+      userErrors: Array<{ message: string }>;
+    };
+  }>(
+    `mutation ($input: [StagedUploadInput!]!) {
+      stagedUploadsCreate(input: $input) {
+        stagedTargets { url resourceUrl parameters { name value } }
+        userErrors { field message }
+      }
+    }`,
+    {
+      input: [
+        {
+          filename,
+          mimeType,
+          resource: "FILE",
+          httpMethod: "POST",
+          fileSize: String(bytes.byteLength),
+        },
+      ],
+    },
+  );
+  if (staged.stagedUploadsCreate.userErrors.length) {
+    throw new Error(staged.stagedUploadsCreate.userErrors.map((row) => row.message).join("; "));
+  }
+  const target = staged.stagedUploadsCreate.stagedTargets[0];
+  if (!target?.url) throw new Error("Shopify did not return a staged upload");
+  const form = new FormData();
+  for (const parameter of target.parameters) form.append(parameter.name, parameter.value);
+  form.append("file", new Blob([bytes], { type: mimeType }), filename);
+  const uploaded = await fetch(target.url, { method: "POST", body: form });
+  if (!uploaded.ok) throw new Error(`Catalog image upload failed (${uploaded.status})`);
+  if (!target.resourceUrl) throw new Error("Shopify staged upload had no resource URL");
+  return target.resourceUrl;
+}
+
+async function catalogProductImageSource(assetPath: string, request?: Request) {
+  try {
+    return await stageLocalCatalogImage(assetPath);
+  } catch {
+    return absoluteAssetUrl(assetPath, request);
+  }
+}
+
+function customerGalleryPaths(product: ReturnType<typeof fernoraCatalog>[number]) {
+  const skip = new Set([product.printFileUrl].filter(Boolean) as string[]);
+  return [...new Set(
+    [product.imageUrl, ...(product.gallery || [])].filter(
+      (file): file is string => Boolean(file) && !skip.has(file),
+    ),
+  )].filter((file) => {
+    const rel = file.replace(/^\//, "").split("?")[0];
+    return existsSync(path.join(process.cwd(), "public", rel));
+  });
+}
+
+function mediaFilename(url?: string | null, alt?: string | null) {
+  const fromUrl = url?.split("?")[0]?.split("/").pop()?.toLowerCase() || "";
+  const fromAlt = alt?.split("/").pop()?.toLowerCase() || "";
+  return fromUrl || fromAlt;
+}
+
+async function ensureShopifyProductGallery(
+  productId: string,
+  product: ReturnType<typeof fernoraCatalog>[number],
+  request?: Request,
+) {
+  const wanted = customerGalleryPaths(product);
+  if (!wanted.length) return;
+  const listed = await shopifyGraphql<{
+    product?: {
+      media: {
+        nodes: Array<{
+          id: string;
+          alt?: string | null;
+          preview?: { image?: { url?: string | null } | null } | null;
+        }>;
+      };
+    } | null;
+  }>(
+    `query ($id: ID!) {
+      product(id: $id) {
+        media(first: 30) {
+          nodes {
+            id
+            alt
+            preview { image { url } }
+          }
+        }
+      }
+    }`,
+    { id: productId },
+  );
+  const current = listed.product?.media.nodes || [];
+  const have = new Set(current.map((row) => mediaFilename(row.preview?.image?.url, row.alt)));
+  const wantedNames = wanted.map((file) => file.split("/").pop()?.toLowerCase() || "").filter(Boolean);
+  const stale = current.filter((row) => {
+    const name = mediaFilename(row.preview?.image?.url, row.alt);
+    return name && !wantedNames.some((wantedName) => name.includes(wantedName) || wantedName.includes(name));
+  });
+  if (stale.length) {
+    await shopifyGraphql(
+      `mutation ($productId: ID!, $mediaIds: [ID!]!) {
+        productDeleteMedia(productId: $productId, mediaIds: $mediaIds) {
+          mediaUserErrors { field message }
+        }
+      }`,
+      { productId, mediaIds: stale.map((row) => row.id) },
+    );
+  }
+  const missing = wanted.filter((file) => {
+    const name = file.split("/").pop()?.toLowerCase() || "";
+    return name && ![...have].some((existing) => existing.includes(name) || name.includes(existing));
+  });
+  if (missing.length) {
+    const media = [];
+    for (const file of missing) {
+      media.push({
+        originalSource: await catalogProductImageSource(file, request),
+        alt: `${product.title} · ${file.split("/").pop()}`,
+        mediaContentType: "IMAGE",
+      });
+    }
+    const created = await shopifyGraphql<{
+      productCreateMedia: { mediaUserErrors: Array<{ message: string }> };
+    }>(
+      `mutation ($productId: ID!, $media: [CreateMediaInput!]!) {
+        productCreateMedia(productId: $productId, media: $media) {
+          media { ... on MediaImage { id } }
+          mediaUserErrors { field message }
+        }
+      }`,
+      { productId, media },
+    );
+    if (created.productCreateMedia.mediaUserErrors.length) {
+      throw new Error(created.productCreateMedia.mediaUserErrors.map((row) => row.message).join("; "));
+    }
+  }
+  const after = await shopifyGraphql<{
+    product?: { media: { nodes: Array<{ id: string; preview?: { image?: { url?: string | null } | null } | null }> } } | null;
+  }>(
+    `query ($id: ID!) {
+      product(id: $id) {
+        media(first: 30) { nodes { id preview { image { url } } } }
+      }
+    }`,
+    { id: productId },
+  );
+  const featuredName = wanted[0]?.split("/").pop()?.toLowerCase() || "";
+  const nodes = after.product?.media.nodes || [];
+  const featured = nodes.find((row) => mediaFilename(row.preview?.image?.url).includes(featuredName));
+  if (featured && nodes[0]?.id !== featured.id) {
+    await shopifyGraphql(
+      `mutation ($id: ID!, $moves: [MoveInput!]!) {
+        productReorderMedia(id: $id, moves: $moves) { userErrors { field message } }
+      }`,
+      { id: productId, moves: [{ id: featured.id, newPosition: "0" }] },
+    );
+  }
+}
+
 export async function syncFernoraCatalogToShopify(request?: Request) {
   const notes: string[] = [];
   const catalog: ShopifyCatalogMap = {};
@@ -283,54 +516,29 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
     return { catalog, notes };
   }
   for (const product of products) {
-    const imageUrl = await absoluteAssetUrl(product.imageUrl, request);
-    const skuQuery = product.variants?.length
-      ? `sku:${product.id} OR sku:${product.variants[0].sku}`
-      : `sku:${product.id}`;
+    const skuQuery = productSkuQuery(product);
     const existing = await shopifyGraphql<{
-      products: { nodes: Array<{ id: string; variants: { nodes: Array<{ id: string; sku?: string | null }> } }> };
+      products: {
+        nodes: Array<{
+          id: string;
+          media: { nodes: Array<{ id: string }> };
+          variants: { nodes: Array<{ id: string; sku?: string | null }> };
+        }>;
+      };
     }>(
       `query ($q: String!) {
         products(first: 1, query: $q) {
-          nodes { id variants(first: 50) { nodes { id sku } } }
+          nodes {
+            id
+            media(first: 1) { nodes { id } }
+            variants(first: 50) { nodes { id sku } }
+          }
         }
       }`,
       { q: skuQuery },
     );
     const found = existing.products.nodes[0];
-    const clothing = product.variants?.length
-      ? {
-          productOptions: [
-            {
-              name: "Color",
-              values: [...new Map(product.variants.map((row) => [row.color, { name: row.color }])).values()],
-            },
-            {
-              name: "Size",
-              values: [...new Map(product.variants.map((row) => [row.size, { name: row.size }])).values()],
-            },
-          ],
-          variants: product.variants.map((variant) => ({
-            optionValues: [
-              { optionName: "Color", name: variant.color },
-              { optionName: "Size", name: variant.size },
-            ],
-            price: product.price.toFixed(2),
-            sku: variant.sku,
-            inventoryPolicy: "CONTINUE",
-          })),
-        }
-      : {
-          productOptions: [{ name: "Title", values: [{ name: "Default Title" }] }],
-          variants: [
-            {
-              optionValues: [{ optionName: "Title", name: "Default Title" }],
-              price: product.price.toFixed(2),
-              sku: product.id,
-              inventoryPolicy: "CONTINUE",
-            },
-          ],
-        };
+    const clothing = shopifyProductOptions(product);
     const input: Record<string, unknown> = {
       title: product.title,
       descriptionHtml: shopifyProductHtml(product),
@@ -339,7 +547,6 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
       status: "ACTIVE",
       tags: ["Fernora", product.collection, ...product.tags],
       ...clothing,
-      files: [{ originalSource: imageUrl, alt: product.title, contentType: "IMAGE" }],
       metafields: [
         { namespace: "fernora", key: "product_id", type: "single_line_text_field", value: product.id },
         {
@@ -361,6 +568,17 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
       ],
     };
     if (found?.id) input.id = found.id;
+    if (product.id === "live_sneaker_star") input.handle = "black-camo-mens-mesh-sneakers";
+    if (product.id === "live_hoodie_bloom") input.handle = "grow-with-purpose-embroidered-zip-hoodie";
+    if (!found?.media.nodes.length && product.imageUrl) {
+      input.files = [
+        {
+          originalSource: await catalogProductImageSource(product.imageUrl, request),
+          alt: product.title,
+          contentType: "IMAGE",
+        },
+      ];
+    }
     const created = await shopifyGraphql<{
       productSet: {
         product?: {
@@ -389,7 +607,7 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
       notes.push(`${product.title}: Shopify returned no product`);
       continue;
     }
-    const defaultSku = product.variants?.find((row) => row.colorUid === "black" && row.sizeUid === "m")?.sku || product.id;
+    const defaultSku = defaultProductSku(product);
     const defaultVariant =
       node.variants.nodes.find((row) => row.sku === defaultSku) || node.variants.nodes[0];
     const variants: Record<string, string> = {};
@@ -406,6 +624,11 @@ export async function syncFernoraCatalogToShopify(request?: Request) {
       await publishableToOnlineStore(node.id);
     } catch (error) {
       notes.push(`${product.title}: published to Admin but not Online Store (${(error as Error).message})`);
+    }
+    try {
+      await ensureShopifyProductGallery(node.id, product, request);
+    } catch (error) {
+      notes.push(`${product.title}: mockups (${(error as Error).message})`);
     }
   }
   await updateShop((state) => {
@@ -462,9 +685,7 @@ export async function refreshShopifyProductCopy() {
   const notes: string[] = [];
   let updated = 0;
   for (const product of fernoraCatalog()) {
-    const skuQuery = product.variants?.length
-      ? `sku:${product.id} OR sku:${product.variants[0].sku}`
-      : `sku:${product.id}`;
+    const skuQuery = productSkuQuery(product);
     const existing = await shopifyGraphql<{
       products: { nodes: Array<{ id: string }> };
     }>(

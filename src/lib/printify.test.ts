@@ -17,6 +17,7 @@ import {
   buildPrintifyProductPayload,
   existingPrintifyProductId,
   FERNORA_PRINTIFY_STARTERS,
+  mergePrintAreaVariantIds,
   printAreasForExistingVariants,
   printifyEnabledVariantIds,
   printifyImageFileName,
@@ -142,24 +143,39 @@ test("EU GPSR probe without stamps is available; stamps mark applied", () => {
   );
 });
 
-test("Fernora Printify catalog is five products, one enabled variant each", () => {
-  assert.equal(FERNORA_PRINTIFY_STARTERS.length, 5);
+test("Fernora Printify catalog is eight products including the embroidered zip hoodie", () => {
+  assert.equal(FERNORA_PRINTIFY_STARTERS.length, 8);
   const keys = FERNORA_PRINTIFY_STARTERS.map((row) => row.key);
-  assert.equal(new Set(keys).size, 5);
+  assert.equal(new Set(keys).size, 8);
   assert.deepEqual(keys, [
     "live_poster",
     "live_quote_breathe",
     "live_botanical_kowhai",
     "live_canvas_harbour",
     "live_frame_kind",
+    "live_sneaker_star",
+    "live_sneaker_star_w",
+    "live_hoodie_bloom",
   ]);
   const catalog = readFileSync(new URL("./live-catalog.ts", import.meta.url), "utf8");
   const liveIds = [...catalog.matchAll(/^\s+id: "(live_[^"]+)"/gm)].map((row) => row[1]);
   assert.deepEqual([...keys].sort(), [...new Set(liveIds)].sort());
   for (const spec of FERNORA_PRINTIFY_STARTERS) {
-    assert.equal(spec.variants.length, 1);
-    assert.equal(spec.variants[0].is_enabled, true);
-    assert.equal(spec.variants[0].is_default, true);
+    const enabled = spec.variants.filter((row) => row.is_enabled);
+    if (spec.key.startsWith("live_sneaker_")) {
+      assert.equal(enabled.length, 9);
+      assert.equal(spec.printProviderId, 90);
+      assert.deepEqual(spec.positions, ["left_shoe", "right_shoe"]);
+      assert.equal(spec.blueprintId, spec.key === "live_sneaker_star_w" ? 1219 : 1072);
+    } else if (spec.key === "live_hoodie_bloom") {
+      assert.equal(enabled.length, 5);
+      assert.equal(spec.printProviderId, 217);
+      assert.deepEqual(spec.positions, ["front_left_chest"]);
+      assert.equal(spec.blueprintId, 66);
+    } else {
+      assert.equal(enabled.length, 1);
+    }
+    assert.equal(enabled.filter((row) => row.is_default).length, 1);
     assert.equal(spec.tags.length, 13);
     assert.ok(spec.printFile.startsWith("print-"));
     assert.ok(spec.mockupFile.startsWith("catalog-"));
@@ -179,6 +195,25 @@ test("Fernora Printify catalog is five products, one enabled variant each", () =
     breathe?.variants.map((row) => row.id),
     [43166],
   );
+  const sneaker = FERNORA_PRINTIFY_STARTERS.find((row) => row.key === "live_sneaker_star");
+  const sneakerPayload = buildPrintifyProductPayload(sneaker!, "img_sneaker");
+  assert.equal(sneaker?.title, "Black Camo · Men’s Mesh Sneakers");
+  assert.equal(sneaker?.printFile, "print-camo-sneakers.png");
+  assert.deepEqual(
+    sneakerPayload.print_areas[0].placeholders.map((row: { position: string }) => row.position),
+    ["left_shoe", "right_shoe"],
+  );
+  assert.equal(sneakerPayload.print_areas[0].variant_ids.length, 9);
+  assert.deepEqual(mergePrintAreaVariantIds([80915, 80917], [80914, 80915], [undefined, 80916]), [
+    80915,
+    80917,
+    80914,
+    80916,
+  ]);
+  const womens = FERNORA_PRINTIFY_STARTERS.find((row) => row.key === "live_sneaker_star_w");
+  assert.equal(womens?.title, "Southern Cross Star · Women’s Mesh Sneakers");
+  assert.equal(womens?.blueprintId, 1219);
+  assert.equal(womens?.variants.find((row) => row.is_default)?.id, 92346);
   const payload = buildPrintifyProductPayload(poster!, "img_poster");
   assert.equal(payload.visible, true);
   assert.equal("publish_details" in payload, false);

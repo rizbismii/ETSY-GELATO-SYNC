@@ -11,7 +11,7 @@ import {
 } from "./listing-health.ts";
 import { FERNORA_PRINTIFY_STARTERS } from "./printify-products.ts";
 import { listingAdsRate, OFFSITE_ADS_RATE } from "./money.ts";
-import { catalogLanes, catalogPrice, PRINTIFY_PRINT_NZD, printifyShipUsd } from "./printify-costs.ts";
+import { catalogLanes, catalogPrice, PRINTIFY_PRINT_NZD, PRINTIFY_PRINT_USD, printifyShipUsd } from "./printify-costs.ts";
 
 test("current and future listings fill 13 unique tags under 20 characters", () => {
   const tags = fillListingTags(["fern", "poster"], ["nz art", "Quotes"]);
@@ -40,20 +40,48 @@ test("gallery lists the listing photo, print file, and extra stills", () => {
   assert.ok(files.includes("/catalog/catalog-poster.png"));
   assert.ok(files.includes("/catalog/print-poster-fern-arc.png"));
   assert.ok(files.includes("/catalog/gallery-live_poster-detail.png"));
+  const sneakers = listingGallery("live_sneaker_star");
+  assert.ok(sneakers.includes("/catalog/catalog-camo-sneakers-angle.jpg"));
+  assert.ok(sneakers.includes("/catalog/gallery-live_sneaker_star-camo-model.jpg"));
+  assert.ok(sneakers.includes("/catalog/gallery-live_sneaker_star-camo-detail.png"));
+  assert.ok(sneakers.includes("/catalog/print-camo-sneakers.png"));
+  const womens = listingGallery("live_sneaker_star_w");
+  assert.ok(womens.includes("/catalog/catalog-star-sneakers-w-angle.jpg"));
+  assert.ok(womens.includes("/catalog/gallery-live_sneaker_star_w-model.jpg"));
+  const hoodie = listingGallery("live_hoodie_bloom");
+  assert.ok(hoodie.includes("/catalog/catalog-hoodie-bloom.jpg"));
+  assert.ok(hoodie.includes("/catalog/print-hoodie-bloom.png"));
+  assert.ok(hoodie.includes("/catalog/gallery-live_hoodie_bloom-model.jpg"));
 });
 
 test("prices use Printify costs and do not pad for opted-out Offsite Ads", () => {
   assert.equal(listingAdsRate(), 0);
   assert.equal(OFFSITE_ADS_RATE, 0.15);
-  assert.equal(PRINTIFY_PRINT_NZD.live_poster, 9.28);
+  assert.equal(PRINTIFY_PRINT_USD.live_poster, 9.28);
+  assert.equal(PRINTIFY_PRINT_NZD.live_poster, 15.5);
   const nz = catalogLanes("live_poster").find((lane) => lane.region === "NZ");
   const gb = catalogLanes("live_poster").find((lane) => lane.region === "GB");
   assert.equal(nz?.printer, "printify");
-  assert.equal(nz?.printCost, 9.28);
+  assert.equal(nz?.printCost, 15.5);
   assert.equal(gb?.printer, "gelato");
   assert.ok(catalogPrice("live_poster") < 56.99);
   assert.equal(printifyShipUsd("poster", "US"), 5.99);
   assert.equal(printifyShipUsd("canvas", "NZ"), 18.29);
+  const sneakerNz = catalogLanes("live_sneaker_star").find((lane) => lane.region === "NZ");
+  const sneakerGb = catalogLanes("live_sneaker_star").find((lane) => lane.region === "GB");
+  assert.equal(sneakerNz?.printer, "printify");
+  assert.equal(sneakerGb?.printer, "printify");
+  assert.equal(PRINTIFY_PRINT_USD.live_sneaker_star, 37.77);
+  assert.equal(PRINTIFY_PRINT_NZD.live_sneaker_star, 63.08);
+  assert.equal(catalogPrice("live_sneaker_star"), 133.99);
+  const womensGb = catalogLanes("live_sneaker_star_w").find((lane) => lane.region === "GB");
+  assert.equal(womensGb?.printer, "printify");
+  assert.equal(catalogPrice("live_sneaker_star_w"), catalogPrice("live_sneaker_star"));
+  assert.equal(PRINTIFY_PRINT_USD.live_hoodie_bloom, 41.23);
+  assert.equal(PRINTIFY_PRINT_NZD.live_hoodie_bloom, 68.85);
+  assert.equal(catalogPrice("live_hoodie_bloom"), 143.99);
+  const hoodieGb = catalogLanes("live_hoodie_bloom").find((lane) => lane.region === "GB");
+  assert.equal(hoodieGb?.printer, "printify");
 });
 
 test("Catalog table shows Printify costs and current ads, not Offsite 15%", () => {

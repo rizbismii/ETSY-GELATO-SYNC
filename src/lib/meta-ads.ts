@@ -196,10 +196,10 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
           object_story_spec: {
             page_id: ping.pageId,
             link_data: {
-              message: "Original botanicals for considered homes. Printed to order.",
+              message: "Original botanicals for considered homes.",
               link: META_ADS_LANDING_URL,
               name: "Fernora",
-              description: "Prints, apparel, and objects — printed to order, priced in your currency.",
+              description: "Prints, apparel, and objects — priced in your currency.",
               call_to_action: { type: "SHOP_NOW", value: { link: META_ADS_LANDING_URL } },
             },
           },
