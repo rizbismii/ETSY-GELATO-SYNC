@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     pageId?: string;
     instagramUserId?: string;
   };
-  let accessToken = body.accessToken?.trim() || "";
+  const accessToken = body.accessToken?.trim() || "";
   let adAccountId = normalizeAdAccountId(body.adAccountId);
   let pixelId = normalizePixelId(body.pixelId);
   let pageId = body.pageId?.trim() || "";
