@@ -305,7 +305,7 @@ export default function ListingsPage() {
         <p className="font-medium">Print file templates</p>
         <p className="mt-1 text-muted-foreground">
           Each product stores its print file in this catalog. Printify holds eight products (wall art
-          one variant; sneakers every white-sole size; zip hoodie white S–2XL). Publish them to Etsy, Shopify, and fernora.nz.
+          one variant; sneakers every white-sole size; zip hoodie Black, White, and Navy, S–2XL). Publish them to Etsy, Shopify, and fernora.nz.
           Gelato stays for UK and EU wall art. Download the template for the current mix.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
