@@ -167,6 +167,7 @@ test("customer-facing shop copy does not name Gelato as the supplier", () => {
   assert.match(shopifySource, /grow-with-purpose-embroidered-tee/);
   assert.match(shopifySource, /isDesignZoomStill/);
   assert.match(shopifySource, /isTemplateStillPath/);
+  assert.match(shopifySource, /refreshNames/);
   assert.match(shopifySource, /productReorderMedia/);
   assert.doesNotMatch(shopifySource, /escapeHtml\(GELATO_SHIP_BLURB\)/);
   const carrierSource = readFileSync(new URL("./shopify-storefront.ts", import.meta.url), "utf8");

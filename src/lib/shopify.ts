@@ -447,9 +447,13 @@ async function ensureShopifyProductGallery(
   const current = listed.product?.media.nodes || [];
   const have = new Set(current.map((row) => mediaFilename(row.preview?.image?.url, row.alt)));
   const wantedNames = wanted.map((file) => file.split("/").pop()?.toLowerCase() || "").filter(Boolean);
+  const refreshNames = wanted.filter((file) => isDesignZoomStill(file)).map((file) => file.split("/").pop()?.toLowerCase() || "");
   const stale = current.filter((row) => {
     const name = mediaFilename(row.preview?.image?.url, row.alt);
-    return name && !wantedNames.some((wantedName) => name.includes(wantedName) || wantedName.includes(name));
+    if (!name) return false;
+    const refresh = refreshNames.some((wantedName) => wantedName && (name.includes(wantedName) || wantedName.includes(name)));
+    const leftover = !wantedNames.some((wantedName) => name.includes(wantedName) || wantedName.includes(name));
+    return leftover || refresh;
   });
   if (stale.length) {
     await shopifyGraphql(
@@ -463,6 +467,7 @@ async function ensureShopifyProductGallery(
   }
   const missing = wanted.filter((file) => {
     const name = file.split("/").pop()?.toLowerCase() || "";
+    if (isDesignZoomStill(file)) return Boolean(name);
     return name && ![...have].some((existing) => existing.includes(name) || name.includes(existing));
   });
   if (missing.length) {
