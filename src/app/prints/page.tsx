@@ -261,8 +261,8 @@ export default function PrintsPage() {
             <CardContent className="space-y-3 p-4">
               <p className="font-medium">Edit or upload</p>
               <p className="text-xs text-muted-foreground">
-                Upload a still. For the zip hoodie, cream paper is knocked out to a 1200×1200
-                embroidery file automatically.
+                Upload a still. Cream paper is knocked out for embroidery products automatically
+                (hoodie 1200×1200 left chest, tee 3000×1800 large center).
               </p>
               <div className="flex flex-wrap gap-2">
                 <Label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">

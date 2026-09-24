@@ -308,8 +308,9 @@ export default function ListingsPage() {
           <a className="underline" href="/prints">
             Print templates
           </a>{" "}
-          to generate, edit, or upload a file. Printify holds eight products (wall art
-          one variant; sneakers every white-sole size; zip hoodie in the shared eight colours, S–2XL). Official
+          to generate, edit, or upload a file. Printify holds nine products (wall art
+          one variant; sneakers every white-sole size; zip hoodie in the shared eight colours, S–2XL;
+          embroidered tee in five colours, S–2XL). Official
           Printify colour photos go to Etsy, Shopify, and fernora.nz. Gelato stays for UK and EU wall art.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">

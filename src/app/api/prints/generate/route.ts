@@ -1,4 +1,5 @@
 import { writeFile } from "node:fs/promises";
+import { embroideryPrintSize, isEmbroideryListing } from "@/lib/print-file";
 import { catalogPrintPath, cleanEmbroideryPrint, generatePrintTemplate } from "@/lib/print-studio";
 import { patchCredentials } from "@/lib/credentials";
 
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
     const bytes = await generatePrintTemplate({ prompt, listingId, reference, openaiApiKey });
     const dest = catalogPrintPath(listingId);
     await writeFile(dest, bytes);
-    if (listingId === "live_hoodie_bloom") await cleanEmbroideryPrint(dest, dest);
+    if (isEmbroideryListing(listingId)) await cleanEmbroideryPrint(dest, dest, embroideryPrintSize(listingId));
     return Response.json({ ok: true, print: dest.replace(/.*\/public/, "") });
   } catch (error) {
     return Response.json({ error: (error as Error).message }, { status: 400 });
