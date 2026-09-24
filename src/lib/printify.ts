@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
@@ -752,6 +753,7 @@ async function pushOfficialPhotosToEtsy(key: string, listingId: string) {
   const ordered = print ? [...files, print] : files;
   for (const [index, file] of ordered.entries()) {
     const imagePath = path.join(process.cwd(), "public", file.replace(/^\//, ""));
+    if (!existsSync(imagePath)) continue;
     try {
       await uploadEtsyListingImage(listingId, imagePath, index + 1);
     } catch (error) {
