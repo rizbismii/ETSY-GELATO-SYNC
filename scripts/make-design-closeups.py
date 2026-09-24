@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Write a tight, zoomable design still for every catalog product.
+"""Crop the official product photo so the design is visible on the item.
 
-Listing photos are full garments or rooms. Zooming those keeps the artwork tiny.
-This crops the print file to the ink and composites it on cream so Etsy and the
-website have a clear second/third photo. Existing stills are kept when present.
+Do not publish print-template stills (artwork on cream). Customers see the
+design on the garment, poster, or shoe. Existing cream detail/close files
+are left on disk for print-match checks but are not customer photos.
 """
 
 from __future__ import annotations
@@ -16,94 +16,89 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "public" / "catalog"
-CREAM = (250, 246, 239)
-SIZE = 2000
+
+# Official ghost / flat cameras — design on the real product, no model crop guess.
+GHOST = {
+    "live_tee_bloom": "gallery-live_tee_bloom-ghost.jpg",
+    "live_hoodie_bloom": "gallery-live_hoodie_bloom-ghost.jpg",
+}
 
 PAIRS = (
-    ("live_poster", "print-poster-fern-arc.png"),
-    ("live_quote_breathe", "print-breathe-here.png"),
-    ("live_botanical_kowhai", "print-kowhai-botanical.png"),
-    ("live_canvas_harbour", "print-harbour-morning.png"),
-    ("live_frame_kind", "print-kind-light.png"),
-    ("live_sneaker_star", "print-camo-sneakers.png"),
-    ("live_sneaker_star_w", "print-star-sneakers.png"),
-    ("live_hoodie_bloom", "print-hoodie-bloom.png"),
-    ("live_tee_bloom", "print-tee-bloom.png"),
+    ("live_poster", "catalog-poster.png"),
+    ("live_quote_breathe", "catalog-breathe-here.png"),
+    ("live_botanical_kowhai", "catalog-kowhai-botanical.png"),
+    ("live_canvas_harbour", "catalog-harbour-morning.png"),
+    ("live_frame_kind", "catalog-kind-light.png"),
+    ("live_sneaker_star", "catalog-camo-sneakers-angle.jpg"),
+    ("live_sneaker_star_w", "catalog-star-sneakers-w-angle.jpg"),
+    ("live_hoodie_bloom", "gallery-live_hoodie_bloom-ghost.jpg"),
+    ("live_tee_bloom", "gallery-live_tee_bloom-ghost.jpg"),
 )
 
 
-def ink_bbox(im: Image.Image) -> tuple[int, int, int, int]:
-    arr = np.array(im)
-    if arr.ndim == 3 and arr.shape[2] == 4:
-        mask = arr[:, :, 3] > 16
-    else:
-        rgb = arr[:, :, :3].astype(np.int16)
-        cream = np.array(CREAM, dtype=np.int16)
-        mask = np.max(np.abs(rgb - cream), axis=2) > 18
-        white = np.max(np.abs(rgb - 255), axis=2) > 12
-        mask = np.logical_and(mask, white)
+def chroma_mask(rgb: np.ndarray) -> np.ndarray:
+    r, g, b = rgb[:, :, 0].astype(np.int16), rgb[:, :, 1].astype(np.int16), rgb[:, :, 2].astype(np.int16)
+    chroma = np.maximum(np.maximum(r, g), b) - np.minimum(np.minimum(r, g), b)
+    near_white = (r > 236) & (g > 236) & (b > 236)
+    return (chroma > 26) & ~near_white
+
+
+def design_bbox(im: Image.Image, apparel: bool) -> tuple[int, int, int, int]:
+    arr = np.array(im.convert("RGB"))
+    mask = chroma_mask(arr)
+    h, w = mask.shape
+    if apparel:
+        # Ignore hair / jeans / room; keep the garment body.
+        mask[: int(h * 0.22)] = False
+        mask[int(h * 0.72) :] = False
+        mask[:, : int(w * 0.22)] = False
+        mask[:, int(w * 0.82) :] = False
     ys, xs = np.nonzero(mask)
-    if len(xs) < 40:
-        return (0, 0, im.size[0], im.size[1])
-    pad = max(24, int(0.06 * max(im.size)))
-    x0 = max(0, int(xs.min()) - pad)
-    y0 = max(0, int(ys.min()) - pad)
-    x1 = min(im.size[0], int(xs.max()) + pad + 1)
-    y1 = min(im.size[1], int(ys.max()) + pad + 1)
-    return (x0, y0, x1, y1)
+    if len(xs) < 80:
+        return (int(w * 0.28), int(h * 0.28), int(w * 0.72), int(h * 0.72))
+    return int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1
 
 
-def square_on_cream(crop: Image.Image, size: int = SIZE) -> Image.Image:
-    canvas = Image.new("RGBA", (size, size), CREAM + (255,))
-    fitted = crop.convert("RGBA")
-    fitted.thumbnail((int(size * 0.88), int(size * 0.88)), Image.Resampling.LANCZOS)
-    x = (size - fitted.width) // 2
-    y = (size - fitted.height) // 2
-    canvas.alpha_composite(fitted, (x, y))
-    return canvas.convert("RGB")
-
-
-def tighter(box: tuple[int, int, int, int], im: Image.Image) -> tuple[int, int, int, int]:
+def square_crop(im: Image.Image, box: tuple[int, int, int, int], pad_ratio: float, size: int = 1600) -> Image.Image:
     x0, y0, x1, y1 = box
-    w, h = x1 - x0, y1 - y0
-    inset_x = int(w * 0.12)
-    inset_y = int(h * 0.10)
-    return (
-        max(0, x0 + inset_x),
-        max(0, y0 + inset_y),
-        min(im.size[0], x1 - inset_x),
-        min(im.size[1], y1 - inset_y),
-    )
+    bw, bh = max(1, x1 - x0), max(1, y1 - y0)
+    side = int(max(bw, bh) * pad_ratio)
+    cx, cy = (x0 + x1) // 2, (y0 + y1) // 2
+    half = side // 2
+    left = max(0, cx - half)
+    top = max(0, cy - half)
+    right = min(im.size[0], left + side)
+    bottom = min(im.size[1], top + side)
+    left = max(0, right - side)
+    top = max(0, bottom - side)
+    crop = im.convert("RGB").crop((left, top, right, bottom))
+    return crop.resize((size, size), Image.Resampling.LANCZOS)
 
 
-def write_stills(key: str, print_name: str, overwrite: bool) -> str:
-    src = OUT / print_name
-    detail = OUT / f"gallery-{key}-detail.png"
-    close = OUT / f"gallery-{key}-close.png"
+def write_stills(key: str, source_name: str) -> str:
+    src = OUT / source_name
+    wear = OUT / f"gallery-{key}-onproduct.jpg"
+    close = OUT / f"gallery-{key}-onproduct-close.jpg"
     if not src.exists():
-        return f"MISSING {print_name}"
-    if detail.exists() and close.exists() and not overwrite:
-        return f"keep {key}"
+        return f"MISSING {source_name}"
     im = Image.open(src)
-    box = ink_bbox(im)
-    detail_im = square_on_cream(im.crop(box))
-    close_im = square_on_cream(im.crop(tighter(box, im)))
-    detail_im.save(detail, "PNG", optimize=True)
-    close_im.save(close, "PNG", optimize=True)
-    return f"wrote {key} {detail_im.size[0]}x{detail_im.size[1]}"
+    apparel = key in GHOST
+    box = design_bbox(im, apparel=apparel)
+    square_crop(im, box, 3.4 if apparel else 1.8).save(wear, "JPEG", quality=92)
+    square_crop(im, box, 1.7 if apparel else 1.15).save(close, "JPEG", quality=92)
+    return f"wrote {key} from {source_name}"
 
 
 def check_only() -> int:
     failed = 0
-    for key, print_name in PAIRS:
-        detail = OUT / f"gallery-{key}-detail.png"
-        close = OUT / f"gallery-{key}-close.png"
-        src = OUT / print_name
-        if not src.exists() or not detail.exists() or not close.exists():
-            print(f"MISSING design zoom stills for {key}")
+    for key, source_name in PAIRS:
+        wear = OUT / f"gallery-{key}-onproduct.jpg"
+        close = OUT / f"gallery-{key}-onproduct-close.jpg"
+        if not (OUT / source_name).exists() or not wear.exists() or not close.exists():
+            print(f"MISSING on-product stills for {key}")
             failed += 1
             continue
-        print(f"ok {key} zoom stills")
+        print(f"ok {key} on-product stills")
     return failed
 
 
@@ -111,14 +106,13 @@ def main() -> None:
     if "--check" in sys.argv:
         failed = check_only()
         if failed:
-            raise SystemExit(f"{failed} product(s) missing design zoom stills")
+            raise SystemExit(f"{failed} product(s) missing on-product stills")
         return
-    overwrite = "--overwrite" in sys.argv
-    for key, print_name in PAIRS:
-        print(write_stills(key, print_name, overwrite=overwrite or key == "live_tee_bloom"))
+    for key, source_name in PAIRS:
+        print(write_stills(key, source_name))
     failed = check_only()
     if failed:
-        raise SystemExit(f"{failed} product(s) missing design zoom stills")
+        raise SystemExit(f"{failed} product(s) missing on-product stills")
 
 
 if __name__ == "__main__":

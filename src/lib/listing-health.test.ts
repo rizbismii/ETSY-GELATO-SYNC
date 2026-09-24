@@ -6,6 +6,7 @@ import {
   LISTING_TAG_LIMIT,
   customerListingGallery,
   fillListingTags,
+  isTemplateStillPath,
   listingGallery,
   listingHealth,
   tagsForListing,
@@ -40,9 +41,9 @@ test("gallery lists the listing photo, print file, and extra stills", () => {
   const files = listingGallery("live_poster");
   assert.ok(files.includes("/catalog/catalog-poster.png"));
   assert.ok(files.includes("/catalog/print-poster-fern-arc.png"));
-  assert.ok(files.includes("/catalog/gallery-live_poster-detail.png"));
-  assert.equal(files[1], "/catalog/gallery-live_poster-detail.png");
-  assert.equal(files[2], "/catalog/gallery-live_poster-close.png");
+  assert.ok(files.includes("/catalog/gallery-live_poster-onproduct.jpg"));
+  assert.equal(files[1], "/catalog/gallery-live_poster-onproduct.jpg");
+  assert.equal(files[2], "/catalog/gallery-live_poster-onproduct-close.jpg");
   const sneakers = listingGallery("live_sneaker_star");
   assert.ok(sneakers.includes("/catalog/catalog-camo-sneakers-angle.jpg"));
   assert.ok(sneakers.includes("/catalog/gallery-live_sneaker_star-camo-model.jpg"));
@@ -57,19 +58,30 @@ test("gallery lists the listing photo, print file, and extra stills", () => {
   assert.ok(hoodie.includes("/catalog/gallery-live_hoodie_bloom-model.jpg"));
   assert.ok(hoodie.includes("/catalog/catalog-hoodie-bloom-ash.jpg"));
   assert.ok(hoodie.includes("/catalog/catalog-hoodie-bloom-light-pink.jpg"));
-  assert.equal(hoodie[1], "/catalog/gallery-live_hoodie_bloom-detail.png");
+  assert.ok(hoodie.includes("/catalog/gallery-live_hoodie_bloom-ghost.jpg"));
+  assert.equal(hoodie[1], "/catalog/gallery-live_hoodie_bloom-onproduct.jpg");
   const tee = listingGallery("live_tee_bloom");
   assert.ok(tee.includes("/catalog/catalog-tee-bloom.jpg"));
   assert.ok(tee.includes("/catalog/print-tee-bloom.png"));
   assert.ok(tee.includes("/catalog/gallery-live_tee_bloom-model.jpg"));
   assert.ok(tee.includes("/catalog/catalog-tee-bloom-navy.jpg"));
   assert.ok(tee.includes("/catalog/gallery-live_tee_bloom-neck.jpg"));
-  assert.equal(tee[1], "/catalog/gallery-live_tee_bloom-detail.png");
-  assert.equal(tee[2], "/catalog/gallery-live_tee_bloom-close.png");
+  assert.ok(tee.includes("/catalog/gallery-live_tee_bloom-ghost.jpg"));
+  assert.equal(tee[1], "/catalog/gallery-live_tee_bloom-onproduct.jpg");
+  assert.equal(tee[2], "/catalog/gallery-live_tee_bloom-onproduct-close.jpg");
   const customer = customerListingGallery("live_tee_bloom");
   assert.equal(customer[0], "/catalog/catalog-tee-bloom.jpg");
-  assert.equal(customer[1], "/catalog/gallery-live_tee_bloom-detail.png");
+  assert.equal(customer[1], "/catalog/gallery-live_tee_bloom-onproduct.jpg");
+  assert.equal(customer[2], "/catalog/gallery-live_tee_bloom-onproduct-close.jpg");
   assert.ok(!customer.some((file) => file.includes("/print-")));
+  assert.ok(!customer.some((file) => isTemplateStillPath(file)));
+  assert.equal(isTemplateStillPath("/catalog/gallery-live_tee_bloom-detail.png"), true);
+  assert.equal(isTemplateStillPath("/catalog/gallery-live_tee_bloom-close.png"), true);
+  assert.equal(isTemplateStillPath("/catalog/gallery-live_tee_bloom-onproduct-close.jpg"), false);
+  assert.equal(isTemplateStillPath("/catalog/print-tee-bloom.png"), true);
+  const customerSneakers = customerListingGallery("live_sneaker_star");
+  assert.ok(!customerSneakers.some((file) => file.includes("-detail.png") || file.includes("-close.png")));
+  assert.ok(customerSneakers.includes("/catalog/gallery-live_sneaker_star-onproduct.jpg"));
 });
 
 test("prices use Printify costs and do not pad for opted-out Offsite Ads", () => {

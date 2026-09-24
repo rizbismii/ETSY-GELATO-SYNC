@@ -166,6 +166,7 @@ test("customer-facing shop copy does not name Gelato as the supplier", () => {
   assert.match(shopifySource, /black-camo-mens-mesh-sneakers/);
   assert.match(shopifySource, /grow-with-purpose-embroidered-tee/);
   assert.match(shopifySource, /isDesignZoomStill/);
+  assert.match(shopifySource, /isTemplateStillPath/);
   assert.match(shopifySource, /productReorderMedia/);
   assert.doesNotMatch(shopifySource, /escapeHtml\(GELATO_SHIP_BLURB\)/);
   const carrierSource = readFileSync(new URL("./shopify-storefront.ts", import.meta.url), "utf8");
@@ -187,6 +188,7 @@ test("customer-facing shop copy does not name Gelato as the supplier", () => {
   const productPage = readFileSync(new URL("../app/shop/products/[id]/ui.tsx", import.meta.url), "utf8");
   assert.match(productPage, /clothingColors\.length > 1/);
   assert.match(productPage, /colorImage/);
+  assert.match(productPage, /isTemplateStillPath/);
 });
 
 test("Catalog dropdown order is All, Quotes, Botanical, Scenic, Home décor, Original fern", () => {

@@ -315,7 +315,8 @@ test("Fernora Printify catalog is nine products including the embroidered zip ho
   ]);
   const printify = readFileSync(new URL("./printify.ts", import.meta.url), "utf8");
   assert.match(printify, /syncCustomerDesignPhotos/);
-  assert.match(printify, /galleryForListing\(key\)/);
+  assert.match(printify, /customerListingGallery\(key\)/);
+  assert.match(printify, /deleteEtsyListingImage/);
   assert.doesNotMatch(printify.slice(printify.indexOf("pushOfficialPhotosToEtsy")), /\.slice\(0, 9\)/);
   const pairs = readFileSync(new URL("./print-file.ts", import.meta.url), "utf8");
   for (const spec of FERNORA_PRINTIFY_STARTERS) {

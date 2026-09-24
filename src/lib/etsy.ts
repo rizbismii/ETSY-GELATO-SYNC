@@ -396,6 +396,33 @@ export async function createEtsyDraft(input: {
   return data as { listing_id: number; url?: string; state?: string };
 }
 
+export async function listEtsyListingImages(listingId: string) {
+  const { shopId, etsy } = await loadEtsyShop();
+  const pack = await etsyFetch(`/listings/${listingId}/images`, etsy.accessToken!, etsy.apiKey);
+  return ((pack.results ?? []) as Array<{
+    listing_image_id: number;
+    rank?: number;
+    alt_text?: string | null;
+    url_fullxfull?: string | null;
+  }>).map((row) => ({
+    id: String(row.listing_image_id),
+    rank: Number(row.rank || 0),
+    alt: row.alt_text || "",
+    url: row.url_fullxfull || "",
+    shopId,
+  }));
+}
+
+export async function deleteEtsyListingImage(listingId: string, imageId: string) {
+  const { shopId, etsy } = await loadEtsyShop();
+  await etsyFetch(
+    `/shops/${shopId}/listings/${listingId}/images/${imageId}`,
+    etsy.accessToken!,
+    etsy.apiKey,
+    { method: "DELETE" },
+  );
+}
+
 export async function uploadEtsyListingImage(listingId: string, filePath: string, rank = 1) {
   const etsy = await refreshEtsyToken();
   if (!etsy?.apiKey || !etsy.accessToken) throw new Error("Etsy is not authorized");

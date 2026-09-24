@@ -10,7 +10,7 @@ import {
   ZIP_HOODIE_PRINTIFY,
 } from "@/lib/clothing";
 import { getCredentials, patchCredentials } from "@/lib/credentials";
-import { galleryForListing } from "@/lib/listing-health";
+import { customerListingGallery, isTemplateStillPath } from "@/lib/listing-health";
 import {
   formatPrintifySafetyInformation,
   pickPrintifyShop,
@@ -46,6 +46,8 @@ import {
   inactivateOlderEtsyListings,
   listEtsyShopListings,
   syncEtsyCatalogSections,
+  deleteEtsyListingImage,
+  listEtsyListingImages,
   uploadEtsyListingImage,
 } from "@/lib/etsy";
 import { deleteOlderGelatoProducts } from "@/lib/gelato-store";
@@ -746,17 +748,35 @@ export async function pullPrintifyVariantPhotos(productId?: string, key = "live_
 
 export async function pushOfficialPhotosToEtsy(key: string, listingId: string) {
   const notes: string[] = [];
-  const files = galleryForListing(key)
-    .filter((file) => !file.includes("/print-"))
+  const files = customerListingGallery(key)
+    .filter((file) => existsSync(path.join(process.cwd(), "public", file.replace(/^\//, ""))))
     .slice(0, 10);
+  let uploaded = 0;
   for (const [index, file] of files.entries()) {
     const imagePath = path.join(process.cwd(), "public", file.replace(/^\//, ""));
-    if (!existsSync(imagePath)) continue;
     try {
       await uploadEtsyListingImage(listingId, imagePath, index + 1);
+      uploaded += 1;
     } catch (error) {
       notes.push(`${file}: ${(error as Error).message}`);
     }
+  }
+  try {
+    const leftover = (await listEtsyListingImages(listingId)).filter((image) => {
+      const label = `${image.alt} ${image.url}`.toLowerCase();
+      const templateAlt = !label.includes("onproduct") && /\b(detail|close)\b/.test(label);
+      return image.rank > uploaded || isTemplateStillPath(label) || templateAlt;
+    });
+    leftover.sort((a, b) => b.rank - a.rank);
+    for (const image of leftover) {
+      try {
+        await deleteEtsyListingImage(listingId, image.id);
+      } catch (error) {
+        notes.push(`delete ${image.id}: ${(error as Error).message}`);
+      }
+    }
+  } catch (error) {
+    notes.push(`list images: ${(error as Error).message}`);
   }
   return notes;
 }
