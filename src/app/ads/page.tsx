@@ -19,6 +19,7 @@ import {
   FERNORA_META_DATA_DELETION_URL,
   FERNORA_META_INSTAGRAM_ACCOUNTS_URL,
   FERNORA_META_APP_ICON_PATH,
+  FERNORA_META_APP_ICON_UPLOAD_URL,
   FERNORA_META_PRIVACY_POLICY_URL,
   FERNORA_META_WAIT_ENDED_ON,
 } from "@/lib/meta-app";
@@ -275,12 +276,14 @@ export default function AdsPage() {
             , and the{" "}
             <a
               className="underline"
-              href={FERNORA_META_APP_ICON_PATH}
-              download="Fernora-Pressroom-app-icon-1024.png"
+              href={FERNORA_META_APP_ICON_UPLOAD_URL}
+              target="_blank"
+              rel="noreferrer"
             >
               1024×1024 Fernora app icon
             </a>{" "}
-            (download, then upload in App settings → Basic). Switch the app to <strong>Live</strong>{" "}
+            (open, save the PNG, then upload in App settings → Basic). Switch the app to{" "}
+            <strong>Live</strong>{" "}
             only after connected assets show, then Create paused campaign again. Do not click Go live
             on the campaign unless we decide to.
           </li>
@@ -323,8 +326,9 @@ export default function AdsPage() {
                 <p>1024×1024 PNG, cream F mark. Upload this in App settings → Basic → App Icon.</p>
                 <a
                   className="underline"
-                  href={FERNORA_META_APP_ICON_PATH}
-                  download="Fernora-Pressroom-app-icon-1024.png"
+                  href={FERNORA_META_APP_ICON_UPLOAD_URL}
+                  target="_blank"
+                  rel="noreferrer"
                 >
                   Download Fernora-Pressroom-app-icon-1024.png
                 </a>

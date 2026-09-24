@@ -11,6 +11,7 @@ import {
 } from "./meta-connect-error.ts";
 import {
   FERNORA_META_APP_ID,
+  FERNORA_META_APP_ICON_UPLOAD_URL,
   FERNORA_META_APP_NAME,
   FERNORA_META_WAIT_ENDED_ON,
 } from "./meta-app.ts";
@@ -120,7 +121,10 @@ test("Ads page uses the existing Fernora Pressroom app after the 48-hour wait", 
   assert.match(page, /switch the app to/i);
   assert.match(page, /FERNORA_META_DATA_DELETION_URL/);
   assert.match(page, /FERNORA_META_APP_ICON_PATH/);
+  assert.match(page, /FERNORA_META_APP_ICON_UPLOAD_URL/);
   assert.match(page, /Fernora-Pressroom-app-icon-1024\.png/);
+  assert.match(FERNORA_META_APP_ICON_UPLOAD_URL, /raw\.githubusercontent\.com/);
+  assert.doesNotMatch(FERNORA_META_APP_ICON_UPLOAD_URL, /trycloudflare/);
   assert.doesNotMatch(page, /Create app/);
   assert.doesNotMatch(page, /\bGelato\b/);
 });
