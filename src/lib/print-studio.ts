@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { getCredentials, patchCredentials } from "@/lib/credentials";
-import { catalogArtPair } from "@/lib/print-file";
+import { catalogArtPair, embroideryPrintSize, isEmbroideryListing } from "@/lib/print-file";
 
 export function catalogPrintPath(listingId: string) {
   const pair = catalogArtPair(listingId);
@@ -32,10 +32,20 @@ function runPython(script: string, args: string[]) {
   });
 }
 
-export async function cleanEmbroideryPrint(source: string, dest: string) {
-  await runPython(path.join(process.cwd(), "scripts", "clean-embroidery-print.py"), [source, dest]);
+export async function cleanEmbroideryPrint(
+  source: string,
+  dest: string,
+  size?: { width: number; height: number },
+) {
+  const args = [source, dest];
+  if (size) {
+    args.push("--width", String(size.width), "--height", String(size.height));
+  }
+  await runPython(path.join(process.cwd(), "scripts", "clean-embroidery-print.py"), args);
   return dest.replace(path.join(process.cwd(), "public"), "");
 }
+
+export { embroideryPrintSize, isEmbroideryListing };
 
 async function openaiKey(override?: string) {
   const saved = override?.trim() || (await getCredentials()).openaiApiKey?.trim();

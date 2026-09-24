@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Turn a cream-backed embroidery still into a 1200×1200 transparent print file."""
+"""Turn a cream-backed embroidery still into a transparent print file."""
 
 from __future__ import annotations
 
@@ -49,20 +49,30 @@ def trim(rgba: np.ndarray, pad: int = 16) -> np.ndarray:
     return rgba[y0:y1, x0:x1]
 
 
-def fit_square(rgba: np.ndarray, size: int = SIZE, fill: float = 0.9) -> np.ndarray:
-    canvas = np.zeros((size, size, 4), dtype=np.uint8)
+def fit_box(rgba: np.ndarray, width: int, height: int, fill: float = 0.9) -> np.ndarray:
+    canvas = np.zeros((height, width, 4), dtype=np.uint8)
     image = Image.fromarray(rgba, "RGBA")
-    scale = min((size * fill) / image.size[1], (size * fill) / image.size[0])
+    scale = min((width * fill) / image.size[0], (height * fill) / image.size[1])
     nw = max(1, int(image.size[0] * scale))
     nh = max(1, int(image.size[1] * scale))
     resized = np.array(image.resize((nw, nh), Image.Resampling.LANCZOS))
-    canvas[(size - nh) // 2 : (size - nh) // 2 + nh, (size - nw) // 2 : (size - nw) // 2 + nw] = resized
+    canvas[(height - nh) // 2 : (height - nh) // 2 + nh, (width - nw) // 2 : (width - nw) // 2 + nw] = resized
     return canvas
 
 
-def clean_embroidery(source: Path, dest: Path) -> None:
+def fit_square(rgba: np.ndarray, size: int = SIZE, fill: float = 0.9) -> np.ndarray:
+    return fit_box(rgba, size, size, fill)
+
+
+def clean_embroidery(
+    source: Path,
+    dest: Path,
+    width: int = SIZE,
+    height: int = SIZE,
+    fill: float = 0.9,
+) -> None:
     rgb = np.array(Image.open(source).convert("RGB"))
-    rgba = fit_square(trim(knockout_cream(rgb)))
+    rgba = fit_box(trim(knockout_cream(rgb)), width, height, fill)
     dest.parent.mkdir(parents=True, exist_ok=True)
     Image.fromarray(rgba, "RGBA").save(dest, "PNG", optimize=True)
 
@@ -71,8 +81,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("source")
     parser.add_argument("dest")
+    parser.add_argument("--width", type=int, default=SIZE)
+    parser.add_argument("--height", type=int, default=SIZE)
+    parser.add_argument("--fill", type=float, default=0.9)
     args = parser.parse_args()
-    clean_embroidery(Path(args.source), Path(args.dest))
+    clean_embroidery(Path(args.source), Path(args.dest), args.width, args.height, args.fill)
     print(f"wrote {args.dest}")
 
 

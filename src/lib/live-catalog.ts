@@ -1,5 +1,12 @@
 import { SNEAKER_WOMENS_WHITE_SOLE } from "@/lib/sneaker-sizes";
-import { CLOTHING_COLOR_LINE, resolveCatalogLine, sneakerVariants, zipHoodieVariants } from "@/lib/clothing";
+import {
+  CLOTHING_COLOR_LINE,
+  TEE_COLOR_LINE,
+  resolveCatalogLine,
+  sneakerVariants,
+  teeVariants,
+  zipHoodieVariants,
+} from "@/lib/clothing";
 import { GELATO_SHIP_BLURB } from "@/lib/gelato-countries";
 import { galleryForListing, tagsForListing } from "@/lib/listing-health";
 import {
@@ -44,6 +51,7 @@ export const LIVE_CATALOG_IDS = [
   "live_sneaker_star",
   "live_sneaker_star_w",
   "live_hoodie_bloom",
+  "live_tee_bloom",
 ] as const;
 
 export type LiveCatalogId = (typeof LIVE_CATALOG_IDS)[number];
@@ -389,6 +397,37 @@ export const LIVE_PRODUCTS: LiveProduct[] = [
     lanes: catalogLanes("live_hoodie_bloom"),
     gallery: galleryForListing("live_hoodie_bloom"),
     variants: zipHoodieVariants("live_hoodie_bloom"),
+  }),
+  item({
+    id: "live_tee_bloom",
+    etsyListingId: "",
+    title: "Grow With Purpose · Embroidered Heavy Cotton Tee",
+    description:
+      `Unisex Gildan 5000 heavy cotton tee with a large-center Fernora embroidered fern and the line “Grow with purpose, Bloom with grace.” Inner neck label carries the Fernora wordmark. ${TEE_COLOR_LINE}. Made to order.`,
+    quote: "Grow with purpose, Bloom with grace.",
+    state: "inactive",
+    price: catalogPrice("live_tee_bloom"),
+    currency: SHOP_CURRENCY,
+    quantity: 999,
+    views: 0,
+    favorites: 0,
+    tags: tagsForListing("live_tee_bloom"),
+    category: "tee",
+    collection: "quote",
+    gelatoProductUid: "printify_gildan_5000",
+    gelatoProductName: "Gildan 5000 heavy cotton tee · embroidery",
+    printFileUrl: "/catalog/print-tee-bloom.png",
+    imageUrl: "/catalog/catalog-tee-bloom.jpg",
+    gelatoUnitCost: catalogUnitCost("live_tee_bloom"),
+    drop: LIVE_DROP_ID,
+    issues: [],
+    taxonomyId: 1738,
+    shippingProfileId: 315080633003,
+    returnPolicyId: RETURN_POLICY_ID,
+    publishState: "ready",
+    lanes: catalogLanes("live_tee_bloom"),
+    gallery: galleryForListing("live_tee_bloom"),
+    variants: teeVariants("live_tee_bloom"),
   }),
 ];
 

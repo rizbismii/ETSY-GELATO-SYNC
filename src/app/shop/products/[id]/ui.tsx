@@ -59,7 +59,7 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
     [product.variants, color, size],
   );
   const lane = shopLane(product, country);
-  const embroidery = product.id === "live_hoodie_bloom";
+  const embroidery = product.id === "live_hoodie_bloom" || product.id === "live_tee_bloom";
   const dtg = !embroidery && printSurface(product.category) === "dtg";
 
   function addToBag() {
@@ -114,7 +114,7 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
           </Button>
           {product.printFileUrl ? (
             <Button size="sm" variant={view === "print" ? "default" : "outline"} onClick={() => setView("print")}>
-              Print file {embroidery ? "· chest embroidery" : dtg ? "· ink only" : ""}
+              Print file {embroidery ? (product.id === "live_tee_bloom" ? "· center embroidery" : "· chest embroidery") : dtg ? "· ink only" : ""}
             </Button>
           ) : null}
         </div>

@@ -9,6 +9,7 @@ export const CATALOG_ART_PAIRS = [
   { key: "live_sneaker_star", mockup: "/catalog/catalog-camo-sneakers-angle.jpg", print: "/catalog/print-camo-sneakers.png" },
   { key: "live_sneaker_star_w", mockup: "/catalog/catalog-star-sneakers-w-angle.jpg", print: "/catalog/print-star-sneakers.png" },
   { key: "live_hoodie_bloom", mockup: "/catalog/catalog-hoodie-bloom.jpg", print: "/catalog/print-hoodie-bloom.png" },
+  { key: "live_tee_bloom", mockup: "/catalog/catalog-tee-bloom.jpg", print: "/catalog/print-tee-bloom.png" },
 ] as const;
 
 export function catalogArtPair(id?: string | null) {
@@ -75,9 +76,22 @@ export function printFileName(printFileUrl?: string, title?: string) {
   return `${slug || "print-template"}.png`;
 }
 
+export function isEmbroideryListing(id?: string | null) {
+  return id === "live_hoodie_bloom" || id === "live_tee_bloom";
+}
+
+export function embroideryPrintSize(id?: string | null) {
+  if (id === "live_tee_bloom") return { width: 3000, height: 1800 };
+  if (id === "live_hoodie_bloom") return { width: 1200, height: 1200 };
+  return undefined;
+}
+
 export function printTemplateLabel(category: string, listingId?: string) {
   if (listingId === "live_hoodie_bloom") {
     return "Embroidery · 1200×1200 left chest (transparent ground, official Printify mockups)";
+  }
+  if (listingId === "live_tee_bloom") {
+    return "Embroidery · 3000×1800 large center + 750×750 neck label (transparent ground, official Printify mockups)";
   }
   const surface = printSurface(category);
   const treatment = printTreatment(category, listingId);

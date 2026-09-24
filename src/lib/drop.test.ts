@@ -14,6 +14,7 @@ test("live catalog covers every mix plus sneakers and the embroidered zip hoodie
     "live_sneaker_star",
     "live_sneaker_star_w",
     "live_hoodie_bloom",
+    "live_tee_bloom",
   ]);
   assert.match(catalog, /LIVE_CATALOG_IDS/);
   assert.match(catalog, /collection: "original"/);
@@ -27,8 +28,10 @@ test("live catalog covers every mix plus sneakers and the embroidered zip hoodie
   assert.match(catalog, /title: "Black Camo · Men’s Mesh Sneakers"/);
   assert.match(catalog, /title: "Southern Cross Star · Women’s Mesh Sneakers"/);
   assert.match(catalog, /title: "Grow With Purpose · Embroidered Zip Hoodie"/);
+  assert.match(catalog, /title: "Grow With Purpose · Embroidered Heavy Cotton Tee"/);
   assert.match(catalog, /variants: sneakerVariants\("live_sneaker_star"/);
   assert.match(catalog, /variants: zipHoodieVariants\("live_hoodie_bloom"\)/);
+  assert.match(catalog, /variants: teeVariants\("live_tee_bloom"\)/);
   assert.doesNotMatch(catalog, /id: "live_hoodie"/);
 });
 
@@ -48,6 +51,7 @@ test("Pressroom catalog strips stale Etsy IDs and keeps retired products tombsto
   assert.match(printify, /fillShopifyCollections/);
   assert.match(printify, /attachPrintifyEtsyIds/);
   assert.match(printify, /refreshPrintifyCatalogItem/);
+  assert.match(printify, /upsertPrintifyCatalogItem/);
   assert.match(printify, /pullPrintifyVariantPhotos/);
   assert.doesNotMatch(printify, /clearDeletedListings/);
 });

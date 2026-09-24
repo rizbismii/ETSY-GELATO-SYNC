@@ -23,7 +23,7 @@ import {
   printifyEnabledVariantIds,
   printifyImageFileName,
 } from "./printify-products.ts";
-import { CLOTHING_COLORS, defaultClothingVariant, zipHoodieVariants } from "./clothing.ts";
+import { CLOTHING_COLORS, TEE_COLORS, defaultClothingVariant, teeVariants, zipHoodieVariants } from "./clothing.ts";
 import { apparelColorDesk, printTemplateDesk } from "./print-templates.ts";
 
 test("Printify GPSR blocks flatten into safety_information", () => {
@@ -146,10 +146,10 @@ test("EU GPSR probe without stamps is available; stamps mark applied", () => {
   );
 });
 
-test("Fernora Printify catalog is eight products including the embroidered zip hoodie", () => {
-  assert.equal(FERNORA_PRINTIFY_STARTERS.length, 8);
+test("Fernora Printify catalog is nine products including the embroidered zip hoodie and tee", () => {
+  assert.equal(FERNORA_PRINTIFY_STARTERS.length, 9);
   const keys = FERNORA_PRINTIFY_STARTERS.map((row) => row.key);
-  assert.equal(new Set(keys).size, 8);
+  assert.equal(new Set(keys).size, 9);
   assert.deepEqual(keys, [
     "live_poster",
     "live_quote_breathe",
@@ -159,6 +159,7 @@ test("Fernora Printify catalog is eight products including the embroidered zip h
     "live_sneaker_star",
     "live_sneaker_star_w",
     "live_hoodie_bloom",
+    "live_tee_bloom",
   ]);
   const catalog = readFileSync(new URL("./live-catalog.ts", import.meta.url), "utf8");
   const liveIds = [...catalog.matchAll(/^\s+id: "(live_[^"]+)"/gm)].map((row) => row[1]);
@@ -179,6 +180,17 @@ test("Fernora Printify catalog is eight products including the embroidered zip h
       assert.match(spec.description, /beneath the leaf/);
       assert.match(spec.description, /White, Ash, Black/);
       assert.match(spec.description, /Dark Heather Grey/);
+    } else if (spec.key === "live_tee_bloom") {
+      assert.equal(enabled.length, TEE_COLORS.length * 5);
+      assert.equal(enabled.filter((row) => row.id).length, TEE_COLORS.length * 5);
+      assert.equal(spec.printProviderId, 410);
+      assert.deepEqual(spec.positions, ["large_center_embroidery", "neck"]);
+      assert.equal(spec.blueprintId, 6);
+      assert.equal(spec.printFiles?.neck, "print-tee-bloom-neck.png");
+      assert.match(spec.description, /large-center/);
+      assert.match(spec.description, /neck label/);
+      assert.match(spec.description, /White, Ash, Black, Sport Grey, Navy/);
+      assert.doesNotMatch(spec.description, /Light Pink/);
     } else {
       assert.equal(enabled.length, 1);
     }
@@ -255,8 +267,26 @@ test("Fernora Printify catalog is eight products including the embroidered zip h
   assert.equal(shopHoodie.find((row) => row.colorUid === "navy")?.imageUrl, "/catalog/catalog-hoodie-bloom-navy.jpg");
   assert.equal(shopHoodie.find((row) => row.colorUid === "ash")?.imageUrl, "/catalog/catalog-hoodie-bloom-ash.jpg");
   assert.equal(shopHoodie.find((row) => row.colorUid === "light-pink")?.imageUrl, "/catalog/catalog-hoodie-bloom-light-pink.jpg");
+  const tee = FERNORA_PRINTIFY_STARTERS.find((row) => row.key === "live_tee_bloom")!;
+  const teePayload = buildPrintifyProductPayload(tee, {
+    large_center_embroidery: "img_tee",
+    neck: "img_neck",
+  });
+  assert.equal(teePayload.variants.length, TEE_COLORS.length * 5);
+  assert.equal(teePayload.print_areas[0].placeholders[0].images[0].id, "img_tee");
+  assert.equal(teePayload.print_areas[0].placeholders[1].images[0].id, "img_neck");
+  const shopTee = teeVariants("live_tee_bloom");
+  assert.equal(shopTee.length, TEE_COLORS.length * 5);
+  assert.deepEqual(
+    [...new Set(shopTee.map((row) => row.color))].sort(),
+    TEE_COLORS.map((row) => row.name).sort(),
+  );
+  assert.equal(defaultClothingVariant(shopTee)?.sku, "live_tee_bloom-white-m");
+  assert.equal(shopTee.find((row) => row.colorUid === "white")?.imageUrl, "/catalog/catalog-tee-bloom.jpg");
+  assert.equal(shopTee.find((row) => row.colorUid === "navy")?.imageUrl, "/catalog/catalog-tee-bloom-navy.jpg");
   assert.equal(CLOTHING_COLORS.length, 8);
-  assert.equal(printTemplateDesk().length, 8);
+  assert.equal(TEE_COLORS.length, 5);
+  assert.equal(printTemplateDesk().length, 9);
   assert.equal(apparelColorDesk().colors.length, 8);
   assert.match(apparelColorDesk().line, /Light Pink/);
   const womens = FERNORA_PRINTIFY_STARTERS.find((row) => row.key === "live_sneaker_star_w");

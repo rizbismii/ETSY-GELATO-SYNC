@@ -1,5 +1,5 @@
 import { CLOTHING_COLOR_LINE, CLOTHING_COLORS, ZIP_HOODIE_COLOR_IMAGE } from "./clothing.ts";
-import { CATALOG_ART_PAIRS, printTemplateLabel } from "./print-file.ts";
+import { CATALOG_ART_PAIRS, isEmbroideryListing, printTemplateLabel } from "./print-file.ts";
 import { FERNORA_PRINTIFY_STARTERS } from "./printify-products.ts";
 
 export function printTemplateDesk() {
@@ -11,7 +11,7 @@ export function printTemplateDesk() {
       print: row.print,
       mockup: row.mockup,
       fileName: spec?.printFile || row.print.split("/").pop() || "",
-      label: printTemplateLabel(spec?.key === "live_hoodie_bloom" ? "hoodie" : "poster", row.key),
+      label: printTemplateLabel(isEmbroideryListing(spec?.key) ? (spec?.key === "live_tee_bloom" ? "tee" : "hoodie") : "poster", row.key),
     };
   });
 }

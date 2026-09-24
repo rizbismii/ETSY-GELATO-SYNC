@@ -32,6 +32,8 @@ export const PRINTIFY_PRINT_USD = {
   live_sneaker_star_w: 37.77,
   /** Gildan 18600 embroidery · Fulfill Engine. 2XL is 41.23; S–XL are 36.83. */
   live_hoodie_bloom: 41.23,
+  /** Gildan 5000 large-center embroidery + neck DTF · Printful. 2XL is 21.32; S–XL are 19.08. */
+  live_tee_bloom: 21.32,
 } as const;
 
 export const PRINTIFY_PRINT_NZD = {
@@ -43,6 +45,7 @@ export const PRINTIFY_PRINT_NZD = {
   live_sneaker_star: usdToNzd(PRINTIFY_PRINT_USD.live_sneaker_star),
   live_sneaker_star_w: usdToNzd(PRINTIFY_PRINT_USD.live_sneaker_star_w),
   live_hoodie_bloom: usdToNzd(PRINTIFY_PRINT_USD.live_hoodie_bloom),
+  live_tee_bloom: usdToNzd(PRINTIFY_PRINT_USD.live_tee_bloom),
 } as const;
 
 export type PrintifyCostKey = keyof typeof PRINTIFY_PRINT_NZD;
@@ -55,12 +58,13 @@ type PrintifyShipUsd = {
 };
 
 /** Printify first-item shipping (USD) for the enabled catalog variants. */
-export const PRINTIFY_SHIP_USD: Record<"poster" | "canvas" | "frame" | "sneaker" | "hoodie", PrintifyShipUsd> = {
+export const PRINTIFY_SHIP_USD: Record<"poster" | "canvas" | "frame" | "sneaker" | "hoodie" | "tee", PrintifyShipUsd> = {
   poster: { US: 5.99, CA: 12.09, ROTW: 12.19 },
   canvas: { US: 8.19, AU: 18.29, CA: 15.69, ROTW: 165.39 },
   frame: { US: 12.49, CA: 49.19, ROTW: 57.19 },
   sneaker: { US: 18.69, AU: 25.69, ROTW: 25.69 },
   hoodie: { US: 10.39, AU: 22.79, ROTW: 15.59 },
+  tee: { US: 4.49, AU: 12.99, CA: 9.69, ROTW: 10.39 },
 };
 
 /** Gelato print + ship for the UK/EU compliance lanes only. */
@@ -96,6 +100,7 @@ function printifyFamily(key: PrintifyCostKey): keyof typeof PRINTIFY_SHIP_USD {
   if (key === "live_frame_kind") return "frame";
   if (isSneakerKey(key)) return "sneaker";
   if (isHoodieKey(key)) return "hoodie";
+  if (isTeeKey(key)) return "tee";
   return "poster";
 }
 
@@ -107,11 +112,23 @@ function isHoodieKey(key: PrintifyCostKey) {
   return key === "live_hoodie_bloom";
 }
 
+function isTeeKey(key: PrintifyCostKey) {
+  return key === "live_tee_bloom";
+}
+
 function hoodieShipUsd(region: "NZ" | "AU" | "US" | "GB" | "EU") {
   if (region === "US") return 10.39;
   if (region === "AU") return 22.79;
   if (region === "EU") return 18.49;
   return 15.59;
+}
+
+function teeShipUsd(region: "NZ" | "AU" | "US" | "GB" | "EU") {
+  if (region === "US") return 4.49;
+  if (region === "AU" || region === "NZ") return 12.99;
+  if (region === "GB") return 4.79;
+  if (region === "EU") return 4.99;
+  return 10.39;
 }
 
 function sneakerShipUsd(region: "NZ" | "AU" | "US" | "GB" | "EU") {
@@ -148,6 +165,15 @@ export function catalogLanes(key: PrintifyCostKey): CostLane[] {
         printer: "printify",
         printCost: printNzd,
         shipping: usdToNzd(hoodieShipUsd(row.region)),
+        days: "10–20 days",
+      };
+    }
+    if (isTeeKey(key)) {
+      return {
+        ...row,
+        printer: "printify",
+        printCost: printNzd,
+        shipping: usdToNzd(teeShipUsd(row.region)),
         days: "10–20 days",
       };
     }

@@ -42,6 +42,7 @@ const GALLERY_PAIRS: Record<string, { mockup: string; print: string }> = {
   live_sneaker_star: { mockup: "/catalog/catalog-camo-sneakers-angle.jpg", print: "/catalog/print-camo-sneakers.png" },
   live_sneaker_star_w: { mockup: "/catalog/catalog-star-sneakers-w-angle.jpg", print: "/catalog/print-star-sneakers.png" },
   live_hoodie_bloom: { mockup: "/catalog/catalog-hoodie-bloom.jpg", print: "/catalog/print-hoodie-bloom.png" },
+  live_tee_bloom: { mockup: "/catalog/catalog-tee-bloom.jpg", print: "/catalog/print-tee-bloom.png" },
 };
 
 const GALLERY_EXTRA: Record<string, string[]> = {
@@ -71,6 +72,15 @@ const GALLERY_EXTRA: Record<string, string[]> = {
     "/catalog/catalog-hoodie-bloom-cardinal-red.jpg",
     "/catalog/catalog-hoodie-bloom-dark-heather.jpg",
     "/catalog/gallery-live_hoodie_bloom-back.jpg",
+  ],
+  live_tee_bloom: [
+    "/catalog/gallery-live_tee_bloom-model.jpg",
+    "/catalog/catalog-tee-bloom-ash.jpg",
+    "/catalog/catalog-tee-bloom-black.jpg",
+    "/catalog/catalog-tee-bloom-sport-grey.jpg",
+    "/catalog/catalog-tee-bloom-navy.jpg",
+    "/catalog/gallery-live_tee_bloom-back.jpg",
+    "/catalog/gallery-live_tee_bloom-neck.jpg",
   ],
 };
 
@@ -154,6 +164,10 @@ export const CATALOG_LISTING_TAGS: Record<string, string[]> = {
   live_hoodie_bloom: fillListingTags(
     ["Quotes", "zip hoodie", "embroidery", "fern", "grow", "bloom"],
     ["unisex", "gildan", "white hoodie", "quote", "botanical"],
+  ),
+  live_tee_bloom: fillListingTags(
+    ["Quotes", "tshirt", "embroidery", "fern", "grow", "bloom"],
+    ["unisex", "gildan", "cotton tee", "quote", "botanical"],
   ),
 };
 
