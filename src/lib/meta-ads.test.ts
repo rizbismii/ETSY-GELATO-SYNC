@@ -119,6 +119,8 @@ test("Ads page uses the existing Fernora Pressroom app after the 48-hour wait", 
   assert.match(page, /Do not click/);
   assert.match(page, /switch the app to/i);
   assert.match(page, /FERNORA_META_DATA_DELETION_URL/);
+  assert.match(page, /FERNORA_META_APP_ICON_PATH/);
+  assert.match(page, /Fernora-Pressroom-app-icon-1024\.png/);
   assert.doesNotMatch(page, /Create app/);
   assert.doesNotMatch(page, /\bGelato\b/);
 });
