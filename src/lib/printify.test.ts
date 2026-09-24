@@ -24,6 +24,7 @@ import {
   printifyImageFileName,
 } from "./printify-products.ts";
 import { CLOTHING_COLORS, defaultClothingVariant, zipHoodieVariants } from "./clothing.ts";
+import { apparelColorDesk, printTemplateDesk } from "./print-templates.ts";
 
 test("Printify GPSR blocks flatten into safety_information", () => {
   const text = formatPrintifySafetyInformation([
@@ -171,12 +172,13 @@ test("Fernora Printify catalog is eight products including the embroidered zip h
       assert.equal(spec.blueprintId, spec.key === "live_sneaker_star_w" ? 1219 : 1072);
     } else if (spec.key === "live_hoodie_bloom") {
       assert.equal(enabled.length, CLOTHING_COLORS.length * 5);
-      assert.equal(enabled.filter((row) => row.id).length, 5);
+      assert.equal(enabled.filter((row) => row.id).length, CLOTHING_COLORS.length * 5);
       assert.equal(spec.printProviderId, 217);
       assert.deepEqual(spec.positions, ["front_left_chest"]);
       assert.equal(spec.blueprintId, 66);
       assert.match(spec.description, /beneath the leaf/);
-      assert.match(spec.description, /Black, White, and Navy/);
+      assert.match(spec.description, /White, Ash, Black/);
+      assert.match(spec.description, /Dark Heather Grey/);
     } else {
       assert.equal(enabled.length, 1);
     }
@@ -217,8 +219,8 @@ test("Fernora Printify catalog is eight products including the embroidered zip h
   ]);
   const hoodie = FERNORA_PRINTIFY_STARTERS.find((row) => row.key === "live_hoodie_bloom")!;
   const hoodiePayload = buildPrintifyProductPayload(hoodie, "img_hoodie");
-  assert.equal(hoodiePayload.variants.length, 5);
-  assert.equal(hoodiePayload.print_areas[0].variant_ids.length, 5);
+  assert.equal(hoodiePayload.variants.length, CLOTHING_COLORS.length * 5);
+  assert.equal(hoodiePayload.print_areas[0].variant_ids.length, CLOTHING_COLORS.length * 5);
   const matched = matchPrintifyColorSizes(hoodie.variants, [
     { id: 31929, options: { color: "White", size: "S" } },
     { id: 31939, title: "White / M" },
@@ -236,7 +238,7 @@ test("Fernora Printify catalog is eight products including the embroidered zip h
     { id: 42004, options: { color: "Navy", size: "XL" } },
     { id: 42005, title: "Navy / 2XL" },
   ]);
-  assert.equal(matched.length, 15);
+  assert.equal(matched.length, CLOTHING_COLORS.length * 5);
   assert.equal(matched.find((row) => row.color === "Black" && row.size === "M")?.id, 41002);
   assert.equal(matched.find((row) => row.color === "Navy" && row.size === "S")?.id, 42001);
   assert.equal(matched.find((row) => row.color === "Black" && row.size === "2XL")?.id, 41005);
@@ -251,6 +253,12 @@ test("Fernora Printify catalog is eight products including the embroidered zip h
   assert.equal(shopHoodie.find((row) => row.colorUid === "white")?.imageUrl, "/catalog/catalog-hoodie-bloom.jpg");
   assert.equal(shopHoodie.find((row) => row.colorUid === "black")?.imageUrl, "/catalog/catalog-hoodie-bloom-black.jpg");
   assert.equal(shopHoodie.find((row) => row.colorUid === "navy")?.imageUrl, "/catalog/catalog-hoodie-bloom-navy.jpg");
+  assert.equal(shopHoodie.find((row) => row.colorUid === "ash")?.imageUrl, "/catalog/catalog-hoodie-bloom-ash.jpg");
+  assert.equal(shopHoodie.find((row) => row.colorUid === "light-pink")?.imageUrl, "/catalog/catalog-hoodie-bloom-light-pink.jpg");
+  assert.equal(CLOTHING_COLORS.length, 8);
+  assert.equal(printTemplateDesk().length, 8);
+  assert.equal(apparelColorDesk().colors.length, 8);
+  assert.match(apparelColorDesk().line, /Light Pink/);
   const womens = FERNORA_PRINTIFY_STARTERS.find((row) => row.key === "live_sneaker_star_w");
   assert.equal(womens?.title, "Southern Cross Star · Women’s Mesh Sneakers");
   assert.equal(womens?.blueprintId, 1219);

@@ -142,6 +142,7 @@ export async function DELETE() {
   const current = await getCredentials();
   await saveCredentials({
     gelatoApiKey: current.gelatoApiKey,
+    openaiApiKey: current.openaiApiKey,
     etsy: current.etsy
       ? { apiKey: current.etsy.apiKey, sharedSecret: current.etsy.sharedSecret }
       : undefined,

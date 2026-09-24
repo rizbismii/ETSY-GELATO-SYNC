@@ -8,10 +8,21 @@ import type { ClothingVariant, Listing } from "@/lib/types";
 
 /** Shared garment colours for the live hoodie and for apparel added later. */
 export const CLOTHING_COLORS = [
-  { name: "Black", uid: "black" },
-  { name: "White", uid: "white" },
-  { name: "Navy", uid: "navy" },
+  { name: "White", uid: "white", hex: "#ffffff" },
+  { name: "Ash", uid: "ash", hex: "#F6F6F6" },
+  { name: "Black", uid: "black", hex: "#000000" },
+  { name: "Sport Grey", uid: "sport-grey", hex: "#CACACA" },
+  { name: "Navy", uid: "navy", hex: "#1a2237" },
+  { name: "Light Pink", uid: "light-pink", hex: "#FEE0EB" },
+  { name: "Cardinal Red", uid: "cardinal-red", hex: "#911a30" },
+  { name: "Dark Heather Grey", uid: "dark-heather", hex: "#3a3d42" },
 ] as const;
+
+export const CLOTHING_COLOR_LINE = CLOTHING_COLORS.map((row) => row.name).join(", ");
+
+export function clothingColor(uid?: string | null) {
+  return CLOTHING_COLORS.find((row) => row.uid === uid);
+}
 
 export const CLOTHING_SIZES = [
   { name: "S", uid: "s" },
@@ -38,29 +49,35 @@ export const ZIP_HOODIE_WHITE = [
 
 export const ZIP_HOODIE_WHITE_DEFAULT = 31939;
 
-/** Photos for the shared apparel colours. New colours need a photo here before the storefront can show them. */
-export const ZIP_HOODIE_COLOR_IMAGE: Record<string, string> = {
-  white: "/catalog/catalog-hoodie-bloom.jpg",
-  black: "/catalog/catalog-hoodie-bloom-black.jpg",
-  navy: "/catalog/catalog-hoodie-bloom-navy.jpg",
+/** Gildan 18600 · Fulfill Engine ids for the shared apparel colours, S–2XL. */
+export const ZIP_HOODIE_PRINTIFY: Record<string, Partial<Record<string, number>>> = {
+  white: { s: 31929, m: 31939, l: 31949, xl: 31959, "2xl": 31969 },
+  ash: { s: 66313, m: 66314, l: 66315, xl: 66316, "2xl": 66317 },
+  black: { s: 31930, m: 31940, l: 31950, xl: 31960, "2xl": 31970 },
+  "sport-grey": { s: 31928, m: 31938, l: 31948, xl: 31958, "2xl": 31968 },
+  navy: { s: 31925, m: 31935, l: 31945, xl: 31955, "2xl": 31965 },
+  "light-pink": { s: 31924, m: 31934, l: 31944, xl: 31954, "2xl": 31964 },
+  "cardinal-red": { s: 36936, m: 36945, l: 36954, xl: 36963, "2xl": 36972 },
+  "dark-heather": { s: 115094, m: 115095, l: 115096, xl: 115097, "2xl": 115098 },
 };
 
+/** Official Printify variant photos. Do not replace these with homemade composites. */
+export const ZIP_HOODIE_COLOR_IMAGE: Record<string, string> = Object.fromEntries(
+  CLOTHING_COLORS.map((color) => [
+    color.uid,
+    color.uid === "white" ? "/catalog/catalog-hoodie-bloom.jpg" : `/catalog/catalog-hoodie-bloom-${color.uid}.jpg`,
+  ]),
+);
+
 export function zipHoodieColorways() {
-  const colors = [
-    ...CLOTHING_COLORS.filter((color) => color.uid === "white"),
-    ...CLOTHING_COLORS.filter((color) => color.uid !== "white"),
-  ];
-  return colors.flatMap((color) =>
-    ZIP_HOODIE_SIZES.map((size) => {
-      const known = color.uid === "white" ? ZIP_HOODIE_WHITE.find((row) => row.sizeUid === size.sizeUid) : undefined;
-      return {
-        color: color.name,
-        colorUid: color.uid,
-        size: size.size,
-        sizeUid: size.sizeUid,
-        printifyId: known?.printifyId,
-      };
-    }),
+  return CLOTHING_COLORS.flatMap((color) =>
+    ZIP_HOODIE_SIZES.map((size) => ({
+      color: color.name,
+      colorUid: color.uid,
+      size: size.size,
+      sizeUid: size.sizeUid,
+      printifyId: ZIP_HOODIE_PRINTIFY[color.uid]?.[size.sizeUid],
+    })),
   );
 }
 
@@ -185,10 +202,29 @@ export function findClothingVariant(variants: ClothingVariant[] | undefined, var
 }
 
 const COLOR_ALIASES: Record<string, string> = {
-  black: "black",
   white: "white",
+  ash: "ash",
+  black: "black",
+  "sport grey": "sport-grey",
+  "sport-grey": "sport-grey",
+  sportgrey: "sport-grey",
+  grey: "sport-grey",
+  gray: "sport-grey",
   navy: "navy",
+  "navy blue": "navy",
   blue: "navy",
+  "light pink": "light-pink",
+  "light-pink": "light-pink",
+  lightpink: "light-pink",
+  pink: "light-pink",
+  "cardinal red": "cardinal-red",
+  "cardinal-red": "cardinal-red",
+  cardinal: "cardinal-red",
+  red: "cardinal-red",
+  "dark heather grey": "dark-heather",
+  "dark heather": "dark-heather",
+  "dark-heather": "dark-heather",
+  heather: "dark-heather",
 };
 
 const SIZE_ALIASES: Record<string, string> = {
@@ -269,7 +305,8 @@ export function resolveListingFulfillment(
   };
 }
 
-const CLOTHING_SKU_PATTERN = /^(.*)-(black|white|navy)-(2xl|xl|s|m|l)$/i;
+const CLOTHING_SKU_PATTERN =
+  /^(.*)-(dark-heather|cardinal-red|light-pink|sport-grey|black|white|navy|ash)-(2xl|xl|s|m|l)$/i;
 const SNEAKER_SKU_PATTERN = /^(.*)-us-(\d+(?:-\d+)?)$/i;
 
 export function parseClothingSku(sku: string) {

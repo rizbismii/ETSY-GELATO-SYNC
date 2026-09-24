@@ -46,6 +46,7 @@ export type PrintifyCredentials = {
 export type StoredCredentials = {
   etsy?: EtsyCredentials;
   gelatoApiKey?: string;
+  openaiApiKey?: string;
   shopify?: ShopifyCredentials;
   meta?: MetaCredentials;
   printify?: PrintifyCredentials;
@@ -186,7 +187,8 @@ function hydrate(disk: StoredCredentials): StoredCredentials {
     fullyConnected: disk.printify?.fullyConnected,
     shops: disk.printify?.shops,
   });
-  const next: StoredCredentials = { gelatoApiKey, etsy, shopify, meta, printify };
+  const openaiApiKey = pickSecret(process.env.OPENAI_API_KEY, disk.openaiApiKey);
+  const next: StoredCredentials = { gelatoApiKey, openaiApiKey, etsy, shopify, meta, printify };
   if (next.etsy && !next.etsy.apiKey) delete next.etsy;
   if (next.shopify && !next.shopify.clientId) delete next.shopify;
   if (next.meta && !next.meta.accessToken && !next.meta.pixelId && !next.meta.adAccountId) delete next.meta;
@@ -230,6 +232,7 @@ function mergePrintify(
 export async function saveCredentials(next: StoredCredentials) {
   const persisted: StoredCredentials = {
     gelatoApiKey: usableGelatoKey(next.gelatoApiKey),
+    openaiApiKey: next.openaiApiKey,
     etsy: next.etsy,
     shopify: next.shopify,
     meta: next.meta,
@@ -246,6 +249,7 @@ export async function patchCredentials(patch: StoredCredentials) {
       usableGelatoKey(patch.gelatoApiKey) ||
       usableGelatoKey(disk.gelatoApiKey) ||
       usableGelatoKey(DESK_CREDENTIALS.gelatoApiKey),
+    openaiApiKey: pickSecret(patch.openaiApiKey, disk.openaiApiKey),
     etsy: mergeEtsy(disk.etsy, patch.etsy),
     shopify: mergeShopify(disk.shopify, patch.shopify),
     meta: mergeMeta(disk.meta, patch.meta),

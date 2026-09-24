@@ -194,8 +194,15 @@ test("Catalog dropdown order is All, Quotes, Botanical, Scenic, Home décor, Ori
   const listings = readFileSync(new URL("../app/listings/page.tsx", import.meta.url), "utf8");
   assert.match(shop, /CATALOG_MENU/);
   assert.match(listings, /CATALOG_MENU/);
+  assert.match(listings, /Print templates/);
   assert.match(listings, /aspect-\[4\/5\]/);
   assert.match(listings, /Printer/);
+  const prints = readFileSync(new URL("../app/prints/page.tsx", import.meta.url), "utf8");
+  assert.match(prints, /AI generate/);
+  assert.match(prints, /Upload print template/);
+  assert.match(prints, /Push print \+ Printify photos/);
+  assert.match(prints, /Shared colours for this and upcoming products/);
+  assert.match(readFileSync(new URL("../components/app-shell.tsx", import.meta.url), "utf8"), /\/prints/);
   assert.doesNotMatch(listings, /lg:h-full/);
   assert.doesNotMatch(listings, /After ads/);
 });

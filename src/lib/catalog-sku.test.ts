@@ -33,6 +33,11 @@ test("parseClothingSku splits product, color, and size", () => {
     sizeUid: "l",
   });
   assert.equal(parseClothingSku("live_poster"), undefined);
+  assert.deepEqual(parseClothingSku("live_hoodie_bloom-sport-grey-m"), {
+    productId: "live_hoodie_bloom",
+    colorUid: "sport-grey",
+    sizeUid: "m",
+  });
 });
 
 test("resolveCatalogLine maps a clothing SKU to the Gelato UID for that variant", () => {

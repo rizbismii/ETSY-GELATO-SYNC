@@ -63,11 +63,14 @@ const GALLERY_EXTRA: Record<string, string[]> = {
   ],
   live_hoodie_bloom: [
     "/catalog/gallery-live_hoodie_bloom-model.jpg",
+    "/catalog/catalog-hoodie-bloom-ash.jpg",
     "/catalog/catalog-hoodie-bloom-black.jpg",
+    "/catalog/catalog-hoodie-bloom-sport-grey.jpg",
     "/catalog/catalog-hoodie-bloom-navy.jpg",
+    "/catalog/catalog-hoodie-bloom-light-pink.jpg",
+    "/catalog/catalog-hoodie-bloom-cardinal-red.jpg",
+    "/catalog/catalog-hoodie-bloom-dark-heather.jpg",
     "/catalog/gallery-live_hoodie_bloom-back.jpg",
-    "/catalog/gallery-live_hoodie_bloom-sleeve.jpg",
-    "/catalog/gallery-live_hoodie_bloom-other.jpg",
   ],
 };
 

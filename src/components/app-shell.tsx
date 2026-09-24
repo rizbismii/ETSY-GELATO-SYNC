@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   LayoutDashboard,
+  ImageIcon,
   Package,
   ShoppingBag,
   Wallet,
@@ -26,6 +27,7 @@ const links = [
   { href: "/", label: "Desk", icon: LayoutDashboard },
   { href: "/orders", label: "Orders", icon: ShoppingBag },
   { href: "/listings", label: "Catalog", icon: Package },
+  { href: "/prints", label: "Print templates", icon: ImageIcon },
   { href: "/ads", label: "Ads", icon: Megaphone },
   { href: "/revenue", label: "Revenue", icon: Wallet },
   { href: "/connections", label: "Connections", icon: Plug },

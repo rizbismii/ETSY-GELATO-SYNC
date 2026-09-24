@@ -1,7 +1,7 @@
 import path from "node:path";
 import { CATALOG_LISTING_TAGS } from "./listing-health.ts";
 import { catalogPrice, printifyListCents } from "./printify-costs.ts";
-import { ZIP_HOODIE_WHITE_DEFAULT, zipHoodieColorways } from "./clothing.ts";
+import { CLOTHING_COLOR_LINE, ZIP_HOODIE_WHITE_DEFAULT, zipHoodieColorways } from "./clothing.ts";
 import {
   SNEAKER_WHITE_SOLE,
   SNEAKER_WHITE_SOLE_DEFAULT,
@@ -72,10 +72,22 @@ const SIZE_TOKENS: Record<string, string> = {
 };
 
 const COLOR_TOKENS: Record<string, string> = {
-  black: "black",
   white: "white",
+  ash: "ash",
+  black: "black",
+  sportgrey: "sport-grey",
+  sportgray: "sport-grey",
   navy: "navy",
   navyblue: "navy",
+  lightpink: "light-pink",
+  pink: "light-pink",
+  cardinalred: "cardinal-red",
+  cardinal: "cardinal-red",
+  red: "cardinal-red",
+  darkheathergrey: "dark-heather",
+  darkheathergray: "dark-heather",
+  darkheather: "dark-heather",
+  heather: "dark-heather",
 };
 
 function optionToken(kind: "color" | "size", value: string) {
@@ -238,7 +250,7 @@ export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
     key: "live_hoodie_bloom",
     title: "Grow With Purpose · Embroidered Zip Hoodie",
     description:
-      "Unisex Gildan 18600 full-zip hoodie with an original Fernora embroidered fern and the line “Grow with purpose, Bloom with grace” beneath the leaf. Left-chest embroidery. Black, White, and Navy. Made to order.",
+      `Unisex Gildan 18600 full-zip hoodie with an original Fernora embroidered fern and the line “Grow with purpose, Bloom with grace” beneath the leaf. Left-chest embroidery. ${CLOTHING_COLOR_LINE}. Made to order.`,
     tags: CATALOG_LISTING_TAGS.live_hoodie_bloom,
     printFile: "print-hoodie-bloom.png",
     mockupFile: "catalog-hoodie-bloom.jpg",
