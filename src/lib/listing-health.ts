@@ -80,6 +80,7 @@ const GALLERY_EXTRA: Record<string, string[]> = {
     "/catalog/catalog-tee-bloom-sport-grey.jpg",
     "/catalog/catalog-tee-bloom-navy.jpg",
     "/catalog/gallery-live_tee_bloom-back.jpg",
+    "/catalog/gallery-live_tee_bloom-neck.jpg",
   ],
 };
 

@@ -32,8 +32,8 @@ export const PRINTIFY_PRINT_USD = {
   live_sneaker_star_w: 37.77,
   /** Gildan 18600 embroidery · Fulfill Engine. 2XL is 41.23; S–XL are 36.83. */
   live_hoodie_bloom: 41.23,
-  /** Gildan 5000 large-center embroidery + neck DTF · Printful. Placeholder until the live product reports variant.cost. */
-  live_tee_bloom: 22.5,
+  /** Gildan 5000 large-center embroidery + neck DTF · Printful. 2XL is 21.32; S–XL are 19.08. */
+  live_tee_bloom: 21.32,
 } as const;
 
 export const PRINTIFY_PRINT_NZD = {
