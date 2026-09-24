@@ -653,7 +653,11 @@ export async function applyPrintifyGpsr(input?: { shopId?: number; token?: strin
 
 const PRINTIFY_FRONT_CAMERA = 108335;
 const PRINTIFY_BACK_CAMERA = 108336;
+const TEE_FRONT_CAMERA = 92575;
+const TEE_BACK_CAMERA = 92571;
+const TEE_NECK_CAMERA = 92586;
 const HOODIE_PRINTIFY_ID = "6ab311b3f483ddf88402ac9b";
+const TEE_PRINTIFY_ID = "6ab468c10f032ace3e089227";
 
 async function downloadPrintifyMockup(url: string, dest: string) {
   const response = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" }, cache: "no-store" });
@@ -671,7 +675,12 @@ function apparelPhotoPlan(key: string) {
         TEE_COLOR_IMAGE[uid]?.replace("/catalog/", "") || `catalog-tee-bloom-${uid}.jpg`,
       backFile: "gallery-live_tee_bloom-back.jpg",
       modelFile: "gallery-live_tee_bloom-model.jpg",
-      slug: "grow-with-purpose-embroidered-tee",
+      neckFile: "gallery-live_tee_bloom-neck.jpg",
+      slug: "grow-with-purpose-embroidered-heavy-cotton-tee",
+      frontCamera: TEE_FRONT_CAMERA,
+      backCamera: TEE_BACK_CAMERA,
+      neckCamera: TEE_NECK_CAMERA,
+      defaultId: TEE_PRINTIFY_ID,
     };
   }
   return {
@@ -681,56 +690,50 @@ function apparelPhotoPlan(key: string) {
       ZIP_HOODIE_COLOR_IMAGE[uid]?.replace("/catalog/", "") || `catalog-hoodie-bloom-${uid}.jpg`,
     backFile: "gallery-live_hoodie_bloom-back.jpg",
     modelFile: "gallery-live_hoodie_bloom-model.jpg",
+    neckFile: "",
     slug: "grow-with-purpose-embroidered-zip-hoodie",
+    frontCamera: PRINTIFY_FRONT_CAMERA,
+    backCamera: PRINTIFY_BACK_CAMERA,
+    neckCamera: 0,
+    defaultId: HOODIE_PRINTIFY_ID,
   };
 }
 
-function pickPrintifyVariantImage(
-  images: Array<{ src?: string; variant_ids?: number[]; position?: string }>,
-  variantId: number,
-  preferBack = false,
-) {
-  const matches = images.filter((image) => image.src && image.variant_ids?.includes(variantId));
-  if (!matches.length) return undefined;
-  const back = matches.find((image) => /back/i.test(image.position || "") || /back/i.test(image.src || ""));
-  const front = matches.find((image) => /front/i.test(image.position || "") || /front/i.test(image.src || ""));
-  return (preferBack ? back || matches[0] : front || matches[0])?.src;
-}
-
 /** Official Printify colour photos — never homemade garment composites. */
-export async function pullPrintifyVariantPhotos(productId = HOODIE_PRINTIFY_ID, key = "live_hoodie_bloom") {
+export async function pullPrintifyVariantPhotos(productId?: string, key = "live_hoodie_bloom") {
   const destDir = path.join(process.cwd(), "public", "catalog");
   const written: string[] = [];
   const plan = apparelPhotoPlan(key);
-  let product: PrintifyProduct | undefined;
-  try {
-    const ping = await pingPrintify();
-    if (ping.shopId) product = await getPrintifyProduct(ping.shopId, productId);
-  } catch {
-    product = undefined;
-  }
+  const id = productId || plan.defaultId;
   for (const color of plan.colors) {
     const variantId = plan.variantId(color.uid);
     if (!variantId) continue;
     const file = plan.fileForColor(color.uid);
-    const fromProduct = product?.images ? pickPrintifyVariantImage(product.images, variantId) : undefined;
-    const url =
-      fromProduct ||
-      `https://images.printify.com/mockup/${productId}/${variantId}/${PRINTIFY_FRONT_CAMERA}/${plan.slug}.jpg`;
+    const url = `https://images.printify.com/mockup/${id}/${variantId}/${plan.frontCamera}/${plan.slug}.jpg`;
     await downloadPrintifyMockup(url, path.join(destDir, file));
     written.push(`/catalog/${file}`);
   }
   const whiteM = plan.variantId("white");
   if (whiteM) {
-    const fromProduct = product?.images ? pickPrintifyVariantImage(product.images, whiteM, true) : undefined;
-    const backUrl =
-      fromProduct ||
-      `https://images.printify.com/mockup/${productId}/${whiteM}/${PRINTIFY_BACK_CAMERA}/${plan.slug}.jpg`;
     try {
-      await downloadPrintifyMockup(backUrl, path.join(destDir, plan.backFile));
+      await downloadPrintifyMockup(
+        `https://images.printify.com/mockup/${id}/${whiteM}/${plan.backCamera}/${plan.slug}.jpg`,
+        path.join(destDir, plan.backFile),
+      );
       written.push(`/catalog/${plan.backFile}`);
     } catch {
-      /* back camera is optional if Printful has not published that view */
+      /* back camera is optional if that view is not published */
+    }
+    if (plan.neckFile && plan.neckCamera) {
+      try {
+        await downloadPrintifyMockup(
+          `https://images.printify.com/mockup/${id}/${whiteM}/${plan.neckCamera}/${plan.slug}.jpg`,
+          path.join(destDir, plan.neckFile),
+        );
+        written.push(`/catalog/${plan.neckFile}`);
+      } catch {
+        /* neck close-up is optional */
+      }
     }
     const whiteFront = path.join(destDir, plan.fileForColor("white"));
     const model = path.join(destDir, plan.modelFile);
@@ -790,7 +793,17 @@ export async function upsertPrintifyCatalogItem(key: string) {
   try {
     const current = await getPrintifyProduct(shopId, productId);
     const listingId = String(current.external?.id || "");
-    if (listingId) etsyNotes = await pushOfficialPhotosToEtsy(key, listingId);
+    if (listingId) {
+      await updateShop((shop) => {
+        const row = shop.listings.find((item) => item.id === key || item.title === spec.title);
+        if (!row) return;
+        row.etsyListingId = listingId;
+        row.etsyUrl = current.external?.handle || etsyListingUrl(listingId);
+        row.publishState = "live";
+        row.state = "active";
+      });
+      etsyNotes = await pushOfficialPhotosToEtsy(key, listingId);
+    }
   } catch (error) {
     etsyNotes.push(`Etsy photos: ${(error as Error).message}`);
   }
