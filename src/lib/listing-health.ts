@@ -107,16 +107,33 @@ export function mixTag(collection?: string | null) {
   return (collection && MIX_TAGS[collection]) || "";
 }
 
+export function designZoomStills(id?: string | null) {
+  if (!id) return [];
+  return [`/catalog/gallery-${id}-detail.png`, `/catalog/gallery-${id}-close.png`];
+}
+
+export function isPrintTemplatePath(file?: string | null) {
+  return Boolean(file && /\/print-[^/]+\.(png|jpe?g)$/i.test(file));
+}
+
+export function isDesignZoomStill(file?: string | null) {
+  return Boolean(file && /gallery-.+-(detail|close)\.(png|jpe?g)$/i.test(file));
+}
+
 export function listingGallery(id?: string | null, mockup?: string | null, print?: string | null) {
   const pair = id ? GALLERY_PAIRS[id] : undefined;
   const files = [
     pair?.mockup || mockup || "",
+    ...designZoomStills(id),
     ...(id ? GALLERY_EXTRA[id] || [] : []),
     pair?.print || print || "",
-    id ? `/catalog/gallery-${id}-detail.png` : "",
-    id ? `/catalog/gallery-${id}-close.png` : "",
   ].filter((file, index, all) => file && all.indexOf(file) === index);
   return files;
+}
+
+/** Website and Etsy zoom photos: listing hero, then the design close-ups. Skip raw print templates. */
+export function customerListingGallery(id?: string | null, mockup?: string | null, print?: string | null) {
+  return listingGallery(id, mockup, print).filter((file) => !isPrintTemplatePath(file));
 }
 
 export function listingHealth(input: { tags?: string[]; gallery?: string[] }) {

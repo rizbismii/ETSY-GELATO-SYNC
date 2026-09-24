@@ -49,11 +49,11 @@ import {
   uploadEtsyListingImage,
 } from "@/lib/etsy";
 import { deleteOlderGelatoProducts } from "@/lib/gelato-store";
-import { etsyListingUrl } from "@/lib/live-catalog";
+import { LIVE_CATALOG_IDS, etsyListingUrl } from "@/lib/live-catalog";
 import { deleteOlderShopifyProducts, syncFernoraCatalogToShopify } from "@/lib/shopify";
 import { syncShopifyCatalogMenu } from "@/lib/shopify-horizon";
-import { fillShopifyCollections, syncShopifyPresentmentPrices } from "@/lib/shopify-storefront";
-import { updateShop } from "@/lib/store";
+import { brandHorizonTheme, fillShopifyCollections, syncShopifyPresentmentPrices } from "@/lib/shopify-storefront";
+import { getShop, updateShop } from "@/lib/store";
 
 export {
   formatPrintifySafetyInformation,
@@ -744,14 +744,12 @@ export async function pullPrintifyVariantPhotos(productId?: string, key = "live_
   return written;
 }
 
-async function pushOfficialPhotosToEtsy(key: string, listingId: string) {
+export async function pushOfficialPhotosToEtsy(key: string, listingId: string) {
   const notes: string[] = [];
   const files = galleryForListing(key)
     .filter((file) => !file.includes("/print-"))
-    .slice(0, 9);
-  const print = galleryForListing(key).find((file) => file.includes("/print-"));
-  const ordered = print ? [...files, print] : files;
-  for (const [index, file] of ordered.entries()) {
+    .slice(0, 10);
+  for (const [index, file] of files.entries()) {
     const imagePath = path.join(process.cwd(), "public", file.replace(/^\//, ""));
     if (!existsSync(imagePath)) continue;
     try {
@@ -761,6 +759,37 @@ async function pushOfficialPhotosToEtsy(key: string, listingId: string) {
     }
   }
   return notes;
+}
+
+const ETSY_PHOTO_FALLBACK: Record<string, string> = {
+  live_hoodie_bloom: "4580717467",
+  live_tee_bloom: "4581437351",
+};
+
+/** Push zoomable design stills to Shopify and Etsy without recreating Printify products. */
+export async function syncCustomerDesignPhotos(onlyIds?: string[]) {
+  const wanted = (onlyIds?.length ? onlyIds : [...LIVE_CATALOG_IDS]).filter(Boolean);
+  const shopify = await syncFernoraCatalogToShopify(undefined, wanted);
+  const notes = [...shopify.notes];
+  try {
+    notes.push(...(await brandHorizonTheme()));
+  } catch (error) {
+    notes.push(`Horizon zoom: ${(error as Error).message}`);
+  }
+  const shop = await getShop();
+  for (const key of wanted) {
+    const listingId =
+      shop.listings.find((row) => row.id === key)?.etsyListingId || ETSY_PHOTO_FALLBACK[key] || "";
+    if (!listingId) {
+      notes.push(`${key}: no Etsy listing id`);
+      continue;
+    }
+    const photoNotes = await pushOfficialPhotosToEtsy(key, listingId);
+    notes.push(
+      photoNotes.length ? `${key} Etsy: ${photoNotes.join("; ")}` : `${key} Etsy photos updated`,
+    );
+  }
+  return { notes };
 }
 
 /** Create or refresh one catalog product on Printify without deleting the rest. */

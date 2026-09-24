@@ -10,10 +10,11 @@
     "etsy-tunnel": "bash scripts/etsy-tunnel.sh",
     "desk": "bash scripts/public-desk.sh",
     "apparel-prints": "python3 scripts/make-apparel-prints.py",
-    "print-files": "python3 scripts/make-apparel-prints.py && python3 scripts/match-prints-from-mockups.py && python3 scripts/layout-hoodie-bloom.py && python3 scripts/layout-tee-bloom.py",
+    "print-files": "python3 scripts/make-apparel-prints.py && python3 scripts/match-prints-from-mockups.py && python3 scripts/layout-hoodie-bloom.py && python3 scripts/layout-tee-bloom.py && python3 scripts/make-design-closeups.py",
     "print-match": "python3 scripts/match-prints-from-mockups.py",
+    "design-closeups": "python3 scripts/make-design-closeups.py",
     "attach-prints": "python3 scripts/attach-gelato-prints.py",
-    "test": "node --experimental-strip-types --test src/lib/catalog-sku.test.ts src/lib/shop.test.ts src/lib/shop-currency.test.ts src/lib/meta-ads.test.ts src/lib/printify.test.ts src/lib/print-supplier.test.ts src/lib/drop.test.ts src/lib/listing-health.test.ts && python3 scripts/match-prints-from-mockups.py --check"
+    "test": "node --experimental-strip-types --test src/lib/catalog-sku.test.ts src/lib/shop.test.ts src/lib/shop-currency.test.ts src/lib/meta-ads.test.ts src/lib/printify.test.ts src/lib/print-supplier.test.ts src/lib/drop.test.ts src/lib/listing-health.test.ts && python3 scripts/match-prints-from-mockups.py --check && python3 scripts/make-design-closeups.py --check"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

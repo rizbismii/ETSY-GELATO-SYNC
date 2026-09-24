@@ -313,6 +313,10 @@ test("Fernora Printify catalog is nine products including the embroidered zip ho
   assert.deepEqual(printifyEnabledVariantIds({ variants: [{ id: 1, is_enabled: true }, { id: 2, is_enabled: false }] }), [
     1,
   ]);
+  const printify = readFileSync(new URL("./printify.ts", import.meta.url), "utf8");
+  assert.match(printify, /syncCustomerDesignPhotos/);
+  assert.match(printify, /galleryForListing\(key\)/);
+  assert.doesNotMatch(printify.slice(printify.indexOf("pushOfficialPhotosToEtsy")), /\.slice\(0, 9\)/);
   const pairs = readFileSync(new URL("./print-file.ts", import.meta.url), "utf8");
   for (const spec of FERNORA_PRINTIFY_STARTERS) {
     assert.match(pairs, new RegExp(`key: "${spec.key}"[\\s\\S]*print: "/catalog/${spec.printFile}"`));

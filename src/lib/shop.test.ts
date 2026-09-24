@@ -143,6 +143,7 @@ test("Horizon branding shows country · currency and made-to-order homepage copy
   assert.match(source, /body\.template-index #MainContent \.section--page-width/);
   assert.match(source, /sticky_details_desktop = false/);
   assert.match(source, /media_presentation = "grid"/);
+  assert.match(source, /gallery.settings.zoom = true/);
   assert.doesNotMatch(source, /by Gelato/);
   assert.doesNotMatch(source, /Gelato quality/);
 });
@@ -164,6 +165,8 @@ test("customer-facing shop copy does not name Gelato as the supplier", () => {
   assert.match(shopifySource, /existsSync/);
   assert.match(shopifySource, /black-camo-mens-mesh-sneakers/);
   assert.match(shopifySource, /grow-with-purpose-embroidered-tee/);
+  assert.match(shopifySource, /isDesignZoomStill/);
+  assert.match(shopifySource, /productReorderMedia/);
   assert.doesNotMatch(shopifySource, /escapeHtml\(GELATO_SHIP_BLURB\)/);
   const carrierSource = readFileSync(new URL("./shopify-storefront.ts", import.meta.url), "utf8");
   assert.match(carrierSource, /FERNORA_CARRIER_NAME = "Fernora"/);

@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import {
   CATALOG_LISTING_TAGS,
   LISTING_TAG_LIMIT,
+  customerListingGallery,
   fillListingTags,
   listingGallery,
   listingHealth,
@@ -40,6 +41,8 @@ test("gallery lists the listing photo, print file, and extra stills", () => {
   assert.ok(files.includes("/catalog/catalog-poster.png"));
   assert.ok(files.includes("/catalog/print-poster-fern-arc.png"));
   assert.ok(files.includes("/catalog/gallery-live_poster-detail.png"));
+  assert.equal(files[1], "/catalog/gallery-live_poster-detail.png");
+  assert.equal(files[2], "/catalog/gallery-live_poster-close.png");
   const sneakers = listingGallery("live_sneaker_star");
   assert.ok(sneakers.includes("/catalog/catalog-camo-sneakers-angle.jpg"));
   assert.ok(sneakers.includes("/catalog/gallery-live_sneaker_star-camo-model.jpg"));
@@ -54,12 +57,19 @@ test("gallery lists the listing photo, print file, and extra stills", () => {
   assert.ok(hoodie.includes("/catalog/gallery-live_hoodie_bloom-model.jpg"));
   assert.ok(hoodie.includes("/catalog/catalog-hoodie-bloom-ash.jpg"));
   assert.ok(hoodie.includes("/catalog/catalog-hoodie-bloom-light-pink.jpg"));
+  assert.equal(hoodie[1], "/catalog/gallery-live_hoodie_bloom-detail.png");
   const tee = listingGallery("live_tee_bloom");
   assert.ok(tee.includes("/catalog/catalog-tee-bloom.jpg"));
   assert.ok(tee.includes("/catalog/print-tee-bloom.png"));
   assert.ok(tee.includes("/catalog/gallery-live_tee_bloom-model.jpg"));
   assert.ok(tee.includes("/catalog/catalog-tee-bloom-navy.jpg"));
   assert.ok(tee.includes("/catalog/gallery-live_tee_bloom-neck.jpg"));
+  assert.equal(tee[1], "/catalog/gallery-live_tee_bloom-detail.png");
+  assert.equal(tee[2], "/catalog/gallery-live_tee_bloom-close.png");
+  const customer = customerListingGallery("live_tee_bloom");
+  assert.equal(customer[0], "/catalog/catalog-tee-bloom.jpg");
+  assert.equal(customer[1], "/catalog/gallery-live_tee_bloom-detail.png");
+  assert.ok(!customer.some((file) => file.includes("/print-")));
 });
 
 test("prices use Printify costs and do not pad for opted-out Offsite Ads", () => {
