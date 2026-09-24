@@ -677,6 +677,7 @@ export async function syncFernoraCatalogToShopify(request?: Request, onlyIds?: s
     if (found?.id) input.id = found.id;
     if (product.id === "live_sneaker_star") input.handle = "black-camo-mens-mesh-sneakers";
     if (product.id === "live_hoodie_bloom") input.handle = "grow-with-purpose-embroidered-zip-hoodie";
+    if (product.id === "live_tee_bloom") input.handle = "grow-with-purpose-embroidered-tee";
     const files: Array<{ originalSource: string; alt?: string; contentType: string }> = [];
     const seenSources = new Set<string>();
     for (const variant of clothing.variants) {

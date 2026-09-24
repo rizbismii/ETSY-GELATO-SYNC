@@ -61,11 +61,12 @@ test("print templates keep a downloadable filename and surface for current produ
 });
 
 test("print files stay paired to their own listing mockup", () => {
-  assert.equal(CATALOG_ART_PAIRS.length, 8);
+  assert.equal(CATALOG_ART_PAIRS.length, 9);
   assert.equal(printFileForListing("live_poster"), "/catalog/print-poster-fern-arc.png");
   assert.equal(printFileForListing("live_sneaker_star"), "/catalog/print-camo-sneakers.png");
   assert.equal(printFileForListing("live_sneaker_star_w"), "/catalog/print-star-sneakers.png");
   assert.equal(printFileForListing("live_hoodie_bloom"), "/catalog/print-hoodie-bloom.png");
+  assert.equal(printFileForListing("live_tee_bloom"), "/catalog/print-tee-bloom.png");
   assert.equal(
     printFileForListing("live_quote_breathe", "/catalog/print-poster-fern-arc.png"),
     "/catalog/print-breathe-here.png",
@@ -162,6 +163,7 @@ test("customer-facing shop copy does not name Gelato as the supplier", () => {
   assert.match(shopifySource, /productDeleteMedia/);
   assert.match(shopifySource, /existsSync/);
   assert.match(shopifySource, /black-camo-mens-mesh-sneakers/);
+  assert.match(shopifySource, /grow-with-purpose-embroidered-tee/);
   assert.doesNotMatch(shopifySource, /escapeHtml\(GELATO_SHIP_BLURB\)/);
   const carrierSource = readFileSync(new URL("./shopify-storefront.ts", import.meta.url), "utf8");
   assert.match(carrierSource, /FERNORA_CARRIER_NAME = "Fernora"/);

@@ -1,7 +1,14 @@
 import path from "node:path";
 import { CATALOG_LISTING_TAGS } from "./listing-health.ts";
 import { catalogPrice, printifyListCents } from "./printify-costs.ts";
-import { CLOTHING_COLOR_LINE, ZIP_HOODIE_WHITE_DEFAULT, zipHoodieColorways } from "./clothing.ts";
+import {
+  CLOTHING_COLOR_LINE,
+  TEE_COLOR_LINE,
+  TEE_WHITE_DEFAULT,
+  ZIP_HOODIE_WHITE_DEFAULT,
+  teeColorways,
+  zipHoodieColorways,
+} from "./clothing.ts";
 import {
   SNEAKER_WHITE_SOLE,
   SNEAKER_WHITE_SOLE_DEFAULT,
@@ -39,7 +46,24 @@ export type PrintifyStarterSpec = {
   variants: PrintifyVariantInput[];
   positions: string[];
   aliases?: string[];
+  /** Per-position print files. Positions fall back to printFile. */
+  printFiles?: Record<string, string>;
 };
+
+export type PrintifyImageIds = string | Record<string, string>;
+
+export function printFileForPosition(spec: PrintifyStarterSpec, position: string) {
+  return spec.printFiles?.[position] || spec.printFile;
+}
+
+export function uniquePrintFiles(spec: PrintifyStarterSpec) {
+  return [...new Set(spec.positions.map((position) => printFileForPosition(spec, position)))];
+}
+
+export function imageIdForPosition(images: PrintifyImageIds, position: string, fallback?: string) {
+  if (typeof images === "string") return images;
+  return images[position] || fallback || Object.values(images)[0] || "";
+}
 
 function one(id: number, price: number): PrintifyVariantInput[] {
   return [{ id, price, is_enabled: true, is_default: true }];
@@ -53,6 +77,17 @@ function zipHoodiePrintifyVariants(price: number): PrintifyVariantInput[] {
     price,
     is_enabled: true,
     ...(row.printifyId === ZIP_HOODIE_WHITE_DEFAULT ? { is_default: true } : {}),
+  }));
+}
+
+function teePrintifyVariants(price: number): PrintifyVariantInput[] {
+  return teeColorways().map((row) => ({
+    ...(row.printifyId ? { id: row.printifyId } : {}),
+    color: row.color,
+    size: row.size,
+    price,
+    is_enabled: true,
+    ...(row.printifyId === TEE_WHITE_DEFAULT ? { is_default: true } : {}),
   }));
 }
 
@@ -147,7 +182,8 @@ function whiteSoleSneakers(
 
 /**
  * Fernora catalog: five wall-art mixes, black-camo men’s and Southern Cross women’s
- * mesh sneakers, and the embroidered Gildan 18600 zip hoodie. Not Gelato External migrations.
+ * mesh sneakers, the embroidered Gildan 18600 zip hoodie, and the embroidered
+ * Gildan 5000 heavy cotton tee. Not Gelato External migrations.
  */
 export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
   {
@@ -259,6 +295,23 @@ export const FERNORA_PRINTIFY_STARTERS: PrintifyStarterSpec[] = [
     variants: zipHoodiePrintifyVariants(printifyListCents(catalogPrice("live_hoodie_bloom"))),
     positions: ["front_left_chest"],
   },
+  {
+    key: "live_tee_bloom",
+    title: "Grow With Purpose · Embroidered Heavy Cotton Tee",
+    description:
+      `Unisex Gildan 5000 heavy cotton tee with a large-center Fernora embroidered fern and the line “Grow with purpose, Bloom with grace.” Inner neck label carries the Fernora wordmark. ${TEE_COLOR_LINE}. Made to order.`,
+    tags: CATALOG_LISTING_TAGS.live_tee_bloom,
+    printFile: "print-tee-bloom.png",
+    mockupFile: "catalog-tee-bloom.jpg",
+    printFiles: {
+      large_center_embroidery: "print-tee-bloom.png",
+      neck: "print-tee-bloom-neck.png",
+    },
+    blueprintId: 6,
+    printProviderId: 410,
+    variants: teePrintifyVariants(printifyListCents(catalogPrice("live_tee_bloom"))),
+    positions: ["large_center_embroidery", "neck"],
+  },
 ];
 
 export function printifyCatalogFile(fileName: string) {
@@ -277,9 +330,10 @@ export function printifyVariantsWithIds(spec: PrintifyStarterSpec) {
   );
 }
 
-export function buildPrintifyProductPayload(spec: PrintifyStarterSpec, imageId: string) {
+export function buildPrintifyProductPayload(spec: PrintifyStarterSpec, images: PrintifyImageIds) {
   const ready = printifyVariantsWithIds(spec);
   const variantIds = ready.map((variant) => variant.id);
+  const fallback = typeof images === "string" ? images : imageIdForPosition(images, spec.positions[0] || "");
   return {
     title: spec.title,
     description: spec.description,
@@ -300,7 +354,7 @@ export function buildPrintifyProductPayload(spec: PrintifyStarterSpec, imageId: 
           position,
           images: [
             {
-              id: imageId,
+              id: imageIdForPosition(images, position, fallback),
               x: 0.5,
               y: 0.5,
               scale: 1,
@@ -326,8 +380,12 @@ export function printifyEnabledVariantIds(product?: { variants?: Array<{ id?: nu
   return (product?.variants || []).filter((variant) => variant.is_enabled).map((variant) => variant.id).filter(Boolean);
 }
 
-export function printAreasForExistingVariants(spec: PrintifyStarterSpec, imageId: string, variantIds: number[]) {
-  const areas = buildPrintifyProductPayload(spec, imageId).print_areas;
+export function printAreasForExistingVariants(
+  spec: PrintifyStarterSpec,
+  images: PrintifyImageIds,
+  variantIds: number[],
+) {
+  const areas = buildPrintifyProductPayload(spec, images).print_areas;
   if (!variantIds.length) return areas;
   return areas.map((area) => ({ ...area, variant_ids: variantIds }));
 }

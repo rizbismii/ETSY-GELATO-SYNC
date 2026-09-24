@@ -1,4 +1,5 @@
 import { writeFile } from "node:fs/promises";
+import { embroideryPrintSize, isEmbroideryListing } from "@/lib/print-file";
 import { catalogPrintPath, cleanEmbroideryPrint } from "@/lib/print-studio";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +14,10 @@ export async function POST(request: Request) {
     const dest = catalogPrintPath(listingId);
     const bytes = new Uint8Array(await file.arrayBuffer());
     await writeFile(dest, bytes);
-    const print = clean || listingId === "live_hoodie_bloom" ? await cleanEmbroideryPrint(dest, dest) : dest;
+    const print =
+      clean || isEmbroideryListing(listingId)
+        ? await cleanEmbroideryPrint(dest, dest, embroideryPrintSize(listingId))
+        : dest;
     return Response.json({ ok: true, print: String(print).replace(/.*\/public/, "") || dest.replace(/.*\/public/, "") });
   } catch (error) {
     return Response.json({ error: (error as Error).message }, { status: 400 });

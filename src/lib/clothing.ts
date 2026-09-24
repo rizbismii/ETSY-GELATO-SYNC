@@ -20,6 +20,13 @@ export const CLOTHING_COLORS = [
 
 export const CLOTHING_COLOR_LINE = CLOTHING_COLORS.map((row) => row.name).join(", ");
 
+/** Gildan 5000 · Printful embroidery: the five colours that exist on that blueprint. */
+export const TEE_COLOR_UIDS = ["white", "ash", "black", "sport-grey", "navy"] as const;
+export const TEE_COLORS = CLOTHING_COLORS.filter((row) =>
+  (TEE_COLOR_UIDS as readonly string[]).includes(row.uid),
+);
+export const TEE_COLOR_LINE = TEE_COLORS.map((row) => row.name).join(", ");
+
 export function clothingColor(uid?: string | null) {
   return CLOTHING_COLORS.find((row) => row.uid === uid);
 }
@@ -77,6 +84,37 @@ export function zipHoodieColorways() {
       size: size.size,
       sizeUid: size.sizeUid,
       printifyId: ZIP_HOODIE_PRINTIFY[color.uid]?.[size.sizeUid],
+    })),
+  );
+}
+
+/** Gildan 5000 · Printful 410 · S–2XL. White M is the default. */
+export const TEE_WHITE_DEFAULT = 12101;
+
+export const TEE_PRINTIFY: Record<string, Partial<Record<string, number>>> = {
+  white: { s: 12102, m: 12101, l: 12100, xl: 12103, "2xl": 12104 },
+  ash: { s: 42716, m: 42717, l: 42718, xl: 42719, "2xl": 42720 },
+  black: { s: 12126, m: 12125, l: 12124, xl: 12127, "2xl": 12128 },
+  "sport-grey": { s: 12072, m: 12071, l: 12070, xl: 12073, "2xl": 12074 },
+  navy: { s: 11988, m: 11987, l: 11986, xl: 11989, "2xl": 11990 },
+};
+
+/** Official Printify variant photos. Do not replace these with homemade composites. */
+export const TEE_COLOR_IMAGE: Record<string, string> = Object.fromEntries(
+  TEE_COLORS.map((color) => [
+    color.uid,
+    color.uid === "white" ? "/catalog/catalog-tee-bloom.jpg" : `/catalog/catalog-tee-bloom-${color.uid}.jpg`,
+  ]),
+);
+
+export function teeColorways() {
+  return TEE_COLORS.flatMap((color) =>
+    ZIP_HOODIE_SIZES.map((size) => ({
+      color: color.name,
+      colorUid: color.uid,
+      size: size.size,
+      sizeUid: size.sizeUid,
+      printifyId: TEE_PRINTIFY[color.uid]?.[size.sizeUid],
     })),
   );
 }
@@ -153,6 +191,22 @@ export function zipHoodieVariants(productId: string): ClothingVariant[] {
   }));
 }
 
+/** Gildan 5000 heavy cotton tee in the five Printful embroidery colours, S–2XL. */
+export function teeVariants(productId: string): ClothingVariant[] {
+  return teeColorways().map((row) => ({
+    id: `${productId}-${row.colorUid}-${row.sizeUid}`,
+    color: row.color,
+    colorUid: row.colorUid,
+    size: row.size,
+    sizeUid: row.sizeUid,
+    sku: `${productId}-${row.colorUid}-${row.sizeUid}`,
+    gelatoProductUid: row.printifyId
+      ? `printify_gildan_5000:${row.printifyId}`
+      : `printify_gildan_5000:${row.colorUid}:${row.sizeUid}`,
+    imageUrl: TEE_COLOR_IMAGE[row.colorUid],
+  }));
+}
+
 /** White-sole US sizes for Printify mesh sneakers (1072 men’s or 1219 women’s). */
 export function sneakerVariants(
   productId: string,
@@ -172,11 +226,14 @@ export function sneakerVariants(
 
 export function defaultClothingVariant(variants: ClothingVariant[] | undefined) {
   if (!variants?.length) return undefined;
-  const zipWhite = variants.find(
+  const printifyWhite = variants.find(
     (row) =>
-      row.gelatoProductUid.startsWith("printify_gildan_18600:") && row.colorUid === "white" && row.sizeUid === "m",
+      (row.gelatoProductUid.startsWith("printify_gildan_18600:") ||
+        row.gelatoProductUid.startsWith("printify_gildan_5000:")) &&
+      row.colorUid === "white" &&
+      row.sizeUid === "m",
   );
-  if (zipWhite) return zipWhite;
+  if (printifyWhite) return printifyWhite;
   return (
     variants.find((row) => row.colorUid === "black" && row.sizeUid === "m") ||
     variants.find((row) => row.sizeUid === "m") ||

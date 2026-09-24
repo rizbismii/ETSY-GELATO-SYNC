@@ -1,6 +1,13 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { CLOTHING_COLORS, ZIP_HOODIE_COLOR_IMAGE, ZIP_HOODIE_PRINTIFY } from "@/lib/clothing";
+import {
+  CLOTHING_COLORS,
+  TEE_COLOR_IMAGE,
+  TEE_COLORS,
+  TEE_PRINTIFY,
+  ZIP_HOODIE_COLOR_IMAGE,
+  ZIP_HOODIE_PRINTIFY,
+} from "@/lib/clothing";
 import { getCredentials, patchCredentials } from "@/lib/credentials";
 import { galleryForListing } from "@/lib/listing-health";
 import {
@@ -23,11 +30,14 @@ import {
   matchPrintifyColorSizes,
   mergePrintAreaVariantIds,
   printAreasForExistingVariants,
+  printFileForPosition,
   printifyCatalogFile,
   printifyEnabledVariantIds,
   printifyImageFileName,
   printifyVariantsWithIds,
+  uniquePrintFiles,
   type PrintifyCatalogVariant,
+  type PrintifyImageIds,
   type PrintifyStarterSpec,
 } from "@/lib/printify-products";
 import { restoreLiveCatalogInShop } from "@/lib/drop";
@@ -73,7 +83,8 @@ type PrintifyProduct = {
   id: string;
   title?: string;
   safety_information?: string;
-  variants?: Array<{ id?: number; is_enabled?: boolean }>;
+  variants?: Array<{ id?: number; is_enabled?: boolean; cost?: number }>;
+  images?: Array<{ src?: string; variant_ids?: number[]; position?: string }>;
   external?: { id?: string; handle?: string };
 };
 
@@ -171,6 +182,19 @@ export async function uploadPrintifyImage(fileName: string, token?: string) {
   return uploaded;
 }
 
+async function uploadPrintifyImagesForSpec(spec: PrintifyStarterSpec, token?: string) {
+  const byFile: Record<string, string> = {};
+  for (const file of uniquePrintFiles(spec)) {
+    const uploaded = await uploadPrintifyImage(file, token);
+    byFile[file] = uploaded.id;
+  }
+  const images: Record<string, string> = {};
+  for (const position of spec.positions) {
+    images[position] = byFile[printFileForPosition(spec, position)];
+  }
+  return images;
+}
+
 async function refreshPrintifyPrintFile(
   shopId: number,
   productId: string,
@@ -178,7 +202,7 @@ async function refreshPrintifyPrintFile(
   token?: string,
 ) {
   const current = await getPrintifyProduct(shopId, productId, token);
-  const image = await uploadPrintifyImage(spec.printFile, token);
+  const images = await uploadPrintifyImagesForSpec(spec, token);
   const currentIds = (current.variants || []).map((variant) => variant.id).filter((id): id is number => Boolean(id));
   const catalogIds = await listBlueprintVariantIds(spec.blueprintId, spec.printProviderId, token);
   const variantIds = mergePrintAreaVariantIds(catalogIds, currentIds);
@@ -189,7 +213,7 @@ async function refreshPrintifyPrintFile(
       title: spec.title,
       description: spec.description,
       tags: spec.tags,
-      print_areas: printAreasForExistingVariants(spec, image.id, variantIds),
+      print_areas: printAreasForExistingVariants(spec, images, variantIds),
     },
   });
   try {
@@ -211,11 +235,16 @@ async function refreshPrintifyPrintFile(
   return image.id;
 }
 
-async function createPrintifyProduct(shopId: number, spec: PrintifyStarterSpec, imageId: string, token?: string) {
+async function createPrintifyProduct(
+  shopId: number,
+  spec: PrintifyStarterSpec,
+  images: PrintifyImageIds,
+  token?: string,
+) {
   const created = await printify<{ id: string; title?: string }>(`/shops/${shopId}/products.json`, {
     method: "POST",
     token,
-    body: buildPrintifyProductPayload(spec, imageId),
+    body: buildPrintifyProductPayload(spec, images),
   });
   if (!created.id) throw new Error(`Printify did not return a product id for ${spec.title}`);
   return created;
@@ -427,8 +456,8 @@ export async function createFernoraPrintifyProducts(input?: { shopId?: number; t
       if (idx >= 0) existing.splice(idx, 1);
       extraNotes.push(`Replaced ${current.title || spec.title} with the catalog variants.`);
     }
-    const image = await uploadPrintifyImage(spec.printFile, input?.token);
-    const created = await createPrintifyProduct(shopId, spec, image.id, input?.token);
+    const images = await uploadPrintifyImagesForSpec(spec, input?.token);
+    const created = await createPrintifyProduct(shopId, spec, images, input?.token);
     claimed.add(created.id);
     existing.push({ id: created.id, title: created.title || spec.title });
     products.push({
@@ -533,9 +562,9 @@ export async function createFernoraPrintifyProducts(input?: { shopId?: number; t
     gpsr,
     fullyConnected: gpsr.fullyConnected,
     notes: [
-      `Catalog is eight products on ${
+      `Catalog is nine products on ${
         gpsr.shopTitle || "Fernora Trends"
-      } (${shopId}): five wall-art mixes, black-camo men’s and Southern Cross women’s mesh sneakers, and the embroidered zip hoodie. Created ${createdCount}, published ${publishedCount} to the Etsy sales channel. Not migrated from Gelato.`,
+      } (${shopId}): five wall-art mixes, black-camo men’s and Southern Cross women’s mesh sneakers, the embroidered zip hoodie, and the embroidered heavy cotton tee. Created ${createdCount}, published ${publishedCount} to the Etsy sales channel. Not migrated from Gelato.`,
       "Older catalog products were removed from Printify, Etsy, Shopify, Gelato, and Pressroom.",
       "Catalog dropdowns match Printify: All, Quotes, Botanical, Scenic, Home décor, Original fern.",
       ...extraNotes,
@@ -633,29 +662,80 @@ async function downloadPrintifyMockup(url: string, dest: string) {
   await writeFile(dest, Buffer.from(await response.arrayBuffer()));
 }
 
+function apparelPhotoPlan(key: string) {
+  if (key === "live_tee_bloom") {
+    return {
+      colors: TEE_COLORS,
+      variantId: (uid: string) => TEE_PRINTIFY[uid]?.m,
+      fileForColor: (uid: string) =>
+        TEE_COLOR_IMAGE[uid]?.replace("/catalog/", "") || `catalog-tee-bloom-${uid}.jpg`,
+      backFile: "gallery-live_tee_bloom-back.jpg",
+      modelFile: "gallery-live_tee_bloom-model.jpg",
+      slug: "grow-with-purpose-embroidered-tee",
+    };
+  }
+  return {
+    colors: CLOTHING_COLORS,
+    variantId: (uid: string) => ZIP_HOODIE_PRINTIFY[uid]?.m,
+    fileForColor: (uid: string) =>
+      ZIP_HOODIE_COLOR_IMAGE[uid]?.replace("/catalog/", "") || `catalog-hoodie-bloom-${uid}.jpg`,
+    backFile: "gallery-live_hoodie_bloom-back.jpg",
+    modelFile: "gallery-live_hoodie_bloom-model.jpg",
+    slug: "grow-with-purpose-embroidered-zip-hoodie",
+  };
+}
+
+function pickPrintifyVariantImage(
+  images: Array<{ src?: string; variant_ids?: number[]; position?: string }>,
+  variantId: number,
+  preferBack = false,
+) {
+  const matches = images.filter((image) => image.src && image.variant_ids?.includes(variantId));
+  if (!matches.length) return undefined;
+  const back = matches.find((image) => /back/i.test(image.position || "") || /back/i.test(image.src || ""));
+  const front = matches.find((image) => /front/i.test(image.position || "") || /front/i.test(image.src || ""));
+  return (preferBack ? back || matches[0] : front || matches[0])?.src;
+}
+
 /** Official Printify colour photos — never homemade garment composites. */
-export async function pullPrintifyVariantPhotos(productId = HOODIE_PRINTIFY_ID) {
+export async function pullPrintifyVariantPhotos(productId = HOODIE_PRINTIFY_ID, key = "live_hoodie_bloom") {
   const destDir = path.join(process.cwd(), "public", "catalog");
   const written: string[] = [];
-  for (const color of CLOTHING_COLORS) {
-    const variantId = ZIP_HOODIE_PRINTIFY[color.uid]?.m;
+  const plan = apparelPhotoPlan(key);
+  let product: PrintifyProduct | undefined;
+  try {
+    const ping = await pingPrintify();
+    if (ping.shopId) product = await getPrintifyProduct(ping.shopId, productId);
+  } catch {
+    product = undefined;
+  }
+  for (const color of plan.colors) {
+    const variantId = plan.variantId(color.uid);
     if (!variantId) continue;
-    const file = ZIP_HOODIE_COLOR_IMAGE[color.uid]?.replace("/catalog/", "") || `catalog-hoodie-bloom-${color.uid}.jpg`;
-    const url = `https://images.printify.com/mockup/${productId}/${variantId}/${PRINTIFY_FRONT_CAMERA}/grow-with-purpose-embroidered-zip-hoodie.jpg`;
+    const file = plan.fileForColor(color.uid);
+    const fromProduct = product?.images ? pickPrintifyVariantImage(product.images, variantId) : undefined;
+    const url =
+      fromProduct ||
+      `https://images.printify.com/mockup/${productId}/${variantId}/${PRINTIFY_FRONT_CAMERA}/${plan.slug}.jpg`;
     await downloadPrintifyMockup(url, path.join(destDir, file));
     written.push(`/catalog/${file}`);
   }
-  const whiteM = ZIP_HOODIE_PRINTIFY.white?.m;
+  const whiteM = plan.variantId("white");
   if (whiteM) {
-    await downloadPrintifyMockup(
-      `https://images.printify.com/mockup/${productId}/${whiteM}/${PRINTIFY_BACK_CAMERA}/grow-with-purpose-embroidered-zip-hoodie.jpg`,
-      path.join(destDir, "gallery-live_hoodie_bloom-back.jpg"),
-    );
-    written.push("/catalog/gallery-live_hoodie_bloom-back.jpg");
-    const whiteFront = path.join(destDir, "catalog-hoodie-bloom.jpg");
-    const model = path.join(destDir, "gallery-live_hoodie_bloom-model.jpg");
+    const fromProduct = product?.images ? pickPrintifyVariantImage(product.images, whiteM, true) : undefined;
+    const backUrl =
+      fromProduct ||
+      `https://images.printify.com/mockup/${productId}/${whiteM}/${PRINTIFY_BACK_CAMERA}/${plan.slug}.jpg`;
+    try {
+      await downloadPrintifyMockup(backUrl, path.join(destDir, plan.backFile));
+      written.push(`/catalog/${plan.backFile}`);
+    } catch {
+      /* back camera is optional if Printful has not published that view */
+    }
+    const whiteFront = path.join(destDir, plan.fileForColor("white"));
+    const model = path.join(destDir, plan.modelFile);
     await writeFile(model, await readFile(whiteFront));
-    written.push("/catalog/gallery-live_hoodie_bloom-model.jpg");
+    written.push(`/catalog/${plan.modelFile}`);
   }
   return written;
 }
@@ -678,8 +758,8 @@ async function pushOfficialPhotosToEtsy(key: string, listingId: string) {
   return notes;
 }
 
-/** Refresh one catalog product on Printify without recreating the rest. */
-export async function refreshPrintifyCatalogItem(key: string) {
+/** Create or refresh one catalog product on Printify without deleting the rest. */
+export async function upsertPrintifyCatalogItem(key: string) {
   const starter = FERNORA_PRINTIFY_STARTERS.find((row) => row.key === key);
   if (!starter) throw new Error(`Unknown catalog product ${key}`);
   const spec = await resolveStarterSpec(starter);
@@ -688,30 +768,48 @@ export async function refreshPrintifyCatalogItem(key: string) {
   if (!shopId) throw new Error("No Printify shop on this token");
   const existing = await listShopProducts(shopId);
   const already = existingPrintifyProductId(existing, spec.title, spec.aliases);
-  if (!already) throw new Error(`${spec.title} is not on Printify yet`);
-  await refreshPrintifyPrintFile(shopId, already, spec);
-  if (spec.key === "live_hoodie_bloom") {
+  let productId = already;
+  let created = false;
+  if (already) {
+    await refreshPrintifyPrintFile(shopId, already, spec);
+  } else {
+    const images = await uploadPrintifyImagesForSpec(spec);
+    const product = await createPrintifyProduct(shopId, spec, images);
+    productId = product.id;
+    created = true;
+  }
+  if (!productId) throw new Error(`Printify did not return a product id for ${spec.title}`);
+  const apparel = spec.key === "live_hoodie_bloom" || spec.key === "live_tee_bloom";
+  if (apparel) {
     await new Promise((resolve) => setTimeout(resolve, 12000));
   }
-  const photos = spec.key === "live_hoodie_bloom" ? await pullPrintifyVariantPhotos(already) : [];
-  await publishPrintifyProduct(shopId, already);
+  const photos = apparel ? await pullPrintifyVariantPhotos(productId, spec.key) : [];
+  await publishPrintifyProduct(shopId, productId);
   const shopify = await syncFernoraCatalogToShopify(undefined, [key]);
   let etsyNotes: string[] = [];
   try {
-    const current = await getPrintifyProduct(shopId, already);
+    const current = await getPrintifyProduct(shopId, productId);
     const listingId = String(current.external?.id || "");
     if (listingId) etsyNotes = await pushOfficialPhotosToEtsy(key, listingId);
   } catch (error) {
     etsyNotes.push(`Etsy photos: ${(error as Error).message}`);
   }
   return {
-    productId: already,
+    productId,
     photos,
+    created,
     notes: [
-      `Refreshed ${spec.title} print file on Printify.`,
+      created
+        ? `Created ${spec.title} on Printify.`
+        : `Refreshed ${spec.title} print file on Printify.`,
       photos.length ? `Pulled ${photos.length} official Printify photos.` : "",
       ...shopify.notes,
       ...etsyNotes,
     ].filter(Boolean),
   };
+}
+
+/** Refresh one catalog product on Printify without recreating the rest. Creates it if missing. */
+export async function refreshPrintifyCatalogItem(key: string) {
+  return upsertPrintifyCatalogItem(key);
 }
