@@ -232,7 +232,7 @@ async function refreshPrintifyPrintFile(
   } catch {
     /* price PUT can fail if Printify wants every blueprint variant; tags and print still saved */
   }
-  return image.id;
+  return Object.values(images)[0] || "";
 }
 
 async function createPrintifyProduct(
