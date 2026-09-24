@@ -111,7 +111,7 @@ export function mixTag(collection?: string | null) {
 
 export function designZoomStills(id?: string | null) {
   if (!id) return [];
-  return [`/catalog/gallery-${id}-onproduct.jpg`, `/catalog/gallery-${id}-onproduct-close.jpg`];
+  return [`/catalog/gallery-${id}-onproduct-close.jpg`, `/catalog/gallery-${id}-onproduct.jpg`];
 }
 
 export function isPrintTemplatePath(file?: string | null) {

@@ -679,10 +679,12 @@ function apparelPhotoPlan(key: string) {
       backFile: "gallery-live_tee_bloom-back.jpg",
       modelFile: "gallery-live_tee_bloom-model.jpg",
       neckFile: "gallery-live_tee_bloom-neck.jpg",
+      ghostFile: "gallery-live_tee_bloom-ghost.jpg",
       slug: "grow-with-purpose-embroidered-heavy-cotton-tee",
       frontCamera: TEE_FRONT_CAMERA,
       backCamera: TEE_BACK_CAMERA,
       neckCamera: TEE_NECK_CAMERA,
+      ghostCamera: 92577,
       defaultId: TEE_PRINTIFY_ID,
     };
   }
@@ -694,10 +696,12 @@ function apparelPhotoPlan(key: string) {
     backFile: "gallery-live_hoodie_bloom-back.jpg",
     modelFile: "gallery-live_hoodie_bloom-model.jpg",
     neckFile: "",
+    ghostFile: "gallery-live_hoodie_bloom-ghost.jpg",
     slug: "grow-with-purpose-embroidered-zip-hoodie",
     frontCamera: PRINTIFY_FRONT_CAMERA,
     backCamera: PRINTIFY_BACK_CAMERA,
     neckCamera: 0,
+    ghostCamera: 108337,
     defaultId: HOODIE_PRINTIFY_ID,
   };
 }
@@ -736,6 +740,17 @@ export async function pullPrintifyVariantPhotos(productId?: string, key = "live_
         written.push(`/catalog/${plan.neckFile}`);
       } catch {
         /* neck close-up is optional */
+      }
+    }
+    if (plan.ghostFile && plan.ghostCamera) {
+      try {
+        await downloadPrintifyMockup(
+          `https://images.printify.com/mockup/${id}/${whiteM}/${plan.ghostCamera}/${plan.slug}.jpg`,
+          path.join(destDir, plan.ghostFile),
+        );
+        written.push(`/catalog/${plan.ghostFile}`);
+      } catch {
+        /* ghost/flat camera is the source for on-product design stills */
       }
     }
     const whiteFront = path.join(destDir, plan.fileForColor("white"));
