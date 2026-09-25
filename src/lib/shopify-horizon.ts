@@ -870,6 +870,8 @@ async function patchProductTemplate(themeId: string) {
     gallery.settings.large_first_image = true;
     gallery.settings.extend_media = false;
     gallery.settings.constrain_to_viewport = true;
+    gallery.settings.zoom = true;
+    gallery.settings.image_zoom = true;
   }
   const errors = await upsertThemeText(themeId, "templates/product.json", JSON.stringify(template, null, 2));
   notes.push(

@@ -10,7 +10,7 @@ import {
   ZIP_HOODIE_PRINTIFY,
 } from "@/lib/clothing";
 import { getCredentials, patchCredentials } from "@/lib/credentials";
-import { galleryForListing } from "@/lib/listing-health";
+import { customerListingGallery, isTemplateStillPath } from "@/lib/listing-health";
 import {
   formatPrintifySafetyInformation,
   pickPrintifyShop,
@@ -46,14 +46,16 @@ import {
   inactivateOlderEtsyListings,
   listEtsyShopListings,
   syncEtsyCatalogSections,
+  deleteEtsyListingImage,
+  listEtsyListingImages,
   uploadEtsyListingImage,
 } from "@/lib/etsy";
 import { deleteOlderGelatoProducts } from "@/lib/gelato-store";
-import { etsyListingUrl } from "@/lib/live-catalog";
+import { LIVE_CATALOG_IDS, etsyListingUrl } from "@/lib/live-catalog";
 import { deleteOlderShopifyProducts, syncFernoraCatalogToShopify } from "@/lib/shopify";
 import { syncShopifyCatalogMenu } from "@/lib/shopify-horizon";
-import { fillShopifyCollections, syncShopifyPresentmentPrices } from "@/lib/shopify-storefront";
-import { updateShop } from "@/lib/store";
+import { brandHorizonTheme, fillShopifyCollections, syncShopifyPresentmentPrices } from "@/lib/shopify-storefront";
+import { getShop, updateShop } from "@/lib/store";
 
 export {
   formatPrintifySafetyInformation,
@@ -677,10 +679,12 @@ function apparelPhotoPlan(key: string) {
       backFile: "gallery-live_tee_bloom-back.jpg",
       modelFile: "gallery-live_tee_bloom-model.jpg",
       neckFile: "gallery-live_tee_bloom-neck.jpg",
+      ghostFile: "gallery-live_tee_bloom-ghost.jpg",
       slug: "grow-with-purpose-embroidered-heavy-cotton-tee",
       frontCamera: TEE_FRONT_CAMERA,
       backCamera: TEE_BACK_CAMERA,
       neckCamera: TEE_NECK_CAMERA,
+      ghostCamera: 92577,
       defaultId: TEE_PRINTIFY_ID,
     };
   }
@@ -692,10 +696,12 @@ function apparelPhotoPlan(key: string) {
     backFile: "gallery-live_hoodie_bloom-back.jpg",
     modelFile: "gallery-live_hoodie_bloom-model.jpg",
     neckFile: "",
+    ghostFile: "gallery-live_hoodie_bloom-ghost.jpg",
     slug: "grow-with-purpose-embroidered-zip-hoodie",
     frontCamera: PRINTIFY_FRONT_CAMERA,
     backCamera: PRINTIFY_BACK_CAMERA,
     neckCamera: 0,
+    ghostCamera: 108337,
     defaultId: HOODIE_PRINTIFY_ID,
   };
 }
@@ -736,6 +742,17 @@ export async function pullPrintifyVariantPhotos(productId?: string, key = "live_
         /* neck close-up is optional */
       }
     }
+    if (plan.ghostFile && plan.ghostCamera) {
+      try {
+        await downloadPrintifyMockup(
+          `https://images.printify.com/mockup/${id}/${whiteM}/${plan.ghostCamera}/${plan.slug}.jpg`,
+          path.join(destDir, plan.ghostFile),
+        );
+        written.push(`/catalog/${plan.ghostFile}`);
+      } catch {
+        /* ghost/flat camera is the source for on-product design stills */
+      }
+    }
     const whiteFront = path.join(destDir, plan.fileForColor("white"));
     const model = path.join(destDir, plan.modelFile);
     await writeFile(model, await readFile(whiteFront));
@@ -744,23 +761,70 @@ export async function pullPrintifyVariantPhotos(productId?: string, key = "live_
   return written;
 }
 
-async function pushOfficialPhotosToEtsy(key: string, listingId: string) {
+export async function pushOfficialPhotosToEtsy(key: string, listingId: string) {
   const notes: string[] = [];
-  const files = galleryForListing(key)
-    .filter((file) => !file.includes("/print-"))
-    .slice(0, 9);
-  const print = galleryForListing(key).find((file) => file.includes("/print-"));
-  const ordered = print ? [...files, print] : files;
-  for (const [index, file] of ordered.entries()) {
+  const files = customerListingGallery(key)
+    .filter((file) => existsSync(path.join(process.cwd(), "public", file.replace(/^\//, ""))))
+    .slice(0, 10);
+  let uploaded = 0;
+  for (const [index, file] of files.entries()) {
     const imagePath = path.join(process.cwd(), "public", file.replace(/^\//, ""));
-    if (!existsSync(imagePath)) continue;
     try {
       await uploadEtsyListingImage(listingId, imagePath, index + 1);
+      uploaded += 1;
     } catch (error) {
       notes.push(`${file}: ${(error as Error).message}`);
     }
   }
+  try {
+    const leftover = (await listEtsyListingImages(listingId)).filter((image) => {
+      const label = `${image.alt} ${image.url}`.toLowerCase();
+      const templateAlt = !label.includes("onproduct") && /\b(detail|close)\b/.test(label);
+      return image.rank > uploaded || isTemplateStillPath(label) || templateAlt;
+    });
+    leftover.sort((a, b) => b.rank - a.rank);
+    for (const image of leftover) {
+      try {
+        await deleteEtsyListingImage(listingId, image.id);
+      } catch (error) {
+        notes.push(`delete ${image.id}: ${(error as Error).message}`);
+      }
+    }
+  } catch (error) {
+    notes.push(`list images: ${(error as Error).message}`);
+  }
   return notes;
+}
+
+const ETSY_PHOTO_FALLBACK: Record<string, string> = {
+  live_hoodie_bloom: "4580717467",
+  live_tee_bloom: "4581437351",
+};
+
+/** Push zoomable design stills to Shopify and Etsy without recreating Printify products. */
+export async function syncCustomerDesignPhotos(onlyIds?: string[]) {
+  const wanted = (onlyIds?.length ? onlyIds : [...LIVE_CATALOG_IDS]).filter(Boolean);
+  const shopify = await syncFernoraCatalogToShopify(undefined, wanted);
+  const notes = [...shopify.notes];
+  try {
+    notes.push(...(await brandHorizonTheme()));
+  } catch (error) {
+    notes.push(`Horizon zoom: ${(error as Error).message}`);
+  }
+  const shop = await getShop();
+  for (const key of wanted) {
+    const listingId =
+      shop.listings.find((row) => row.id === key)?.etsyListingId || ETSY_PHOTO_FALLBACK[key] || "";
+    if (!listingId) {
+      notes.push(`${key}: no Etsy listing id`);
+      continue;
+    }
+    const photoNotes = await pushOfficialPhotosToEtsy(key, listingId);
+    notes.push(
+      photoNotes.length ? `${key} Etsy: ${photoNotes.join("; ")}` : `${key} Etsy photos updated`,
+    );
+  }
+  return { notes };
 }
 
 /** Create or refresh one catalog product on Printify without deleting the rest. */

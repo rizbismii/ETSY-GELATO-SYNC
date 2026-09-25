@@ -4,7 +4,10 @@ import { readFileSync } from "node:fs";
 import {
   CATALOG_LISTING_TAGS,
   LISTING_TAG_LIMIT,
+  customerListingGallery,
   fillListingTags,
+  isTemplateStillPath,
+  isTinyDesignStill,
   listingGallery,
   listingHealth,
   tagsForListing,
@@ -39,7 +42,9 @@ test("gallery lists the listing photo, print file, and extra stills", () => {
   const files = listingGallery("live_poster");
   assert.ok(files.includes("/catalog/catalog-poster.png"));
   assert.ok(files.includes("/catalog/print-poster-fern-arc.png"));
-  assert.ok(files.includes("/catalog/gallery-live_poster-detail.png"));
+  assert.ok(files.includes("/catalog/gallery-live_poster-onproduct.jpg"));
+  assert.equal(files[1], "/catalog/gallery-live_poster-onproduct-close.jpg");
+  assert.equal(files[2], "/catalog/gallery-live_poster-onproduct.jpg");
   const sneakers = listingGallery("live_sneaker_star");
   assert.ok(sneakers.includes("/catalog/catalog-camo-sneakers-angle.jpg"));
   assert.ok(sneakers.includes("/catalog/gallery-live_sneaker_star-camo-model.jpg"));
@@ -54,12 +59,36 @@ test("gallery lists the listing photo, print file, and extra stills", () => {
   assert.ok(hoodie.includes("/catalog/gallery-live_hoodie_bloom-model.jpg"));
   assert.ok(hoodie.includes("/catalog/catalog-hoodie-bloom-ash.jpg"));
   assert.ok(hoodie.includes("/catalog/catalog-hoodie-bloom-light-pink.jpg"));
+  assert.ok(hoodie.includes("/catalog/gallery-live_hoodie_bloom-ghost.jpg"));
+  assert.equal(hoodie[1], "/catalog/gallery-live_hoodie_bloom-onproduct-close.jpg");
+  assert.equal(hoodie[2], "/catalog/gallery-live_hoodie_bloom-onproduct.jpg");
   const tee = listingGallery("live_tee_bloom");
   assert.ok(tee.includes("/catalog/catalog-tee-bloom.jpg"));
   assert.ok(tee.includes("/catalog/print-tee-bloom.png"));
   assert.ok(tee.includes("/catalog/gallery-live_tee_bloom-model.jpg"));
   assert.ok(tee.includes("/catalog/catalog-tee-bloom-navy.jpg"));
   assert.ok(tee.includes("/catalog/gallery-live_tee_bloom-neck.jpg"));
+  assert.ok(tee.includes("/catalog/gallery-live_tee_bloom-ghost.jpg"));
+  assert.equal(tee[1], "/catalog/gallery-live_tee_bloom-onproduct-close.jpg");
+  assert.equal(tee[2], "/catalog/gallery-live_tee_bloom-onproduct.jpg");
+  const customer = customerListingGallery("live_tee_bloom");
+  assert.equal(customer[0], "/catalog/catalog-tee-bloom.jpg");
+  assert.equal(customer[1], "/catalog/gallery-live_tee_bloom-onproduct-close.jpg");
+  assert.equal(customer[2], "/catalog/gallery-live_tee_bloom-onproduct.jpg");
+  assert.ok(!customer.some((file) => file.includes("/print-")));
+  assert.ok(!customer.some((file) => isTemplateStillPath(file)));
+  assert.ok(!customer.some((file) => isTinyDesignStill(file)));
+  assert.ok(!customer.includes("/catalog/gallery-live_tee_bloom-ghost.jpg"));
+  assert.ok(!customer.includes("/catalog/gallery-live_tee_bloom-model.jpg"));
+  assert.equal(isTinyDesignStill("/catalog/gallery-live_tee_bloom-ghost.jpg"), true);
+  assert.equal(isTinyDesignStill("/catalog/gallery-live_sneaker_star-camo-model.jpg"), false);
+  assert.equal(isTemplateStillPath("/catalog/gallery-live_tee_bloom-detail.png"), true);
+  assert.equal(isTemplateStillPath("/catalog/gallery-live_tee_bloom-close.png"), true);
+  assert.equal(isTemplateStillPath("/catalog/gallery-live_tee_bloom-onproduct-close.jpg"), false);
+  assert.equal(isTemplateStillPath("/catalog/print-tee-bloom.png"), true);
+  const customerSneakers = customerListingGallery("live_sneaker_star");
+  assert.ok(!customerSneakers.some((file) => file.includes("-detail.png") || file.includes("-close.png")));
+  assert.ok(customerSneakers.includes("/catalog/gallery-live_sneaker_star-onproduct.jpg"));
 });
 
 test("prices use Printify costs and do not pad for opted-out Offsite Ads", () => {
@@ -95,6 +124,20 @@ test("prices use Printify costs and do not pad for opted-out Offsite Ads", () =>
   assert.equal(catalogPrice("live_tee_bloom"), 75.99);
   const teeGb = catalogLanes("live_tee_bloom").find((lane) => lane.region === "GB");
   assert.equal(teeGb?.printer, "printify");
+});
+
+test("on-product stills are generated from catalog pairs with a minimum design fill", () => {
+  const closeups = readFileSync(new URL("../../scripts/make-design-closeups.py", import.meta.url), "utf8");
+  assert.match(closeups, /CATALOG_ART_PAIRS/);
+  assert.match(closeups, /MIN_FILL/);
+  assert.match(closeups, /clean_and_stamp/);
+  assert.match(closeups, /should_stamp/);
+  assert.match(closeups, /apparel_context": 0.38/);
+  assert.match(closeups, /apparel_close": 0.64/);
+  assert.match(closeups, /CONTEXT_FILL = \{"apparel": 0.46/);
+  assert.match(closeups, /CLOSE_FILL = \{"apparel": 0.76/);
+  assert.match(closeups, /CROP_FILL/);
+  assert.doesNotMatch(closeups, /gallery-.+-detail\.png/);
 });
 
 test("Catalog table shows Printify costs and current ads, not Offsite 15%", () => {

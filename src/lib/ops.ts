@@ -18,6 +18,7 @@ import {
 import { HARVEST_DROP_ID, HARVEST_DROP_NAME } from "@/lib/constants";
 import { printFileForListing } from "@/lib/print-file";
 import { applyHarvestDrop } from "@/lib/drop";
+import { customerListingGallery } from "@/lib/listing-health";
 import { ETSY_KNOWN_LISTINGS, etsyListingUrl, liveProductById, resolveLiveSku, READINESS_STATE_ID } from "@/lib/live-catalog";
 import { absoluteAssetUrl } from "@/lib/origin";
 import { etsyClothingInventory, isClothingCategory, resolveListingFulfillment } from "@/lib/clothing";
@@ -741,7 +742,7 @@ export async function publishListing(id: string, mode: "draft" | "live") {
     url = etsyListingUrl(listingId) || created.url;
   }
 
-  const gallery = (meta.gallery?.length ? meta.gallery : [meta.imageUrl, meta.printFileUrl]).filter(Boolean);
+  const gallery = customerListingGallery(id, meta.imageUrl, meta.printFileUrl).slice(0, 10);
   for (const [index, file] of gallery.entries()) {
     const imagePath = `${process.cwd()}/public${file}`;
     if (!existsSync(imagePath)) {

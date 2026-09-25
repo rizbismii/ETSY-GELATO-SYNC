@@ -52,6 +52,7 @@ test("Pressroom catalog strips stale Etsy IDs and keeps retired products tombsto
   assert.match(printify, /attachPrintifyEtsyIds/);
   assert.match(printify, /refreshPrintifyCatalogItem/);
   assert.match(printify, /upsertPrintifyCatalogItem/);
+  assert.match(printify, /syncCustomerDesignPhotos/);
   assert.match(printify, /pullPrintifyVariantPhotos/);
   assert.doesNotMatch(printify, /clearDeletedListings/);
 });

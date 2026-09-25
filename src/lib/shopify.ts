@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { defaultClothingVariant } from "@/lib/clothing";
+import { isDesignZoomStill, isTemplateStillPath, isTinyDesignStill } from "@/lib/listing-health";
 import { getCredentials, normalizeShopDomain, patchCredentials } from "@/lib/credentials";
 import { fernoraCatalog, FERNORA_NAME, gelatoShipFamilies, shopLane } from "@/lib/shop";
 import { FERNORA_SHOPIFY_SHOP, FERNORA_STOREFRONT_ORIGIN } from "@/lib/shopify-shop";
@@ -389,9 +390,18 @@ async function catalogProductImageSource(assetPath: string, request?: Request) {
 }
 
 function customerGalleryPaths(product: ReturnType<typeof fernoraCatalog>[number]) {
-  const skip = new Set([product.printFileUrl].filter(Boolean) as string[]);
+  const skip = new Set(
+    [
+      product.printFileUrl,
+      ...(product.gallery || []).filter((file) => isTemplateStillPath(file) || isTinyDesignStill(file)),
+    ].filter(
+      Boolean,
+    ) as string[],
+  );
   const variantImages = (product.variants || []).map((row) => row.imageUrl);
-  const files = [product.imageUrl, ...variantImages, ...(product.gallery || [])].filter(
+  const design = (product.gallery || []).filter((file) => isDesignZoomStill(file));
+  const rest = (product.gallery || []).filter((file) => !design.includes(file));
+  const files = [product.imageUrl, ...design, ...variantImages, ...rest].filter(
     (file): file is string => typeof file === "string" && !skip.has(file),
   );
   return [...new Set(files)].filter((file) => {
@@ -440,9 +450,13 @@ async function ensureShopifyProductGallery(
   const current = listed.product?.media.nodes || [];
   const have = new Set(current.map((row) => mediaFilename(row.preview?.image?.url, row.alt)));
   const wantedNames = wanted.map((file) => file.split("/").pop()?.toLowerCase() || "").filter(Boolean);
+  const refreshNames = wanted.filter((file) => isDesignZoomStill(file)).map((file) => file.split("/").pop()?.toLowerCase() || "");
   const stale = current.filter((row) => {
     const name = mediaFilename(row.preview?.image?.url, row.alt);
-    return name && !wantedNames.some((wantedName) => name.includes(wantedName) || wantedName.includes(name));
+    if (!name) return false;
+    const refresh = refreshNames.some((wantedName) => wantedName && (name.includes(wantedName) || wantedName.includes(name)));
+    const leftover = !wantedNames.some((wantedName) => name.includes(wantedName) || wantedName.includes(name));
+    return leftover || refresh;
   });
   if (stale.length) {
     await shopifyGraphql(
@@ -456,6 +470,7 @@ async function ensureShopifyProductGallery(
   }
   const missing = wanted.filter((file) => {
     const name = file.split("/").pop()?.toLowerCase() || "";
+    if (isDesignZoomStill(file)) return Boolean(name);
     return name && ![...have].some((existing) => existing.includes(name) || name.includes(existing));
   });
   if (missing.length) {
@@ -492,15 +507,24 @@ async function ensureShopifyProductGallery(
     }`,
     { id: productId },
   );
-  const featuredName = wanted[0]?.split("/").pop()?.toLowerCase() || "";
   const nodes = after.product?.media.nodes || [];
-  const featured = nodes.find((row) => mediaFilename(row.preview?.image?.url).includes(featuredName));
-  if (featured && nodes[0]?.id !== featured.id) {
+  const moves: Array<{ id: string; newPosition: string }> = [];
+  wanted.forEach((file, index) => {
+    const name = file.split("/").pop()?.toLowerCase() || "";
+    const match = nodes.find((row) => {
+      const existing = mediaFilename(row.preview?.image?.url);
+      return existing && name && (existing.includes(name) || name.includes(existing));
+    });
+    if (match && !moves.some((row) => row.id === match.id)) {
+      moves.push({ id: match.id, newPosition: String(index) });
+    }
+  });
+  if (moves.length) {
     await shopifyGraphql(
       `mutation ($id: ID!, $moves: [MoveInput!]!) {
         productReorderMedia(id: $id, moves: $moves) { userErrors { field message } }
       }`,
-      { id: productId, moves: [{ id: featured.id, newPosition: "0" }] },
+      { id: productId, moves },
     );
   }
 }

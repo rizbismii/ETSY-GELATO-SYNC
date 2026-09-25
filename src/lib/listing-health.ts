@@ -63,6 +63,7 @@ const GALLERY_EXTRA: Record<string, string[]> = {
     "/catalog/gallery-live_sneaker_star_w-back.jpg",
   ],
   live_hoodie_bloom: [
+    "/catalog/gallery-live_hoodie_bloom-ghost.jpg",
     "/catalog/gallery-live_hoodie_bloom-model.jpg",
     "/catalog/catalog-hoodie-bloom-ash.jpg",
     "/catalog/catalog-hoodie-bloom-black.jpg",
@@ -74,6 +75,7 @@ const GALLERY_EXTRA: Record<string, string[]> = {
     "/catalog/gallery-live_hoodie_bloom-back.jpg",
   ],
   live_tee_bloom: [
+    "/catalog/gallery-live_tee_bloom-ghost.jpg",
     "/catalog/gallery-live_tee_bloom-model.jpg",
     "/catalog/catalog-tee-bloom-ash.jpg",
     "/catalog/catalog-tee-bloom-black.jpg",
@@ -107,16 +109,47 @@ export function mixTag(collection?: string | null) {
   return (collection && MIX_TAGS[collection]) || "";
 }
 
+export function designZoomStills(id?: string | null) {
+  if (!id) return [];
+  return [`/catalog/gallery-${id}-onproduct-close.jpg`, `/catalog/gallery-${id}-onproduct.jpg`];
+}
+
+export function isPrintTemplatePath(file?: string | null) {
+  return Boolean(file && /\/print-[^/]+\.(png|jpe?g)$/i.test(file));
+}
+
+export function isTemplateStillPath(file?: string | null) {
+  if (!file || isDesignZoomStill(file)) return false;
+  return /gallery-.+-(detail|close)\.(png|jpe?g)$/i.test(file) || isPrintTemplatePath(file);
+}
+
+export function isDesignZoomStill(file?: string | null) {
+  return Boolean(file && /gallery-.+-onproduct(-close)?\.(png|jpe?g)$/i.test(file));
+}
+
+/** Full-garment ghost/model shots hide a small chest logo. Keep for Printify health only. */
+export function isTinyDesignStill(file?: string | null) {
+  return Boolean(
+    file &&
+      (/gallery-.+-ghost\.(png|jpe?g)$/i.test(file) ||
+        /gallery-live_(tee|hoodie)_[^/]+-model\.(png|jpe?g)$/i.test(file)),
+  );
+}
+
 export function listingGallery(id?: string | null, mockup?: string | null, print?: string | null) {
   const pair = id ? GALLERY_PAIRS[id] : undefined;
   const files = [
     pair?.mockup || mockup || "",
+    ...designZoomStills(id),
     ...(id ? GALLERY_EXTRA[id] || [] : []),
     pair?.print || print || "",
-    id ? `/catalog/gallery-${id}-detail.png` : "",
-    id ? `/catalog/gallery-${id}-close.png` : "",
   ].filter((file, index, all) => file && all.indexOf(file) === index);
   return files;
+}
+
+/** Website and Etsy: hero + design on the product. Never print templates or tiny full-garment stills. */
+export function customerListingGallery(id?: string | null, mockup?: string | null, print?: string | null) {
+  return listingGallery(id, mockup, print).filter((file) => !isTemplateStillPath(file) && !isTinyDesignStill(file));
 }
 
 export function listingHealth(input: { tags?: string[]; gallery?: string[] }) {

@@ -10,6 +10,7 @@ import { clothingColor, findClothingVariant, defaultClothingVariant } from "@/li
 import { shopLane } from "@/lib/shop";
 import { gelatoCountryName } from "@/lib/gelato-countries";
 import { POLICY_PATHS } from "@/lib/shop-policies";
+import { isTemplateStillPath, isTinyDesignStill } from "@/lib/listing-health";
 import { printSurface } from "@/lib/print-file";
 import type { LiveProduct } from "@/lib/live-catalog";
 import { useCart } from "../../cart-provider";
@@ -35,7 +36,7 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
   const clothingSizes = [...new Map((product.variants || []).map((row) => [row.sizeUid, row])).values()];
   const preferred = defaultClothingVariant(product.variants);
   const gallery = [...new Set([product.imageUrl, ...(product.gallery || [])])].filter(
-    (file) => file && file !== product.printFileUrl,
+    (file) => file && file !== product.printFileUrl && !isTemplateStillPath(file) && !isTinyDesignStill(file),
   );
   const [country, setCountry] = useState("NZ");
   const [color, setColor] = useState(preferred?.colorUid || clothingColors[0]?.colorUid || "black");
