@@ -799,6 +799,8 @@ export async function pushOfficialPhotosToEtsy(key: string, listingId: string) {
 const ETSY_PHOTO_FALLBACK: Record<string, string> = {
   live_hoodie_bloom: "4580717467",
   live_tee_bloom: "4581437351",
+  live_sneaker_star: "4579508879",
+  live_sneaker_star_w: "4579558164",
 };
 
 /** Push zoomable design stills to Shopify and Etsy without recreating Printify products. */
