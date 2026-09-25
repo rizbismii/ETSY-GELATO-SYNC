@@ -10,3 +10,6 @@ export const FERNORA_META_PRIVACY_POLICY_URL = "https://fernora.nz/policies/priv
 export const FERNORA_META_DATA_DELETION_URL = "https://fernora.nz/pages/data-deletion";
 export const FERNORA_META_APP_CATEGORY = "Business";
 export const FERNORA_META_APP_ICON_PATH = "/meta/fernora-app-icon-1024.png";
+/** Public PNG that does not depend on a trycloudflare hostname. */
+export const FERNORA_META_APP_ICON_UPLOAD_URL =
+  "https://raw.githubusercontent.com/rizbismii/ETSY-GELATO-SYNC/main/public/meta/fernora-app-icon-1024.png";

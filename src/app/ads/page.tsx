@@ -18,6 +18,8 @@ import {
   FERNORA_META_EXPLORER_URL,
   FERNORA_META_DATA_DELETION_URL,
   FERNORA_META_INSTAGRAM_ACCOUNTS_URL,
+  FERNORA_META_APP_ICON_PATH,
+  FERNORA_META_APP_ICON_UPLOAD_URL,
   FERNORA_META_PRIVACY_POLICY_URL,
   FERNORA_META_WAIT_ENDED_ON,
 } from "@/lib/meta-app";
@@ -271,8 +273,19 @@ export default function AdsPage() {
             <a className="underline" href={FERNORA_META_DATA_DELETION_URL} target="_blank" rel="noreferrer">
               fernora.nz/pages/data-deletion
             </a>
-            , and the 1024×1024 Fernora icon. Switch the app to <strong>Live</strong>, then Create
-            paused campaign again. Do not click Go live on the campaign unless we decide to.
+            , and the{" "}
+            <a
+              className="underline"
+              href={FERNORA_META_APP_ICON_UPLOAD_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
+              1024×1024 Fernora app icon
+            </a>{" "}
+            (open, save the PNG, then upload in App settings → Basic). Switch the app to{" "}
+            <strong>Live</strong>{" "}
+            only after connected assets show, then Create paused campaign again. Do not click Go live
+            on the campaign unless we decide to.
           </li>
         </ol>
         <p className="mt-3 text-muted-foreground">
@@ -300,6 +313,27 @@ export default function AdsPage() {
                 Graph API Explorer
               </a>
             </p>
+            <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2">
+              <img
+                src={FERNORA_META_APP_ICON_PATH}
+                alt="Fernora Pressroom 1024 app icon"
+                width={48}
+                height={48}
+                className="size-12 rounded-md border border-border bg-background"
+              />
+              <div className="min-w-0 text-xs leading-5 text-muted-foreground">
+                <p className="font-medium text-foreground">App icon for Meta upload</p>
+                <p>1024×1024 PNG, cream F mark. Upload this in App settings → Basic → App Icon.</p>
+                <a
+                  className="underline"
+                  href={FERNORA_META_APP_ICON_UPLOAD_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Download Fernora-Pressroom-app-icon-1024.png
+                </a>
+              </div>
+            </div>
             <div className="space-y-1">
               <Label htmlFor="meta-token">Access token</Label>
               <Input
