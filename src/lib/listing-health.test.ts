@@ -130,10 +130,13 @@ test("on-product stills are generated from catalog pairs with a minimum design f
   const closeups = readFileSync(new URL("../../scripts/make-design-closeups.py", import.meta.url), "utf8");
   assert.match(closeups, /CATALOG_ART_PAIRS/);
   assert.match(closeups, /MIN_FILL/);
-  assert.match(closeups, /apparel_context": 0.58/);
-  assert.match(closeups, /apparel_close": 0.72/);
-  assert.match(closeups, /CONTEXT_FILL = \{"apparel": 0.64/);
-  assert.match(closeups, /CLOSE_FILL = \{"apparel": 0.80/);
+  assert.match(closeups, /clean_and_stamp/);
+  assert.match(closeups, /should_stamp/);
+  assert.match(closeups, /apparel_context": 0.38/);
+  assert.match(closeups, /apparel_close": 0.64/);
+  assert.match(closeups, /CONTEXT_FILL = \{"apparel": 0.46/);
+  assert.match(closeups, /CLOSE_FILL = \{"apparel": 0.76/);
+  assert.match(closeups, /CROP_FILL/);
   assert.doesNotMatch(closeups, /gallery-.+-detail\.png/);
 });
 
