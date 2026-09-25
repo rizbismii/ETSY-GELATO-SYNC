@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import {
   CATALOG_LISTING_TAGS,
   LISTING_TAG_LIMIT,
+  catalogMediaMatches,
   customerListingGallery,
   fillListingTags,
   isTemplateStillPath,
@@ -88,7 +89,29 @@ test("gallery lists the listing photo, print file, and extra stills", () => {
   assert.equal(isTemplateStillPath("/catalog/print-tee-bloom.png"), true);
   const customerSneakers = customerListingGallery("live_sneaker_star");
   assert.ok(!customerSneakers.some((file) => file.includes("-detail.png") || file.includes("-close.png")));
-  assert.ok(customerSneakers.includes("/catalog/gallery-live_sneaker_star-onproduct.jpg"));
+  assert.equal(customerSneakers[0], "/catalog/catalog-camo-sneakers-angle.jpg");
+  assert.equal(customerSneakers[1], "/catalog/gallery-live_sneaker_star-onproduct-close.jpg");
+  assert.equal(customerSneakers[2], "/catalog/gallery-live_sneaker_star-onproduct.jpg");
+  assert.ok(customerSneakers.indexOf("/catalog/gallery-live_sneaker_star-camo-model.jpg") > 2);
+  const customerWomens = customerListingGallery("live_sneaker_star_w");
+  assert.equal(customerWomens[1], "/catalog/gallery-live_sneaker_star_w-onproduct-close.jpg");
+  assert.equal(customerWomens[2], "/catalog/gallery-live_sneaker_star_w-onproduct.jpg");
+  assert.ok(customerWomens.indexOf("/catalog/gallery-live_sneaker_star_w-model.jpg") > 2);
+  const closeUrl =
+    "https://cdn.shopify.com/s/files/1/gallery-live_sneaker_star-onproduct-close_ee9844ce-88ff-45be-85f1-583f45bd76ba.jpg";
+  assert.equal(
+    catalogMediaMatches("/catalog/gallery-live_sneaker_star-onproduct-close.jpg", closeUrl, ""),
+    true,
+  );
+  assert.equal(catalogMediaMatches("/catalog/gallery-live_sneaker_star-onproduct.jpg", closeUrl, ""), false);
+  assert.equal(
+    catalogMediaMatches(
+      "/catalog/gallery-live_sneaker_star-onproduct.jpg",
+      "",
+      "Black Camo · Men’s Mesh Sneakers · gallery-live_sneaker_star-onproduct.jpg",
+    ),
+    true,
+  );
 });
 
 test("prices use Printify costs and do not pad for opted-out Offsite Ads", () => {

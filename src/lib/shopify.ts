@@ -3,7 +3,13 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { defaultClothingVariant } from "@/lib/clothing";
-import { isDesignZoomStill, isTemplateStillPath, isTinyDesignStill } from "@/lib/listing-health";
+import {
+  catalogFileStem,
+  catalogMediaMatches,
+  isDesignZoomStill,
+  isTemplateStillPath,
+  isTinyDesignStill,
+} from "@/lib/listing-health";
 import { getCredentials, normalizeShopDomain, patchCredentials } from "@/lib/credentials";
 import { fernoraCatalog, FERNORA_NAME, gelatoShipFamilies, shopLane } from "@/lib/shop";
 import { FERNORA_SHOPIFY_SHOP, FERNORA_STOREFRONT_ORIGIN } from "@/lib/shopify-shop";
@@ -410,12 +416,6 @@ function customerGalleryPaths(product: ReturnType<typeof fernoraCatalog>[number]
   });
 }
 
-function mediaFilename(url?: string | null, alt?: string | null) {
-  const fromUrl = url?.split("?")[0]?.split("/").pop()?.toLowerCase() || "";
-  const fromAlt = alt?.split("/").pop()?.toLowerCase() || "";
-  return fromUrl || fromAlt;
-}
-
 async function ensureShopifyProductGallery(
   productId: string,
   product: ReturnType<typeof fernoraCatalog>[number],
@@ -448,14 +448,10 @@ async function ensureShopifyProductGallery(
     { id: productId },
   );
   const current = listed.product?.media.nodes || [];
-  const have = new Set(current.map((row) => mediaFilename(row.preview?.image?.url, row.alt)));
-  const wantedNames = wanted.map((file) => file.split("/").pop()?.toLowerCase() || "").filter(Boolean);
-  const refreshNames = wanted.filter((file) => isDesignZoomStill(file)).map((file) => file.split("/").pop()?.toLowerCase() || "");
+  const refreshNames = wanted.filter((file) => isDesignZoomStill(file));
   const stale = current.filter((row) => {
-    const name = mediaFilename(row.preview?.image?.url, row.alt);
-    if (!name) return false;
-    const refresh = refreshNames.some((wantedName) => wantedName && (name.includes(wantedName) || wantedName.includes(name)));
-    const leftover = !wantedNames.some((wantedName) => name.includes(wantedName) || wantedName.includes(name));
+    const refresh = refreshNames.some((file) => catalogMediaMatches(file, row.preview?.image?.url, row.alt));
+    const leftover = !wanted.some((file) => catalogMediaMatches(file, row.preview?.image?.url, row.alt));
     return leftover || refresh;
   });
   if (stale.length) {
@@ -469,9 +465,8 @@ async function ensureShopifyProductGallery(
     );
   }
   const missing = wanted.filter((file) => {
-    const name = file.split("/").pop()?.toLowerCase() || "";
-    if (isDesignZoomStill(file)) return Boolean(name);
-    return name && ![...have].some((existing) => existing.includes(name) || name.includes(existing));
+    if (isDesignZoomStill(file)) return true;
+    return !current.some((row) => catalogMediaMatches(file, row.preview?.image?.url, row.alt));
   });
   if (missing.length) {
     const media = [];
@@ -497,41 +492,59 @@ async function ensureShopifyProductGallery(
       throw new Error(created.productCreateMedia.mediaUserErrors.map((row) => row.message).join("; "));
     }
   }
-  const after = await shopifyGraphql<{
-    product?: { media: { nodes: Array<{ id: string; preview?: { image?: { url?: string | null } | null } | null }> } } | null;
-  }>(
-    `query ($id: ID!) {
-      product(id: $id) {
-        media(first: 30) { nodes { id preview { image { url } } } }
-      }
-    }`,
-    { id: productId },
-  );
-  const nodes = after.product?.media.nodes || [];
-  const moves: Array<{ id: string; newPosition: string }> = [];
-  wanted.forEach((file, index) => {
-    const name = file.split("/").pop()?.toLowerCase() || "";
-    const match = nodes.find((row) => {
-      const existing = mediaFilename(row.preview?.image?.url);
-      return existing && name && (existing.includes(name) || name.includes(existing));
-    });
-    if (match && !moves.some((row) => row.id === match.id)) {
-      moves.push({ id: match.id, newPosition: String(index) });
+  type ListedMedia = {
+    id: string;
+    alt?: string | null;
+    status?: string | null;
+    preview?: { image?: { url?: string | null } | null } | null;
+  };
+  const mediaQuery = `query ($id: ID!) {
+    product(id: $id) {
+      media(first: 30) { nodes { id alt status preview { image { url } } } }
     }
+  }`;
+  let after = await shopifyGraphql<{ product?: { media: { nodes: ListedMedia[] } } | null }>(mediaQuery, {
+    id: productId,
   });
-  if (moves.length) {
-    await shopifyGraphql(
-      `mutation ($id: ID!, $moves: [MoveInput!]!) {
-        productReorderMedia(id: $id, moves: $moves) { userErrors { field message } }
-      }`,
-      { id: productId, moves },
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const pending = (after.product?.media.nodes || []).some(
+      (row) => row.status && row.status !== "READY" && row.status !== "FAILED",
     );
+    if (!pending) break;
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    after = await shopifyGraphql<{ product?: { media: { nodes: ListedMedia[] } } | null }>(mediaQuery, {
+      id: productId,
+    });
+  }
+  const order = [...(after.product?.media.nodes || [])];
+  for (let index = 0; index < wanted.length; index += 1) {
+    const from = order.findIndex((row) => catalogMediaMatches(wanted[index], row.preview?.image?.url, row.alt));
+    if (from < 0 || from === index) continue;
+    const [row] = order.splice(from, 1);
+    order.splice(index, 0, row);
+    const moved = await shopifyGraphql<{
+      productReorderMedia: { mediaUserErrors?: Array<{ message: string }>; userErrors?: Array<{ message: string }> };
+    }>(
+      `mutation ($id: ID!, $moves: [MoveInput!]!) {
+        productReorderMedia(id: $id, moves: $moves) {
+          mediaUserErrors { message }
+          userErrors { field message }
+        }
+      }`,
+      { id: productId, moves: [{ id: row.id, newPosition: String(index) }] },
+    );
+    const reorderErrors = [
+      ...(moved.productReorderMedia.mediaUserErrors || []),
+      ...(moved.productReorderMedia.userErrors || []),
+    ];
+    if (reorderErrors.length) {
+      throw new Error(reorderErrors.map((entry) => entry.message).join("; "));
+    }
   }
 }
 
 function mediaStem(name: string) {
-  const base = (name.split("?")[0].split("/").pop() || "").toLowerCase();
-  return base.replace(/\.[a-z0-9]+$/, "").replace(/_[0-9a-f]{8}-[0-9a-f-]{20,}$/i, "");
+  return catalogFileStem(name);
 }
 
 /** Horizon swaps the photo only when the selected variant has its own media. */

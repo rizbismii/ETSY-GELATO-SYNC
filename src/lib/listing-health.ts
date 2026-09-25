@@ -127,6 +127,20 @@ export function isDesignZoomStill(file?: string | null) {
   return Boolean(file && /gallery-.+-onproduct(-close)?\.(png|jpe?g)$/i.test(file));
 }
 
+/** Shopify CDN names append `_uuid` before the extension. Compare stems, not raw filenames. */
+export function catalogFileStem(file?: string | null) {
+  const base = (file || "").split("?")[0].split("/").pop()?.toLowerCase() || "";
+  return base.replace(/\.[a-z0-9]+$/, "").replace(/_[0-9a-f]{8}-[0-9a-f-]{20,}$/i, "");
+}
+
+export function catalogMediaMatches(file: string, url?: string | null, alt?: string | null) {
+  const wanted = catalogFileStem(file);
+  if (!wanted) return false;
+  if (catalogFileStem(url) === wanted) return true;
+  const altFile = (alt || "").split("·").pop()?.trim() || "";
+  return catalogFileStem(altFile) === wanted;
+}
+
 /** Full-garment ghost/model shots hide a small chest logo. Keep for Printify health only. */
 export function isTinyDesignStill(file?: string | null) {
   return Boolean(
