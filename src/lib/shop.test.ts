@@ -167,6 +167,7 @@ test("customer-facing shop copy does not name Gelato as the supplier", () => {
   assert.match(shopifySource, /grow-with-purpose-embroidered-tee/);
   assert.match(shopifySource, /isDesignZoomStill/);
   assert.match(shopifySource, /isTemplateStillPath/);
+  assert.match(shopifySource, /isTinyDesignStill/);
   assert.match(shopifySource, /refreshNames/);
   assert.match(shopifySource, /productReorderMedia/);
   assert.doesNotMatch(shopifySource, /escapeHtml\(GELATO_SHIP_BLURB\)/);
@@ -190,6 +191,7 @@ test("customer-facing shop copy does not name Gelato as the supplier", () => {
   assert.match(productPage, /clothingColors\.length > 1/);
   assert.match(productPage, /colorImage/);
   assert.match(productPage, /isTemplateStillPath/);
+  assert.match(productPage, /isTinyDesignStill/);
 });
 
 test("Catalog dropdown order is All, Quotes, Botanical, Scenic, Home décor, Original fern", () => {

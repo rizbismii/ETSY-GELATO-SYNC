@@ -127,6 +127,15 @@ export function isDesignZoomStill(file?: string | null) {
   return Boolean(file && /gallery-.+-onproduct(-close)?\.(png|jpe?g)$/i.test(file));
 }
 
+/** Full-garment ghost/model shots hide a small chest logo. Keep for Printify health only. */
+export function isTinyDesignStill(file?: string | null) {
+  return Boolean(
+    file &&
+      (/gallery-.+-ghost\.(png|jpe?g)$/i.test(file) ||
+        /gallery-live_(tee|hoodie)_[^/]+-model\.(png|jpe?g)$/i.test(file)),
+  );
+}
+
 export function listingGallery(id?: string | null, mockup?: string | null, print?: string | null) {
   const pair = id ? GALLERY_PAIRS[id] : undefined;
   const files = [
@@ -138,9 +147,9 @@ export function listingGallery(id?: string | null, mockup?: string | null, print
   return files;
 }
 
-/** Website and Etsy: hero + design on the product. Never print templates or cream art stills. */
+/** Website and Etsy: hero + design on the product. Never print templates or tiny full-garment stills. */
 export function customerListingGallery(id?: string | null, mockup?: string | null, print?: string | null) {
-  return listingGallery(id, mockup, print).filter((file) => !isTemplateStillPath(file));
+  return listingGallery(id, mockup, print).filter((file) => !isTemplateStillPath(file) && !isTinyDesignStill(file));
 }
 
 export function listingHealth(input: { tags?: string[]; gallery?: string[] }) {

@@ -7,6 +7,7 @@ import {
   customerListingGallery,
   fillListingTags,
   isTemplateStillPath,
+  isTinyDesignStill,
   listingGallery,
   listingHealth,
   tagsForListing,
@@ -76,6 +77,11 @@ test("gallery lists the listing photo, print file, and extra stills", () => {
   assert.equal(customer[2], "/catalog/gallery-live_tee_bloom-onproduct.jpg");
   assert.ok(!customer.some((file) => file.includes("/print-")));
   assert.ok(!customer.some((file) => isTemplateStillPath(file)));
+  assert.ok(!customer.some((file) => isTinyDesignStill(file)));
+  assert.ok(!customer.includes("/catalog/gallery-live_tee_bloom-ghost.jpg"));
+  assert.ok(!customer.includes("/catalog/gallery-live_tee_bloom-model.jpg"));
+  assert.equal(isTinyDesignStill("/catalog/gallery-live_tee_bloom-ghost.jpg"), true);
+  assert.equal(isTinyDesignStill("/catalog/gallery-live_sneaker_star-camo-model.jpg"), false);
   assert.equal(isTemplateStillPath("/catalog/gallery-live_tee_bloom-detail.png"), true);
   assert.equal(isTemplateStillPath("/catalog/gallery-live_tee_bloom-close.png"), true);
   assert.equal(isTemplateStillPath("/catalog/gallery-live_tee_bloom-onproduct-close.jpg"), false);
@@ -124,7 +130,9 @@ test("on-product stills are generated from catalog pairs with a minimum design f
   const closeups = readFileSync(new URL("../../scripts/make-design-closeups.py", import.meta.url), "utf8");
   assert.match(closeups, /CATALOG_ART_PAIRS/);
   assert.match(closeups, /MIN_FILL/);
+  assert.match(closeups, /apparel_context": 0.58/);
   assert.match(closeups, /apparel_close": 0.72/);
+  assert.match(closeups, /CONTEXT_FILL = \{"apparel": 0.64/);
   assert.match(closeups, /CLOSE_FILL = \{"apparel": 0.80/);
   assert.doesNotMatch(closeups, /gallery-.+-detail\.png/);
 });

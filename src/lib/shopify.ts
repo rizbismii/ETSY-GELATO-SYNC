@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { defaultClothingVariant } from "@/lib/clothing";
-import { isDesignZoomStill, isTemplateStillPath } from "@/lib/listing-health";
+import { isDesignZoomStill, isTemplateStillPath, isTinyDesignStill } from "@/lib/listing-health";
 import { getCredentials, normalizeShopDomain, patchCredentials } from "@/lib/credentials";
 import { fernoraCatalog, FERNORA_NAME, gelatoShipFamilies, shopLane } from "@/lib/shop";
 import { FERNORA_SHOPIFY_SHOP, FERNORA_STOREFRONT_ORIGIN } from "@/lib/shopify-shop";
@@ -391,7 +391,10 @@ async function catalogProductImageSource(assetPath: string, request?: Request) {
 
 function customerGalleryPaths(product: ReturnType<typeof fernoraCatalog>[number]) {
   const skip = new Set(
-    [product.printFileUrl, ...(product.gallery || []).filter((file) => isTemplateStillPath(file))].filter(
+    [
+      product.printFileUrl,
+      ...(product.gallery || []).filter((file) => isTemplateStillPath(file) || isTinyDesignStill(file)),
+    ].filter(
       Boolean,
     ) as string[],
   );

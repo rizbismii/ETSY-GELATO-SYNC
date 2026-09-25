@@ -23,9 +23,9 @@ OUT = ROOT / "public" / "catalog"
 PRINT_FILE_TS = ROOT / "src" / "lib" / "print-file.ts"
 
 # Design bbox / crop-side. Apparel context keeps collar or zipper in frame.
-CONTEXT_FILL = {"apparel": 0.50, "default": 0.62}
+CONTEXT_FILL = {"apparel": 0.64, "default": 0.62}
 CLOSE_FILL = {"apparel": 0.80, "default": 0.88}
-MIN_FILL = {"apparel_context": 0.45, "apparel_close": 0.72, "default_close": 0.50}
+MIN_FILL = {"apparel_context": 0.58, "apparel_close": 0.72, "default_close": 0.50}
 OUTPUT_SIZE = 1600
 
 
@@ -135,11 +135,12 @@ def write_stills(key: str, source_name: str) -> str:
     apparel = is_apparel(key, source_name)
     box = design_bbox(im, apparel=apparel)
     kind = "apparel" if apparel else "default"
-    context_bias = (-0.18 if apparel else 0.0, -0.16 if apparel else 0.0)
+    context_bias = (0.0, 0.0)
     if apparel:
         img_cx = im.size[0] / 2
         design_cx = (box[0] + box[2]) / 2
-        context_bias = (-0.20 if design_cx > img_cx else 0.08, -0.16)
+        # Keep a sliver of collar / zipper without dropping the fern down the frame.
+        context_bias = (-0.10 if design_cx > img_cx else 0.04, -0.07)
     place_square(im, box, CONTEXT_FILL[kind], context_bias).save(wear, "JPEG", quality=93)
     place_square(im, box, CLOSE_FILL[kind]).save(close, "JPEG", quality=93)
     return f"wrote {key} from {source_name} fill ctx={CONTEXT_FILL[kind]} close={CLOSE_FILL[kind]}"
