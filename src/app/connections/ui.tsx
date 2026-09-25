@@ -18,7 +18,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StatusPill } from "@/components/status-pill";
 import { api } from "@/lib/api";
-import { cn } from "@/lib/utils";
 import { printifyConnectionHeadline, printifyShopLine, type PrintifyGpsrStatus, type PrintifyShopSummary } from "@/lib/printify-gpsr";
 import { FERNORA_SHOPIFY_SHOP, FERNORA_SHOPIFY_STOREFRONT } from "@/lib/shopify-shop";
 import type { Connections } from "@/lib/types";
@@ -152,6 +151,7 @@ export function ConnectionsClient() {
     | null
   >(null);
   const [shopifyAuthOpen, setShopifyAuthOpen] = useState(false);
+  const [etsyAuthOpen, setEtsyAuthOpen] = useState(false);
   const callbackUrl = data?.callbackUrl || "";
   const websiteUrl = data?.websiteUrl || "";
   const shopifyCallbackUrl = data?.shopifyCallbackUrl || "";
@@ -197,9 +197,15 @@ export function ConnectionsClient() {
   useEffect(() => {
     const etsy = search.get("etsy");
     if (etsy === "connected") toast.success("Etsy shop authorized");
-    if (etsy === "denied") toast.error("Etsy authorization was cancelled");
+    if (etsy === "denied") {
+      toast.error("Etsy authorization was cancelled");
+      setEtsyAuthOpen(true);
+    }
     if (etsy === "invalid") toast.error("Etsy OAuth state did not match — try again");
-    if (etsy === "error") toast.error(search.get("reason") || "Etsy connect failed");
+    if (etsy === "error") {
+      toast.error(search.get("reason") || "Etsy connect failed");
+      setEtsyAuthOpen(true);
+    }
     const shopify = search.get("shopify");
     if (shopify === "connected") toast.success("Shopify shop authorized");
     if (shopify === "denied") toast.error("Shopify authorization was cancelled");
@@ -511,7 +517,7 @@ export function ConnectionsClient() {
   function copyUrlRow(
     label: string,
     value: string,
-    copyId: "shopify-app" | "shopify-callback",
+    copyId: "shopify-app" | "shopify-callback" | "website" | "callback",
     toastLabel: string,
   ) {
     if (!value) return null;
@@ -958,15 +964,12 @@ export function ConnectionsClient() {
               <Button variant="outline" onClick={() => void saveEtsy()} disabled={busy === "etsy"}>
                 Save keys
               </Button>
-              <a
-                href="/api/etsy/connect"
-                className={cn(
-                  buttonVariants(),
-                  !data.etsy.apiKeySet || !callbackIsPublic ? "pointer-events-none opacity-50" : "",
-                )}
+              <Button
+                onClick={() => setEtsyAuthOpen(true)}
+                disabled={!data.etsy.apiKeySet || !callbackIsPublic}
               >
                 Authorize with Etsy
-              </a>
+              </Button>
             </div>
             <p className="text-xs leading-5 text-muted-foreground">
               Catalog shop sections (Quotes, Botanical, Scenic, Home décor, Original fern) need the
@@ -1329,6 +1332,57 @@ export function ConnectionsClient() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={etsyAuthOpen} onOpenChange={setEtsyAuthOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Etsy Callback URL is still the old tunnel</DialogTitle>
+            <DialogDescription>
+              Etsy shows “The requested redirect URL is not permitted” when{" "}
+              <strong className="font-medium text-foreground">fernora-etsgelto-app</strong> still
+              has a previous trycloudflare hostname. Pressroom cannot change that field. Paste the
+              live Callback URL, Save the Etsy app, then authorize.
+            </DialogDescription>
+          </DialogHeader>
+          <ol className="list-decimal space-y-2 pl-4 text-sm leading-6 text-muted-foreground">
+            <li>
+              Open{" "}
+              <a
+                className="underline"
+                href="https://www.etsy.com/developers/your-apps"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Manage your apps
+              </a>{" "}
+              → fernora-etsgelto-app.
+            </li>
+            <li>Replace Website URL and Callback URL with the values below. Save.</li>
+            <li>Come back and click I saved both — Authorize.</li>
+          </ol>
+          <div className="space-y-3">
+            {copyUrlRow("Website URL", websiteUrl, "website", "Website URL copied")}
+            {copyUrlRow("Callback URL", callbackUrl, "callback", "Callback URL copied")}
+            <p className="text-xs leading-5 text-muted-foreground">
+              Callback must be exactly {callbackUrl || "https://this-desk/api/etsy/callback"} — no
+              trailing slash, and not an old treasure-territories or localhost address.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEtsyAuthOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                (window.top ?? window).location.assign("/api/etsy/connect");
+              }}
+              disabled={!data?.etsy.apiKeySet || !callbackIsPublic}
+            >
+              I saved both — Authorize
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={shopifyAuthOpen} onOpenChange={setShopifyAuthOpen}>
         <DialogContent className="sm:max-w-lg">
