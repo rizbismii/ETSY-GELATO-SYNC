@@ -88,7 +88,12 @@ test("gallery lists the listing photo, print file, and extra stills", () => {
   assert.equal(isTemplateStillPath("/catalog/print-tee-bloom.png"), true);
   const customerSneakers = customerListingGallery("live_sneaker_star");
   assert.ok(!customerSneakers.some((file) => file.includes("-detail.png") || file.includes("-close.png")));
-  assert.ok(customerSneakers.includes("/catalog/gallery-live_sneaker_star-onproduct.jpg"));
+  assert.equal(customerSneakers[0], "/catalog/catalog-camo-sneakers-angle.jpg");
+  assert.equal(customerSneakers[1], "/catalog/gallery-live_sneaker_star-onproduct-close.jpg");
+  assert.equal(customerSneakers[2], "/catalog/gallery-live_sneaker_star-onproduct.jpg");
+  const customerWomens = customerListingGallery("live_sneaker_star_w");
+  assert.equal(customerWomens[1], "/catalog/gallery-live_sneaker_star_w-onproduct-close.jpg");
+  assert.equal(customerWomens[2], "/catalog/gallery-live_sneaker_star_w-onproduct.jpg");
 });
 
 test("prices use Printify costs and do not pad for opted-out Offsite Ads", () => {
