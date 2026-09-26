@@ -14,7 +14,7 @@
     "print-match": "python3 scripts/match-prints-from-mockups.py",
     "design-closeups": "python3 scripts/make-design-closeups.py",
     "attach-prints": "python3 scripts/attach-gelato-prints.py",
-    "test": "node --experimental-strip-types --test src/lib/catalog-sku.test.ts src/lib/shop.test.ts src/lib/shop-currency.test.ts src/lib/meta-ads.test.ts src/lib/printify.test.ts src/lib/print-supplier.test.ts src/lib/drop.test.ts src/lib/listing-health.test.ts && python3 scripts/match-prints-from-mockups.py --check && python3 scripts/make-design-closeups.py --check && python3 scripts/clean-checker-print.py --check"
+    "test": "node --experimental-strip-types --test src/lib/catalog-sku.test.ts src/lib/shop.test.ts src/lib/shop-currency.test.ts src/lib/meta-ads.test.ts src/lib/printify.test.ts src/lib/printify-shopify.test.ts src/lib/print-supplier.test.ts src/lib/drop.test.ts src/lib/listing-health.test.ts && python3 scripts/match-prints-from-mockups.py --check && python3 scripts/make-design-closeups.py --check && python3 scripts/clean-checker-print.py --check"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
