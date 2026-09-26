@@ -32,6 +32,22 @@ export async function POST(request: Request) {
       dpi,
     });
   } catch (error) {
-    return Response.json({ error: (error as Error).message }, { status: 400 });
+    const message = (error as Error).message || "Could not fix that image";
+    console.error(message);
+    return Response.json({ error: publicPrintError(message) }, { status: 400 });
   }
+}
+
+function publicPrintError(message: string) {
+  if (/formdata|request body|unexpected end/i.test(message)) {
+    return "That image did not upload. Use a JPEG or PNG under 60MB and try again.";
+  }
+  if (/cannot identify|UnidentifiedImageError/i.test(message)) {
+    return "That file is not a readable JPEG, PNG, or WebP.";
+  }
+  const line = message.split("\n").map((row) => row.trim()).filter(Boolean).at(-1) || message;
+  if (line.length > 180 || /Traceback/.test(message)) {
+    return "Could not fix that image. Export it again as a JPEG or PNG and try once more.";
+  }
+  return line;
 }
