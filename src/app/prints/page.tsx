@@ -38,6 +38,10 @@ export default function PrintsPage() {
   const [key, setKey] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [stamp, setStamp] = useState(0);
+  const [printWidth, setPrintWidth] = useState("3852");
+  const [printHeight, setPrintHeight] = useState("4398");
+  const [printDpi, setPrintDpi] = useState("300");
+  const [fixedHref, setFixedHref] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -70,6 +74,25 @@ export default function PrintsPage() {
     const json = (await response.json()) as { error?: string };
     if (!response.ok) throw new Error(json.error || "Request failed");
     return json;
+  }
+
+  async function onFixGemini(file: File) {
+    setBusy("gemini");
+    try {
+      const json = (await sendFile("/api/prints/fix-gemini", {
+        width: printWidth,
+        height: printHeight,
+        dpi: printDpi,
+      }, file)) as { href?: string; width?: number; height?: number; dpi?: number };
+      const href = `${json.href}?v=${Date.now()}`;
+      setFixedHref(href);
+      setStamp(Date.now());
+      toast.success(`Transparent print ready · ${json.width}×${json.height} at ${json.dpi} DPI`);
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
   }
 
   async function onUpload(file: File, clean: boolean) {
@@ -161,6 +184,66 @@ export default function PrintsPage() {
           composites.
         </p>
       </div>
+
+      <Card>
+        <CardContent className="space-y-4 p-4">
+          <div>
+            <p className="font-medium">Fix a Gemini image</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              Gemini paints the transparency grid into the file, so Printify prints gray squares on
+              the garment. Upload that image here. Pressroom removes the grid and gives you a
+              transparent PNG. In Printify, open Edit design, delete the old front image, then
+              upload this file.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div>
+              <Label htmlFor="print-width">Width (px)</Label>
+              <Input id="print-width" value={printWidth} onChange={(event) => setPrintWidth(event.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="print-height">Height (px)</Label>
+              <Input id="print-height" value={printHeight} onChange={(event) => setPrintHeight(event.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="print-dpi">DPI</Label>
+              <Input id="print-dpi" value={printDpi} onChange={(event) => setPrintDpi(event.target.value)} />
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
+              {busy === "gemini" ? <Loader2 className="size-4 animate-spin" /> : <Wand2 className="size-4" />}
+              Fix Gemini image
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                disabled={Boolean(busy)}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void onFixGemini(file);
+                  event.target.value = "";
+                }}
+              />
+            </Label>
+            {fixedHref ? (
+              <a className="text-sm underline" href={fixedHref} download="print-gemini-fixed.png">
+                Download transparent print
+              </a>
+            ) : null}
+          </div>
+          {fixedHref ? (
+            <ProductArt
+              id={`gemini-fixed-${stamp}`}
+              title="Fixed Gemini print"
+              imageUrl={fixedHref}
+              kind="print"
+              fit="contain"
+              className="aspect-square max-w-sm rounded-lg bg-white"
+            />
+          ) : null}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
         <div className="space-y-2">

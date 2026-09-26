@@ -36,6 +36,7 @@ yarn-error.log*
 
 # generated DTG proof composites
 /scripts/apparel-preview
+/public/catalog/print-gemini-fixed.png
 
 # local shop state and secrets
 /data/runtime.json

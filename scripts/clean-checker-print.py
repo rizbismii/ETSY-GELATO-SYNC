@@ -75,14 +75,51 @@ def clean_checker_print(source: Path, dest: Path, width: int, height: int, dpi: 
     Image.fromarray(canvas, "RGBA").save(dest, "PNG", dpi=(dpi, dpi), optimize=True)
 
 
+def check() -> None:
+    """A painted checker must disappear. A colored mark in the middle must stay."""
+    size = 80
+    cell = 10
+    rgb = np.zeros((size, size, 3), dtype=np.uint8)
+    yy, xx = np.indices((size, size))
+    dark = ((yy // cell + xx // cell) % 2) == 0
+    rgb[dark] = (198, 198, 198)
+    rgb[~dark] = (230, 230, 230)
+    rgb[30:50, 30:50] = (180, 40, 50)
+    source = Path("/tmp/gemini-checker-check.png")
+    dest = Path("/tmp/gemini-checker-check-out.png")
+    Image.fromarray(rgb, "RGB").save(source)
+    clean_checker_print(source, dest, 160, 160, 300)
+    out = np.array(Image.open(dest).convert("RGBA"))
+    if out.shape != (160, 160, 4):
+        raise SystemExit(f"expected 160x160, got {out.shape}")
+    if int(out[0, 0, 3]) != 0 or int(out[-1, -1, 3]) != 0:
+        raise SystemExit("checker corners stayed opaque")
+    red, green, blue, alpha = [out[:, :, i].astype(np.int16) for i in range(4)]
+    chroma = np.maximum(np.maximum(red, green), blue) - np.minimum(np.minimum(red, green), blue)
+    luma = 0.299 * red + 0.587 * green + 0.114 * blue
+    leftover = (alpha > 0) & (chroma <= 14) & (luma >= 175) & (luma <= 242)
+    if int(leftover.sum()) != 0:
+        raise SystemExit(f"opaque checker pixels remain: {int(leftover.sum())}")
+    ink = (alpha > 200) & (red > green + 40) & (red > blue + 40)
+    if int(ink.sum()) < 20:
+        raise SystemExit("the colored mark was removed with the checker")
+    print("ok gemini checker knockout")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("source")
-    parser.add_argument("dest")
+    parser.add_argument("source", nargs="?")
+    parser.add_argument("dest", nargs="?")
     parser.add_argument("--width", type=int, default=3852)
     parser.add_argument("--height", type=int, default=4398)
     parser.add_argument("--dpi", type=int, default=300)
+    parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
+    if args.check:
+        check()
+        return
+    if not args.source or not args.dest:
+        raise SystemExit("source and dest are required")
     clean_checker_print(Path(args.source), Path(args.dest), args.width, args.height, args.dpi)
     print(f"wrote {args.dest} {args.width}x{args.height} @ {args.dpi} dpi")
 

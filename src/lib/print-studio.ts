@@ -32,6 +32,24 @@ function runPython(script: string, args: string[]) {
   });
 }
 
+export async function cleanGeminiPrint(
+  source: string,
+  dest: string,
+  size: { width: number; height: number; dpi: number },
+) {
+  await runPython(path.join(process.cwd(), "scripts", "clean-checker-print.py"), [
+    source,
+    dest,
+    "--width",
+    String(size.width),
+    "--height",
+    String(size.height),
+    "--dpi",
+    String(size.dpi),
+  ]);
+  return dest.replace(path.join(process.cwd(), "public"), "");
+}
+
 export async function cleanEmbroideryPrint(
   source: string,
   dest: string,
