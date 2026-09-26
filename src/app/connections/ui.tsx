@@ -370,6 +370,26 @@ export function ConnectionsClient() {
     }
   }
 
+  async function sendPrintifyToShopify() {
+    setBusy("printify-shopify");
+    try {
+      const result = await api<{ notes?: string[]; published?: number }>("/api/printify/shopify", {
+        method: "POST",
+      });
+      toast.success(
+        result.published
+          ? `Sent ${result.published} Printify product${result.published === 1 ? "" : "s"} to Shopify`
+          : "No Printify products were sent to Shopify",
+      );
+      for (const note of result.notes || []) toast.message(note);
+      await load();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function saveGelato() {
     setBusy("gelato");
     try {
@@ -1059,10 +1079,11 @@ export function ConnectionsClient() {
           <CardContent className="space-y-4">
             <p className="text-sm leading-6 text-muted-foreground">
               Printify is the main print supplier except the United Kingdom and the European Union.
-              Keep the token and the Etsy-connected Fernora Trends shop. Keep eight catalog products
-              (five wall-art mixes, sneakers, and the embroidered zip hoodie) and publish them to Etsy,
-              Shopify, and fernora.nz. Do not
-              migrate leftover External products, and do not republish the old Gelato mix.
+              Keep the token and the Etsy-connected Fernora Trends shop. Shopify and fernora.nz are the
+              main store. Etsy is the secondary channel. Send Printify products to Shopify copies each
+              product&apos;s name, description, enabled variants, mockup images, and made-to-order stock
+              onto the Online Store. That leaves the Etsy-connected shop and its current listings in
+              place. Do not migrate leftover External products, and do not republish the old Gelato mix.
             </p>
             <p className="text-sm leading-6 text-muted-foreground">
               Keep <strong className="font-medium text-foreground">Non-EU</strong> on Printify.
@@ -1123,6 +1144,13 @@ export function ConnectionsClient() {
                 {busy === "printify-products" ? <Loader2 className="animate-spin" /> : null}
                 Create 6-product catalog · publish to shops
               </Button>
+              <Button
+                onClick={() => void sendPrintifyToShopify()}
+                disabled={!data.printify?.apiTokenSet || !data.shopify?.authorized || Boolean(busy)}
+              >
+                {busy === "printify-shopify" ? <Loader2 className="animate-spin" /> : null}
+                Send Printify products to Shopify
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -1148,7 +1176,10 @@ export function ConnectionsClient() {
               </a>
               ): native checkout, Shop Pay, accounts, markets, and destination shipping. Leave this
               connection as it is. Do not click Publish catalog to push the old Gelato 9-pack clothing
-              mix back onto fernora.nz. Catalog dropdowns already match Printify.{" "}
+              mix back onto fernora.nz. Shopify and fernora.nz are the main store. Etsy stays the
+              secondary channel. Send Printify products to Shopify copies the live name, description,
+              enabled colours and sizes, mockup images, and made-to-order stock onto the Online Store.
+              Current Etsy listings stay in place.{" "}
               <a className="underline" href="/shop">
                 /shop
               </a>{" "}
@@ -1294,6 +1325,13 @@ export function ConnectionsClient() {
               >
                 {busy === "shopify-token" ? <Loader2 className="animate-spin" /> : null}
                 Authorize Shopify
+              </Button>
+              <Button
+                onClick={() => void sendPrintifyToShopify()}
+                disabled={!data.printify?.apiTokenSet || !data.shopify?.authorized || Boolean(busy)}
+              >
+                {busy === "printify-shopify" ? <Loader2 className="animate-spin" /> : null}
+                Send Printify products to Shopify
               </Button>
               <Button
                 variant="outline"

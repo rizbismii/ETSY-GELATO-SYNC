@@ -82,19 +82,41 @@ export type PrintifyShop = {
   sales_channel?: string;
 };
 
-type PrintifyProduct = {
+export type PrintifyShopProduct = {
   id: string;
   title?: string;
+  description?: string;
+  tags?: string[];
   safety_information?: string;
-  variants?: Array<{ id?: number; is_enabled?: boolean; cost?: number }>;
-  images?: Array<{ src?: string; variant_ids?: number[]; position?: string }>;
+  options?: Array<{
+    name?: string;
+    type?: string;
+    values?: Array<{ id?: number; title?: string }>;
+  }>;
+  variants?: Array<{
+    id?: number;
+    sku?: string;
+    price?: number;
+    cost?: number;
+    is_enabled?: boolean;
+    is_available?: boolean;
+    is_default?: boolean;
+    title?: string;
+    options?: number[];
+  }>;
+  images?: Array<{
+    src?: string;
+    variant_ids?: number[];
+    position?: string;
+    is_default?: boolean;
+  }>;
   external?: { id?: string; handle?: string };
 };
 
 type PrintifyProductPage = {
   current_page?: number;
   last_page?: number;
-  data?: PrintifyProduct[];
+  data?: PrintifyShopProduct[];
 };
 
 export function usablePrintifyToken(value?: string | null) {
@@ -254,7 +276,7 @@ async function createPrintifyProduct(
 }
 
 async function getPrintifyProduct(shopId: number, productId: string, token?: string) {
-  return printify<PrintifyProduct>(`/shops/${shopId}/products/${productId}.json`, { token });
+  return printify<PrintifyShopProduct>(`/shops/${shopId}/products/${productId}.json`, { token });
 }
 
 async function listBlueprintCatalog(blueprintId: number, printProviderId: number, token?: string) {
@@ -576,8 +598,27 @@ export async function createFernoraPrintifyProducts(input?: { shopId?: number; t
   };
 }
 
+/** Read the connected Printify shop. Does not publish to Etsy or Shopify. */
+export async function loadPrintifyProductsForShopify(token?: string) {
+  const ping = await pingPrintify(token);
+  const shopId = ping.shopId;
+  if (!shopId) throw new Error("No Printify shop on this token");
+  const listed = await listShopProducts(shopId);
+  const products: PrintifyShopProduct[] = [];
+  for (const row of listed) {
+    if (!row.id) continue;
+    products.push(await getPrintifyProduct(shopId, row.id, token));
+  }
+  return {
+    shopId,
+    shopTitle: ping.shopTitle,
+    salesChannel: ping.salesChannel || "disconnected",
+    products,
+  };
+}
+
 async function listShopProducts(shopId: number) {
-  const products: PrintifyProduct[] = [];
+  const products: PrintifyShopProduct[] = [];
   let page = 1;
   let last = 1;
   while (page <= last && page <= 20) {
