@@ -245,6 +245,31 @@ export default function PrintsPage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardContent className="space-y-4 p-4">
+          <div>
+            <p className="font-medium">DTG · Grow with purpose</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              The same rainbow fern, line, and gold heart as smooth flat ink for direct-to-garment.
+              Stitch ridges are melted into solid color. The hoodie and tee embroidery files stay as
+              they are. This one is 3600×3600 px at 300 DPI with a transparent ground. In Printify,
+              use a DTG print area.
+            </p>
+          </div>
+          <a className="text-sm underline" href="/catalog/print-fern-dtg.png" download="print-fern-dtg.png">
+            Download DTG print
+          </a>
+          <ProductArt
+            id="fern-dtg"
+            title="Grow with purpose DTG"
+            imageUrl="/catalog/print-fern-dtg.png"
+            kind="print"
+            fit="contain"
+            className="aspect-square max-w-sm rounded-lg bg-none! bg-white"
+          />
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
         <div className="space-y-2">
           {data.templates.map((row) => (
