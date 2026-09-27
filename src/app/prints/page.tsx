@@ -245,6 +245,31 @@ export default function PrintsPage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardContent className="space-y-4 p-4">
+          <div>
+            <p className="font-medium">Puff DTG · Grow with purpose</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              The same rainbow fern, line, and gold heart as raised ink for direct-to-garment. The
+              hoodie and tee embroidery files stay as they are. This one is 3600×3600 px at 300 DPI,
+              transparent ground, with a soft lift so it sits up off the fabric. In Printify, use a
+              DTG print area, not the embroidery placement.
+            </p>
+          </div>
+          <a className="text-sm underline" href="/catalog/print-fern-puff-dtg.png" download="print-fern-puff-dtg.png">
+            Download puff DTG print
+          </a>
+          <ProductArt
+            id="fern-puff-dtg"
+            title="Grow with purpose puff DTG"
+            imageUrl="/catalog/print-fern-puff-dtg.png"
+            kind="print"
+            fit="contain"
+            className="aspect-square max-w-sm rounded-lg bg-white"
+          />
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
         <div className="space-y-2">
           {data.templates.map((row) => (
