@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ProductArt } from "@/components/product-art";
 import { api } from "@/lib/api";
+import { TEE_PRINT_AREA, effectiveDpi, pixelsForInches, teePrintInches } from "@/lib/print-placement";
 
 type Template = {
   id: string;
@@ -39,9 +40,11 @@ export default function PrintsPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [stamp, setStamp] = useState(0);
   const [pixelMode, setPixelMode] = useState("file");
-  const [printWidth, setPrintWidth] = useState("3852");
-  const [printHeight, setPrintHeight] = useState("4398");
-  const [printDpi, setPrintDpi] = useState("300");
+  const [printWidth, setPrintWidth] = useState(String(TEE_PRINT_AREA.widthPx));
+  const [printHeight, setPrintHeight] = useState(String(TEE_PRINT_AREA.heightPx));
+  const [placeWidth, setPlaceWidth] = useState(teePrintInches().width.toFixed(2));
+  const [placeHeight, setPlaceHeight] = useState(teePrintInches().height.toFixed(2));
+  const [printDpi, setPrintDpi] = useState(String(TEE_PRINT_AREA.dpi));
   const [printComment, setPrintComment] = useState("");
   const [fixedHref, setFixedHref] = useState<string | null>(null);
 
@@ -81,10 +84,13 @@ export default function PrintsPage() {
   async function onFixGemini(file: File) {
     setBusy("gemini");
     try {
+      const dpi = Number(printDpi) || TEE_PRINT_AREA.dpi;
+      const placedWidth = pixelMode === "placement" ? String(pixelsForInches(Number(placeWidth), dpi)) : printWidth;
+      const placedHeight = pixelMode === "placement" ? String(pixelsForInches(Number(placeHeight), dpi)) : printHeight;
       const json = (await sendFile("/api/prints/fix-gemini", {
-        pixels: pixelMode,
-        width: printWidth,
-        height: printHeight,
+        pixels: pixelMode === "file" ? "file" : "custom",
+        width: placedWidth,
+        height: placedHeight,
         dpi: printDpi,
         comment: printComment,
       }, file)) as { href?: string; width?: number; height?: number; dpi?: number };
@@ -210,6 +216,7 @@ export default function PrintsPage() {
                 className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               >
                 <option value="file">Keep this file&apos;s pixels</option>
+                <option value="placement">Set the Printify layer size</option>
                 <option value="custom">Set width and height</option>
               </select>
             </div>
@@ -227,6 +234,40 @@ export default function PrintsPage() {
               </select>
             </div>
           </div>
+          {pixelMode === "placement" ? (
+            <div className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="place-width">Layer width (in)</Label>
+                  <Input id="place-width" value={placeWidth} onChange={(event) => setPlaceWidth(event.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="place-height">Layer height (in)</Label>
+                  <Input id="place-height" value={placeHeight} onChange={(event) => setPlaceHeight(event.target.value)} />
+                </div>
+              </div>
+              <p className="text-xs leading-5 text-muted-foreground">
+                {pixelsForInches(Number(placeWidth), Number(printDpi))}×
+                {pixelsForInches(Number(placeHeight), Number(printDpi))} px at {printDpi} DPI.
+                {Number(placeWidth) > teePrintInches().width + 0.05 ||
+                Number(placeHeight) > teePrintInches().height + 0.05
+                  ? ` A ${TEE_PRINT_AREA.widthPx}×${TEE_PRINT_AREA.heightPx} px file at ${placeWidth}×${placeHeight} in is about ${effectiveDpi(TEE_PRINT_AREA.widthPx, Number(placeWidth) || 1)} DPI, so Printify marks it medium. The dashed print box is ${teePrintInches().width.toFixed(2)}×${teePrintInches().height.toFixed(2)} in.`
+                  : ` This fills the dashed print box at ${printDpi} DPI.`}
+              </p>
+              <button
+                type="button"
+                className="text-sm underline"
+                onClick={() => {
+                  const inches = teePrintInches();
+                  setPlaceWidth(inches.width.toFixed(2));
+                  setPlaceHeight(inches.height.toFixed(2));
+                  setPrintDpi(String(TEE_PRINT_AREA.dpi));
+                }}
+              >
+                Use the tee print box
+              </button>
+            </div>
+          ) : null}
           {pixelMode === "custom" ? (
             <div className="grid gap-3 sm:grid-cols-2">
               <div>

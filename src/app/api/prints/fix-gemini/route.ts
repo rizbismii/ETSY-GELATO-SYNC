@@ -18,8 +18,8 @@ export async function POST(request: Request) {
     const file = form.get("file");
     if (!(file instanceof File)) throw new Error("Choose the Gemini image");
     const pixels = String(form.get("pixels") || "file");
-    const width = pixels === "custom" ? numberField(form.get("width"), 3852, 256, 8000) : 0;
-    const height = pixels === "custom" ? numberField(form.get("height"), 4398, 256, 8000) : 0;
+    const width = pixels === "custom" ? numberField(form.get("width"), 3951, 256, 12000) : 0;
+    const height = pixels === "custom" ? numberField(form.get("height"), 4919, 256, 12000) : 0
     const dpi = numberField(form.get("dpi"), 300, 72, 600);
     const comment = String(form.get("comment") || "").replace(/\s+/g, " ").trim().slice(0, 240);
     const source = path.join("/tmp", `gemini-print-${Date.now()}.img`);
