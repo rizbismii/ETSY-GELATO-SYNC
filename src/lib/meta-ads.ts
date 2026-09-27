@@ -10,6 +10,7 @@ import {
   META_ADS_CAMPAIGN_NAME,
   META_ADS_DAILY_BUDGET_DEFAULT,
   META_ADS_LANDING_URL,
+  metaAdStorySpec,
   metaPurchasePayload,
   normalizeAdAccountId,
   normalizePixelId,
@@ -23,6 +24,7 @@ export {
   META_ADS_ADSET_NAME,
   META_ADS_CAMPAIGN_NAME,
   META_ADS_DAILY_BUDGET_DEFAULT,
+  META_ADS_IMAGE_URL,
   META_ADS_DAILY_BUDGET_MAX,
   META_ADS_DAILY_BUDGET_MIN,
   META_ADS_LANDING_URL,
@@ -262,22 +264,14 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
   if (ping.pageId) {
     try {
       if (!creativeId) {
-        const storySpec: Record<string, unknown> = {
-          page_id: ping.pageId,
-          link_data: {
-            message: "Original botanicals for considered homes.",
-            link: META_ADS_LANDING_URL,
-            name: "Fernora",
-            description: "Prints, apparel, and objects — priced in your currency.",
-            call_to_action: { type: "SHOP_NOW", value: { link: META_ADS_LANDING_URL } },
-          },
-        };
-        if (ping.instagramUserId) storySpec.instagram_user_id = ping.instagramUserId;
         const created = await graph<{ id: string }>(`/${accountId}/adcreatives`, {
           method: "POST",
           body: {
             name: META_ADS_AD_NAME,
-            object_story_spec: storySpec,
+            object_story_spec: metaAdStorySpec({
+              pageId: ping.pageId,
+              instagramUserId: ping.instagramUserId,
+            }),
           },
         });
         creativeId = created.id;

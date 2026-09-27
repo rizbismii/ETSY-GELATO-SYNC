@@ -10,6 +10,7 @@ import {
   META_TOKEN_EXPIRED_HELP,
 } from "./meta-connect-error.ts";
 import {
+  FERNORA_META_APP_ICON_UPLOAD_URL,
   FERNORA_META_APP_ID,
   FERNORA_META_APP_NAME,
   FERNORA_META_WAIT_ENDED_ON,
@@ -20,7 +21,9 @@ import {
   META_ADS_DAILY_BUDGET_DEFAULT,
   META_ADS_DAILY_BUDGET_MAX,
   META_ADS_DAILY_BUDGET_MIN,
+  META_ADS_IMAGE_URL,
   META_ADS_LANDING_URL,
+  metaAdStorySpec,
   metaPixelSnippet,
   metaPurchasePayload,
   normalizeAdAccountId,
@@ -119,6 +122,11 @@ test("Ads page uses the existing Fernora Pressroom app after the 48-hour wait", 
   assert.match(page, /Do not click/);
   assert.match(page, /switch the app to/i);
   assert.match(page, /FERNORA_META_DATA_DELETION_URL/);
+  assert.match(page, /FERNORA_META_APP_ICON_PATH/);
+  assert.match(page, /FERNORA_META_APP_ICON_UPLOAD_URL/);
+  assert.match(page, /Fernora-Pressroom-app-icon-1024\.png/);
+  assert.match(FERNORA_META_APP_ICON_UPLOAD_URL, /raw\.githubusercontent\.com/);
+  assert.doesNotMatch(FERNORA_META_APP_ICON_UPLOAD_URL, /trycloudflare/);
   assert.doesNotMatch(page, /Create app/);
   assert.doesNotMatch(page, /\bGelato\b/);
 });
@@ -136,6 +144,21 @@ test("pickMetaIds keeps saved Fernora IDs and fills Instagram from the Page", ()
   assert.equal(picked.pageId, "page_fernora");
   assert.equal(picked.pixelId, "1435089141828956");
   assert.equal(picked.instagramUserId, "ig_1");
+});
+
+test("paused ad creative uses the fern poster, not a text-only link", () => {
+  const story = metaAdStorySpec({ pageId: "123", instagramUserId: "ig_9" });
+  const link = story.link_data as { picture?: string; link?: string };
+  assert.equal(link.picture, META_ADS_IMAGE_URL);
+  assert.equal(link.link, "https://fernora.nz");
+  assert.match(META_ADS_IMAGE_URL, /^https:\/\/fernora\.nz\/cdn\/shop\/files\/catalog-poster\.png$/);
+  assert.equal(story.instagram_user_id, "ig_9");
+  assert.equal(metaAdStorySpec({ pageId: "123" }).instagram_user_id, undefined);
+  const source = readFileSync(new URL("./meta-ads.ts", import.meta.url), "utf8");
+  assert.match(source, /metaAdStorySpec/);
+  const privacy = readFileSync(new URL("./shop-policies.ts", import.meta.url), "utf8");
+  assert.match(privacy, /Meta Pixel on fernora\.nz/);
+  assert.doesNotMatch(privacy, /add analytics later/);
 });
 
 test("CAPI purchase hashes email and keeps the shop URL", () => {
