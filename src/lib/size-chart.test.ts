@@ -23,6 +23,14 @@ test("every live catalog item has a size chart", () => {
     assert.ok(chart.rows.length > 0);
   }
   assert.equal(sizeChartFor(CATALOG[2])?.rows[0]?.values[0], "18 in");
+  assert.equal(
+    sizeChartFor({
+      title: "Fern Arc Poster · A3 Semi-Gloss",
+      category: "poster",
+      description: "Printed on A3 paper. Unframed.",
+    })?.rows[0]?.values[0],
+    "11.7 in (297 mm)",
+  );
   assert.equal(sizeChartFor(CATALOG[5])?.rows[0]?.label, "US 5");
   assert.equal(sizeChartFor(CATALOG[6])?.rows[0]?.label, "US 5.5");
 });

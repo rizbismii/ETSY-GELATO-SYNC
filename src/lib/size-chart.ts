@@ -101,7 +101,7 @@ export function sizeChartFor(hint: { id?: string; title?: string; category?: str
   }
   if (/18\s*[×x]\s*24|kowhai/.test(blob)) return PRINT_18_24;
   if (/12\s*[×x]\s*12|canvas/.test(blob) || hint.category === "canvas") return CANVAS_12;
-  if (/12\s*[×x]\s*16|oak frame|frame/.test(blob) || hint.category === "frame") return FRAME_12_16;
+  if (/12\s*[×x]\s*16|oak frame|\bframe\b/.test(blob) || hint.category === "frame") return FRAME_12_16;
   if (/a3|poster/.test(blob) || hint.category === "poster") return A3;
   return null;
 }
