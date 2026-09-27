@@ -153,6 +153,23 @@ def clean_white(rgba: np.ndarray) -> np.ndarray:
     return zero_rgb(out)
 
 
+def clean_paper(rgba: np.ndarray) -> np.ndarray:
+    """Drop a pale plate that touches empty pixels. Light ink boxed in by the drawing stays."""
+    luma, chroma = luma_chroma(rgba[:, :, :3])
+    alpha = rgba[:, :, 3]
+    pale = (luma >= 215) & (chroma <= 20) & (alpha > 0)
+    if int(pale.sum()) < 40:
+        return rgba
+    reached = flood_from_border(pale | (alpha == 0))
+    cleared = reached & pale
+    if int(cleared.sum()) < 40:
+        return rgba
+    fringe = dilate(cleared) & ~cleared & (luma >= 200) & (chroma <= 26) & (alpha > 0)
+    out = rgba.copy()
+    out[cleared | fringe, 3] = 0
+    return zero_rgb(out)
+
+
 def border_samples(values: np.ndarray) -> np.ndarray:
     return np.concatenate(
         [values[:6, :].ravel(), values[-6:, :].ravel(), values[:, :6].ravel(), values[:, -6:].ravel()]
@@ -240,13 +257,16 @@ def clean_checker_print(
     rgba = load_rgba(source)
     kind = background_kind(rgba)
     if kind == "cutout":
-        cleaned = clean_cutout(rgba)
+        cleaned = clean_paper(clean_cutout(rgba))
     elif kind == "black":
         cleaned = clean_black(rgba)
     elif kind == "white":
         cleaned = clean_white(rgba)
     elif kind == "checker":
         cleaned = clean_checker(rgba)
+        # A flat off-white page has no two-tone grid, so the checker pass leaves it.
+        if cleaned is rgba:
+            cleaned = clean_paper(rgba)
     else:
         cleaned = rgba
     if width <= 0 or height <= 0:
@@ -336,6 +356,22 @@ def check() -> None:
         raise SystemExit("the drawing on a white page was removed")
     if int(lifted[23, 23, 3]) < 200 or int(lifted[23, 23, 0]) < 240:
         raise SystemExit("white ink inside the drawing was cleared")
+    plate = np.zeros((64, 64, 4), dtype=np.uint8)
+    plate[8:56, 12:52] = (232, 228, 220, 255)
+    plate[24:44, 24:44] = (210, 90, 20, 255)
+    plate[30:34, 30:34] = (250, 248, 242, 255)
+    plate_source = Path("/tmp/gemini-paper-check.png")
+    plate_dest = Path("/tmp/gemini-paper-check-out.png")
+    Image.fromarray(plate, "RGBA").save(plate_source)
+    clean_checker_print(plate_source, plate_dest, 0, 0, 300)
+    peeled = np.array(Image.open(plate_dest).convert("RGBA"))
+    if int(peeled[0, 0, 3]) != 0 or int(peeled[12, 16, 3]) != 0:
+        raise SystemExit("pale plate behind the drawing stayed opaque")
+    if int(peeled[26, 26, 3]) < 200 or int(peeled[26, 26, 0]) < 160:
+        raise SystemExit("the drawing on a pale plate was removed")
+    if int(peeled[32, 32, 3]) < 200 or int(peeled[32, 32, 0]) < 240:
+        raise SystemExit("light ink inside the drawing was cleared with the plate")
+
     saved = Image.open(white_dest)
     if saved.info.get("Comment") != "house on white" and saved.text.get("Comment") != "house on white":
         comment = saved.info.get("Comment") or getattr(saved, "text", {}).get("Comment")

@@ -200,8 +200,8 @@ export default function PrintsPage() {
           <div>
             <p className="font-medium">Fix a Gemini image</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Gemini paints a gray grid, a black matte, or a white page behind the drawing. Pressroom
-              clears that ground and keeps the drawing. The empty area in the file is transparent. A
+              Gemini paints a gray grid, a black matte, a white page, or a pale square behind the drawing.
+              Pressroom clears that ground and keeps the drawing. The empty area in the file is transparent. A
               photo app may paint it white or black; that fill is not in the file. In Printify, open
               Edit design, delete the old front image, then upload this file.
             </p>
