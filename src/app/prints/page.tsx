@@ -265,7 +265,7 @@ export default function PrintsPage() {
             imageUrl="/catalog/print-fern-dtg.png"
             kind="print"
             fit="contain"
-            className="aspect-square max-w-sm rounded-lg bg-white"
+            className="aspect-square max-w-sm rounded-lg bg-none! bg-white"
           />
         </CardContent>
       </Card>
