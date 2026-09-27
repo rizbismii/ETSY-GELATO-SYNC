@@ -1,4 +1,5 @@
 import type { PrintifyShopProduct } from "./printify.ts";
+import { withSizeChart } from "./size-chart.ts";
 
 const FERNORA_VENDOR = "Fernora";
 const VARIANT_CAP = 100;
@@ -71,19 +72,19 @@ export function printifyCentsToPrice(cents: number) {
   return `${dollars}.${String(remainder).padStart(2, "0")}`;
 }
 
-function descriptionHtml(description?: string) {
+function descriptionHtml(description: string | undefined, title: string) {
   const text = (description || "").trim();
   const made = "<p>Made to order. In stock while the colour and size are on in Printify.</p>";
-  if (!text) return made;
-  if (/<[a-z][\s\S]*>/i.test(text)) {
-    const cleaned = text.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "");
-    return `${cleaned}${made}`;
+  let body = "";
+  if (text && /<[a-z][\s\S]*>/i.test(text)) {
+    body = text.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "");
+  } else if (text) {
+    body = text
+      .split(/\n{2,}/)
+      .map((block) => `<p>${escapeHtml(block).replaceAll("\n", "<br>")}</p>`)
+      .join("");
   }
-  const paragraphs = text
-    .split(/\n{2,}/)
-    .map((block) => `<p>${escapeHtml(block).replaceAll("\n", "<br>")}</p>`)
-    .join("");
-  return `${paragraphs}${made}`;
+  return `${withSizeChart(body, { title, description: text })}${made}`;
 }
 
 function tagsFor(product: PrintifyShopProduct) {
@@ -284,7 +285,7 @@ export function printifyProductToShopifyDraft(product: PrintifyShopProduct): Pri
   return {
     printifyProductId: product.id,
     title,
-    descriptionHtml: descriptionHtml(product.description),
+    descriptionHtml: descriptionHtml(product.description, title),
     tags: tagsFor(product),
     productOptions,
     variants,

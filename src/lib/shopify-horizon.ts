@@ -5,6 +5,7 @@ import { shopifyGraphql } from "@/lib/shopify";
 import { policyHtml } from "@/lib/shop-policies";
 import { getCredentials } from "@/lib/credentials";
 import { normalizePixelId, withMetaPixelInTheme } from "@/lib/meta-budget";
+import { withSizeChartInTheme } from "@/lib/size-chart";
 
 const HERO_FILE = "fernora-hero.png";
 const COUNTRY_CURRENCY_MARK = "localization.country.name }} · {{ localization.country.currency.iso_code";
@@ -40,6 +41,7 @@ export async function brandHorizonStorefront(themeId: string, origin?: string) {
   }
   notes.push(...(await patchHorizonLocalization(themeId)));
   notes.push(...(await installFernoraMetaPixel(themeId)));
+  notes.push(...(await installFernoraSizeChart(themeId)));
   const heroRef = await uploadFernoraHero(origin).catch((error: Error) => {
     notes.push(`Hero image: ${error.message}`);
     return "";
@@ -80,6 +82,25 @@ async function upsertThemeText(themeId: string, filename: string, value: string)
     { themeId, files: [{ filename, body: { type: "TEXT", value } }] },
   );
   return upserted.themeFilesUpsert.userErrors.map((row) => row.message);
+}
+
+export async function installFernoraSizeChart(themeId: string) {
+  const notes: string[] = [];
+  const raw = await themeFileText(themeId, "layout/theme.liquid");
+  if (!raw) {
+    notes.push("Theme layout could not be read for the size chart.");
+    return notes;
+  }
+  const next = withSizeChartInTheme(raw);
+  if (next === raw) {
+    notes.push("Size chart dropdown is already on fernora.nz.");
+    return notes;
+  }
+  const errors = await upsertThemeText(themeId, "layout/theme.liquid", next);
+  notes.push(
+    errors.length ? `Size chart: ${errors.join("; ")}` : "Size chart dropdown is on fernora.nz product pages.",
+  );
+  return notes;
 }
 
 export async function installFernoraMetaPixel(themeId: string) {
