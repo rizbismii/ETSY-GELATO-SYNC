@@ -190,10 +190,10 @@ export default function PrintsPage() {
           <div>
             <p className="font-medium">Fix a Gemini image</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Gemini paints the transparency grid into the file, so Printify prints gray squares on
-              the garment. Upload that image here. Pressroom removes the grid and gives you a
-              transparent PNG. In Printify, open Edit design, delete the old front image, then
-              upload this file.
+              Gemini paints the transparency grid into the file, or stores the empty area as black.
+              Upload that image here. Pressroom clears the background and keeps the drawing sharp.
+              A photo app paints the empty area black; that black is not in the file. In Printify,
+              open Edit design, delete the old front image, then upload this file.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
