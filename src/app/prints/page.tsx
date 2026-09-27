@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ProductArt } from "@/components/product-art";
 import { api } from "@/lib/api";
+import { TEE_PRINT_AREA, effectiveDpi, pixelsForInches, teePrintInches } from "@/lib/print-placement";
 
 type Template = {
   id: string;
@@ -38,9 +39,13 @@ export default function PrintsPage() {
   const [key, setKey] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [stamp, setStamp] = useState(0);
-  const [printWidth, setPrintWidth] = useState("3852");
-  const [printHeight, setPrintHeight] = useState("4398");
-  const [printDpi, setPrintDpi] = useState("300");
+  const [pixelMode, setPixelMode] = useState("file");
+  const [printWidth, setPrintWidth] = useState(String(TEE_PRINT_AREA.widthPx));
+  const [printHeight, setPrintHeight] = useState(String(TEE_PRINT_AREA.heightPx));
+  const [placeWidth, setPlaceWidth] = useState(teePrintInches().width.toFixed(2));
+  const [placeHeight, setPlaceHeight] = useState(teePrintInches().height.toFixed(2));
+  const [printDpi, setPrintDpi] = useState(String(TEE_PRINT_AREA.dpi));
+  const [printComment, setPrintComment] = useState("");
   const [fixedHref, setFixedHref] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -79,15 +84,20 @@ export default function PrintsPage() {
   async function onFixGemini(file: File) {
     setBusy("gemini");
     try {
+      const dpi = Number(printDpi) || TEE_PRINT_AREA.dpi;
+      const placedWidth = pixelMode === "placement" ? String(pixelsForInches(Number(placeWidth), dpi)) : printWidth;
+      const placedHeight = pixelMode === "placement" ? String(pixelsForInches(Number(placeHeight), dpi)) : printHeight;
       const json = (await sendFile("/api/prints/fix-gemini", {
-        width: printWidth,
-        height: printHeight,
+        pixels: pixelMode === "file" ? "file" : "custom",
+        width: placedWidth,
+        height: placedHeight,
         dpi: printDpi,
+        comment: printComment,
       }, file)) as { href?: string; width?: number; height?: number; dpi?: number };
       const href = `${json.href}?v=${Date.now()}`;
       setFixedHref(href);
       setStamp(Date.now());
-      toast.success(`Transparent print ready · ${json.width}×${json.height} at ${json.dpi} DPI`);
+      toast.success(`Transparent print ready · ${json.width}×${json.height} px at ${json.dpi} DPI`);
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
@@ -190,25 +200,96 @@ export default function PrintsPage() {
           <div>
             <p className="font-medium">Fix a Gemini image</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Gemini paints the transparency grid into the file, or stores the empty area as black.
-              Upload that image here. Pressroom clears the background and keeps the drawing sharp.
-              A photo app paints the empty area black; that black is not in the file. In Printify,
-              open Edit design, delete the old front image, then upload this file.
+              Gemini paints a gray grid, a black matte, or a white page behind the drawing. Pressroom
+              clears that ground and keeps the drawing. The empty area in the file is transparent. A
+              photo app may paint it white or black; that fill is not in the file. In Printify, open
+              Edit design, delete the old front image, then upload this file.
             </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <Label htmlFor="print-width">Width (px)</Label>
-              <Input id="print-width" value={printWidth} onChange={(event) => setPrintWidth(event.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="print-height">Height (px)</Label>
-              <Input id="print-height" value={printHeight} onChange={(event) => setPrintHeight(event.target.value)} />
+              <Label htmlFor="print-pixels">Pixels</Label>
+              <select
+                id="print-pixels"
+                value={pixelMode}
+                onChange={(event) => setPixelMode(event.target.value)}
+                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                <option value="file">Keep this file&apos;s pixels</option>
+                <option value="placement">Set the Printify layer size</option>
+                <option value="custom">Set width and height</option>
+              </select>
             </div>
             <div>
               <Label htmlFor="print-dpi">DPI</Label>
-              <Input id="print-dpi" value={printDpi} onChange={(event) => setPrintDpi(event.target.value)} />
+              <select
+                id="print-dpi"
+                value={printDpi}
+                onChange={(event) => setPrintDpi(event.target.value)}
+                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                <option value="150">150</option>
+                <option value="300">300</option>
+                <option value="600">600</option>
+              </select>
             </div>
+          </div>
+          {pixelMode === "placement" ? (
+            <div className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="place-width">Layer width (in)</Label>
+                  <Input id="place-width" value={placeWidth} onChange={(event) => setPlaceWidth(event.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="place-height">Layer height (in)</Label>
+                  <Input id="place-height" value={placeHeight} onChange={(event) => setPlaceHeight(event.target.value)} />
+                </div>
+              </div>
+              <p className="text-xs leading-5 text-muted-foreground">
+                {pixelsForInches(Number(placeWidth), Number(printDpi))}×
+                {pixelsForInches(Number(placeHeight), Number(printDpi))} px at {printDpi} DPI.
+                {Number(placeWidth) > teePrintInches().width + 0.05 ||
+                Number(placeHeight) > teePrintInches().height + 0.05
+                  ? ` A ${TEE_PRINT_AREA.widthPx}×${TEE_PRINT_AREA.heightPx} px file at ${placeWidth}×${placeHeight} in is about ${effectiveDpi(TEE_PRINT_AREA.widthPx, Number(placeWidth) || 1)} DPI, so Printify marks it medium. The dashed print box is ${teePrintInches().width.toFixed(2)}×${teePrintInches().height.toFixed(2)} in.`
+                  : ` This fills the dashed print box at ${printDpi} DPI.`}
+              </p>
+              <button
+                type="button"
+                className="text-sm underline"
+                onClick={() => {
+                  const inches = teePrintInches();
+                  setPlaceWidth(inches.width.toFixed(2));
+                  setPlaceHeight(inches.height.toFixed(2));
+                  setPrintDpi(String(TEE_PRINT_AREA.dpi));
+                }}
+              >
+                Use the tee print box
+              </button>
+            </div>
+          ) : null}
+          {pixelMode === "custom" ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="print-width">Width (px)</Label>
+                <Input id="print-width" value={printWidth} onChange={(event) => setPrintWidth(event.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="print-height">Height (px)</Label>
+                <Input id="print-height" value={printHeight} onChange={(event) => setPrintHeight(event.target.value)} />
+              </div>
+            </div>
+          ) : null}
+          <div>
+            <Label htmlFor="print-comment">Comment</Label>
+            <Textarea
+              id="print-comment"
+              value={printComment}
+              onChange={(event) => setPrintComment(event.target.value)}
+              placeholder="Optional note saved inside the PNG"
+              rows={2}
+              maxLength={240}
+            />
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
@@ -239,7 +320,7 @@ export default function PrintsPage() {
               imageUrl={fixedHref}
               kind="print"
               fit="contain"
-              className="aspect-square max-w-sm rounded-lg bg-white"
+              className="aspect-square max-w-sm rounded-lg"
             />
           ) : null}
         </CardContent>

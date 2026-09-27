@@ -19,14 +19,18 @@ export async function writeCatalogPrint(listingId: string, bytes: Uint8Array, ex
 }
 
 function runPython(script: string, args: string[]) {
-  return new Promise<void>((resolve, reject) => {
+  return new Promise<string>((resolve, reject) => {
     const child = spawn("python3", [script, ...args], { cwd: process.cwd() });
+    let out = "";
     let err = "";
+    child.stdout.on("data", (chunk) => {
+      out += String(chunk);
+    });
     child.stderr.on("data", (chunk) => {
       err += String(chunk);
     });
     child.on("exit", (code) => {
-      if (code === 0) resolve();
+      if (code === 0) resolve(out);
       else reject(new Error(err.trim() || `python exited ${code}`));
     });
   });
@@ -35,9 +39,9 @@ function runPython(script: string, args: string[]) {
 export async function cleanGeminiPrint(
   source: string,
   dest: string,
-  size: { width: number; height: number; dpi: number },
+  size: { width: number; height: number; dpi: number; comment?: string },
 ) {
-  await runPython(path.join(process.cwd(), "scripts", "clean-checker-print.py"), [
+  const args = [
     source,
     dest,
     "--width",
@@ -46,8 +50,16 @@ export async function cleanGeminiPrint(
     String(size.height),
     "--dpi",
     String(size.dpi),
-  ]);
-  return dest.replace(path.join(process.cwd(), "public"), "");
+  ];
+  if (size.comment?.trim()) args.push("--comment", size.comment.trim());
+  const output = await runPython(path.join(process.cwd(), "scripts", "clean-checker-print.py"), args);
+  const match = output.match(/(\d+)x(\d+) @ (\d+)/);
+  return {
+    href: dest.replace(path.join(process.cwd(), "public"), ""),
+    width: match ? Number(match[1]) : size.width,
+    height: match ? Number(match[2]) : size.height,
+    dpi: match ? Number(match[3]) : size.dpi,
+  };
 }
 
 export async function cleanEmbroideryPrint(

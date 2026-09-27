@@ -17,19 +17,22 @@ export async function POST(request: Request) {
     const form = await request.formData();
     const file = form.get("file");
     if (!(file instanceof File)) throw new Error("Choose the Gemini image");
-    const width = numberField(form.get("width"), 3852, 256, 8000);
-    const height = numberField(form.get("height"), 4398, 256, 8000);
+    const pixels = String(form.get("pixels") || "file");
+    const width = pixels === "custom" ? numberField(form.get("width"), 3951, 256, 12000) : 0;
+    const height = pixels === "custom" ? numberField(form.get("height"), 4919, 256, 12000) : 0
     const dpi = numberField(form.get("dpi"), 300, 72, 600);
+    const comment = String(form.get("comment") || "").replace(/\s+/g, " ").trim().slice(0, 240);
     const source = path.join("/tmp", `gemini-print-${Date.now()}.img`);
     await writeFile(source, Buffer.from(await file.arrayBuffer()));
     await mkdir(path.dirname(DEST), { recursive: true });
-    await cleanGeminiPrint(source, DEST, { width, height, dpi });
+    const cleaned = await cleanGeminiPrint(source, DEST, { width, height, dpi, comment });
     return Response.json({
       ok: true,
       href: "/catalog/print-gemini-fixed.png",
-      width,
-      height,
-      dpi,
+      width: cleaned.width,
+      height: cleaned.height,
+      dpi: cleaned.dpi,
+      comment,
     });
   } catch (error) {
     const message = (error as Error).message || "Could not fix that image";
