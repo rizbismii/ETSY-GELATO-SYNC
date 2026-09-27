@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Build a flat DTG print of the rainbow fern, separate from embroidery and puff.
+"""Build a flat DTG print of the rainbow fern.
 
-The still is stitch art on a cream checker. This knocks that ground out, closes
-the thread gaps with neighboring ink, and leaves a transparent file with no
-bevel or contact shadow.
+The still is stitch art on a cream checker. This knocks that ground out, fills
+the thread gaps, and melts the stitch ridges into solid ink. The result is a
+transparent print with no bevel and no contact shadow.
 """
 
 from __future__ import annotations
@@ -31,40 +31,32 @@ def ground_of(rgb: np.ndarray) -> np.ndarray:
 
 def close_coverage(ground: np.ndarray) -> np.ndarray:
     alpha = Image.fromarray(np.where(ground, 0, 255).astype(np.uint8), "L")
-    # Fill stitch gaps, then drop specks that are not part of the fern.
-    alpha = alpha.filter(ImageFilter.MaxFilter(3)).filter(ImageFilter.MinFilter(3))
+    # Fill thread gaps, then drop specks that are not part of the fern.
+    alpha = alpha.filter(ImageFilter.MaxFilter(9)).filter(ImageFilter.MinFilter(9))
     alpha = alpha.filter(ImageFilter.MinFilter(3)).filter(ImageFilter.MaxFilter(3))
     return np.array(alpha)
 
 
-def bleed_ink(rgb: np.ndarray, ground: np.ndarray, coverage: np.ndarray) -> np.ndarray:
-    """Keep thread color, and paint closed gaps with nearby ink instead of cream."""
-    ink = ~ground
-    amount = ink.astype(np.float32)
-    premul = rgb.astype(np.float32) * amount[..., None]
-    color = Image.fromarray(np.clip(premul, 0, 255).astype(np.uint8), "RGB")
-    weight = Image.fromarray(np.clip(amount * 255, 0, 255).astype(np.uint8), "L")
-    color = np.array(color.filter(ImageFilter.GaussianBlur(1.1))).astype(np.float32)
-    weight = np.array(weight.filter(ImageFilter.GaussianBlur(1.1))).astype(np.float32) / 255.0
-    filled = np.where(weight[..., None] > 0.04, color / np.maximum(weight[..., None], 1e-3), 0)
-    out = np.where(ink[..., None], rgb, filled)
-    out[~((coverage > 0))] = 0
-    return np.clip(out, 0, 255).astype(np.uint8)
-
-
-def crisp_ink(color: Image.Image, alpha: np.ndarray) -> np.ndarray:
-    sharp = np.array(color.filter(ImageFilter.UnsharpMask(radius=1.2, percent=70, threshold=2)))
-    solid = alpha > 220
-    base = np.array(color)
-    mixed = np.where(solid[..., None], sharp, base)
-    mixed[alpha == 0] = 0
-    return mixed
+def solid_ink(rgb: np.ndarray, ground: np.ndarray, coverage: np.ndarray) -> np.ndarray:
+    """Melt stitch ridges into flat color and keep that color inside the fern."""
+    known = (~ground).astype(np.float32)
+    premul = rgb.astype(np.float32) * known[..., None]
+    blurred = Image.fromarray(np.clip(premul, 0, 255).astype(np.uint8), "RGB").filter(ImageFilter.GaussianBlur(4))
+    weight = Image.fromarray(np.clip(known * 255, 0, 255).astype(np.uint8), "L").filter(ImageFilter.GaussianBlur(4))
+    blurred_px = np.array(blurred).astype(np.float32)
+    weight_px = np.array(weight).astype(np.float32) / 255.0
+    filled = np.where(weight_px[..., None] > 0.08, blurred_px / np.maximum(weight_px[..., None], 1e-3), 0)
+    smooth = Image.fromarray(np.clip(filled, 0, 255).astype(np.uint8), "RGB")
+    smooth = smooth.filter(ImageFilter.MedianFilter(5)).filter(ImageFilter.GaussianBlur(0.8))
+    out = np.array(smooth)
+    out[coverage == 0] = 0
+    return out
 
 
 def flat(rgb: np.ndarray, side: int) -> np.ndarray:
     ground = ground_of(rgb)
     coverage = close_coverage(ground)
-    color = bleed_ink(rgb, ground, coverage)
+    color = solid_ink(rgb, ground, coverage)
     height, width = rgb.shape[:2]
     scale = side / max(height, width)
     fitted = (max(1, int(round(width * scale))), max(1, int(round(height * scale))))
@@ -72,7 +64,8 @@ def flat(rgb: np.ndarray, side: int) -> np.ndarray:
     alpha_im = Image.fromarray(coverage, "L").resize(fitted, Image.Resampling.LANCZOS)
     alpha = np.array(alpha_im)
     alpha[alpha < 6] = 0
-    rgb_out = crisp_ink(color_im, alpha)
+    rgb_out = np.array(color_im)
+    rgb_out[alpha == 0] = 0
     piece = np.dstack([rgb_out, alpha])
     canvas = np.zeros((side, side, 4), dtype=np.uint8)
     y0 = (side - fitted[1]) // 2
@@ -106,6 +99,15 @@ def check() -> None:
     # A flat print has no offset contact shadow, so a corner stays empty.
     if int(out[2, 2, 3]) != 0:
         raise SystemExit("dtg canvas picked up a shadow")
+    ridged = np.full((48, 48, 3), 236, dtype=np.uint8)
+    for x in range(18, 34):
+        ridged[16:32, x] = (20, 90, 40) if x % 2 == 0 else (90, 190, 100)
+    melted = flat(ridged, 96)
+    band = melted[40:56, 36:64, :3].astype(np.float32)
+    luma = 0.299 * band[:, :, 0] + 0.587 * band[:, :, 1] + 0.114 * band[:, :, 2]
+    jumps = np.abs(np.diff(luma, axis=1))
+    if float(jumps.mean()) > 12:
+        raise SystemExit("dtg ink still has stitch ridges")
     print("ok fern dtg")
 
 

@@ -250,10 +250,10 @@ export default function PrintsPage() {
           <div>
             <p className="font-medium">DTG · Grow with purpose</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              The same rainbow fern, line, and gold heart as flat ink for direct-to-garment. The
-              hoodie and tee embroidery files stay as they are. This one is 3600×3600 px at 300 DPI
-              with a transparent ground and no raised shadow. In Printify, use a DTG print area, not
-              the embroidery placement.
+              The same rainbow fern, line, and gold heart as smooth flat ink for direct-to-garment.
+              Stitch ridges are melted into solid color. The hoodie and tee embroidery files stay as
+              they are. This one is 3600×3600 px at 300 DPI with a transparent ground. In Printify,
+              use a DTG print area.
             </p>
           </div>
           <a className="text-sm underline" href="/catalog/print-fern-dtg.png" download="print-fern-dtg.png">
