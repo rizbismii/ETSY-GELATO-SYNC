@@ -12,6 +12,7 @@ import { gelatoCountryName } from "@/lib/gelato-countries";
 import { POLICY_PATHS } from "@/lib/shop-policies";
 import { isTemplateStillPath, isTinyDesignStill } from "@/lib/listing-health";
 import { printSurface } from "@/lib/print-file";
+import { sizeChartFor } from "@/lib/size-chart";
 import type { LiveProduct } from "@/lib/live-catalog";
 import { useCart } from "../../cart-provider";
 import { CountrySelect } from "../../country-select";
@@ -61,6 +62,12 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
   );
   const lane = shopLane(product, country);
   const embroidery = product.id === "live_hoodie_bloom" || product.id === "live_tee_bloom";
+  const sizeChart = sizeChartFor({
+    id: product.id,
+    title: product.title,
+    category: product.category,
+    description: product.description,
+  });
   const dtg = !embroidery && printSurface(product.category) === "dtg";
 
   function addToBag() {
@@ -174,6 +181,38 @@ export function ProductDetail({ product }: { product: LiveProduct }) {
               </div>
             </div>
           </div>
+        ) : null}
+        {sizeChart ? (
+          <details className="rounded-2xl border border-border/70 bg-card px-4 py-3">
+            <summary className="cursor-pointer text-sm font-medium">Size chart</summary>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full min-w-[28rem] text-left text-xs">
+                <thead>
+                  <tr className="border-b border-border/70 text-muted-foreground">
+                    <th className="py-2 pr-3 font-medium" />
+                    {sizeChart.columns.map((column) => (
+                      <th key={column} className="py-2 pr-3 font-medium">
+                        {column}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sizeChart.rows.map((row) => (
+                    <tr key={row.label} className="border-b border-border/40">
+                      <th className="py-2 pr-3 font-medium">{row.label}</th>
+                      {row.values.map((value, index) => (
+                        <td key={`${row.label}-${index}`} className="py-2 pr-3 text-muted-foreground">
+                          {value}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">{sizeChart.note}</p>
+          </details>
         ) : null}
         <CountrySelect value={country} onChange={setCountry} label="Ship to" />
         {lane ? (

@@ -138,6 +138,7 @@ test("Horizon branding shows country · currency and made-to-order homepage copy
   assert.match(source, /title: series\.label/);
   assert.match(source, /CATALOG_SERIES/);
   assert.match(source, /All, Quotes, Botanical, Scenic, Home décor, and Original fern/);
+  assert.match(source, /installFernoraSizeChart/);
   assert.match(source, /fernora-product-layout/);
   assert.match(source, /fernora-product-gallery/);
   assert.match(source, /body\.template-index #MainContent \.section--page-width/);
