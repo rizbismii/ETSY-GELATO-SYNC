@@ -42,8 +42,8 @@ export default function PrintsPage() {
   const [pixelMode, setPixelMode] = useState("file");
   const [printWidth, setPrintWidth] = useState(String(TEE_PRINT_AREA.widthPx));
   const [printHeight, setPrintHeight] = useState(String(TEE_PRINT_AREA.heightPx));
-  const [placeWidth, setPlaceWidth] = useState(teePrintInches().width.toFixed(2));
-  const [placeHeight, setPlaceHeight] = useState(teePrintInches().height.toFixed(2));
+  const [placeWidth, setPlaceWidth] = useState((TEE_PRINT_AREA.widthPx / TEE_PRINT_AREA.dpi).toFixed(2));
+  const [placeHeight, setPlaceHeight] = useState((TEE_PRINT_AREA.heightPx / TEE_PRINT_AREA.dpi).toFixed(4));
   const [printDpi, setPrintDpi] = useState(String(TEE_PRINT_AREA.dpi));
   const [printComment, setPrintComment] = useState("");
   const [fixedHref, setFixedHref] = useState<string | null>(null);
@@ -258,9 +258,8 @@ export default function PrintsPage() {
                 type="button"
                 className="text-sm underline"
                 onClick={() => {
-                  const inches = teePrintInches();
-                  setPlaceWidth(inches.width.toFixed(2));
-                  setPlaceHeight(inches.height.toFixed(2));
+                  setPlaceWidth((TEE_PRINT_AREA.widthPx / TEE_PRINT_AREA.dpi).toFixed(2));
+                  setPlaceHeight((TEE_PRINT_AREA.heightPx / TEE_PRINT_AREA.dpi).toFixed(4));
                   setPrintDpi(String(TEE_PRINT_AREA.dpi));
                 }}
               >
