@@ -13,7 +13,7 @@ import argparse
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
+from PIL import Image, PngImagePlugin
 
 
 def load_rgba(source: Path) -> np.ndarray:
@@ -142,6 +142,17 @@ def clean_black(rgba: np.ndarray) -> np.ndarray:
     return zero_rgb(out)
 
 
+def clean_white(rgba: np.ndarray) -> np.ndarray:
+    """Remove a white page that touches the edge. Leave white ink enclosed by the drawing."""
+    luma, chroma = luma_chroma(rgba[:, :, :3])
+    matte = (luma >= 246) & (chroma <= 12) & (rgba[:, :, 3] > 0)
+    cleared = flood_from_border(matte)
+    fringe = dilate(cleared) & ~cleared & (luma >= 230) & (chroma <= 18)
+    out = rgba.copy()
+    out[cleared | fringe, 3] = 0
+    return zero_rgb(out)
+
+
 def border_samples(values: np.ndarray) -> np.ndarray:
     return np.concatenate(
         [values[:6, :].ravel(), values[-6:, :].ravel(), values[:, :6].ravel(), values[:, -6:].ravel()]
@@ -211,28 +222,46 @@ def background_kind(rgba: np.ndarray) -> str:
     edge_chroma = float(np.median(border_samples(chroma)))
     if edge_luma < 35 and edge_chroma < 18:
         return "black"
+    if edge_chroma < 16 and edge_luma >= 246:
+        return "white"
     if edge_chroma < 18 and 150 < edge_luma < 245:
         return "checker"
     return "keep"
 
 
-def clean_checker_print(source: Path, dest: Path, width: int, height: int, dpi: int) -> None:
+def clean_checker_print(
+    source: Path,
+    dest: Path,
+    width: int,
+    height: int,
+    dpi: int,
+    comment: str = "",
+) -> None:
     rgba = load_rgba(source)
     kind = background_kind(rgba)
     if kind == "cutout":
         cleaned = clean_cutout(rgba)
     elif kind == "black":
         cleaned = clean_black(rgba)
+    elif kind == "white":
+        cleaned = clean_white(rgba)
     elif kind == "checker":
         cleaned = clean_checker(rgba)
     else:
         cleaned = rgba
+    if width <= 0 or height <= 0:
+        width, height = cleaned.shape[1], cleaned.shape[0]
     canvas = fit_canvas(cleaned, width, height)
     if kind == "checker":
         # Only the pure checker gray that resampling blended back. Not the drawing.
         canvas = clean_checker(canvas)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    Image.fromarray(canvas, "RGBA").save(dest, "PNG", dpi=(dpi, dpi))
+    note = " ".join(comment.split())[:240]
+    pnginfo = PngImagePlugin.PngInfo()
+    if note:
+        pnginfo.add_text("Comment", note)
+    Image.fromarray(canvas, "RGBA").save(dest, "PNG", dpi=(dpi, dpi), pnginfo=pnginfo)
+    return width, height
 
 
 def check() -> None:
@@ -289,6 +318,28 @@ def check() -> None:
         raise SystemExit("black matte stayed opaque")
     if int(opened[24, 24, 3]) < 200 or int(opened[24, 24, 0]) < 120:
         raise SystemExit("ink on a black matte was removed")
+
+    page = np.full((48, 48, 3), 255, dtype=np.uint8)
+    page[16:32, 16:32] = (30, 24, 40)
+    page[20:26, 20:26] = (240, 140, 40)
+    page[22:24, 22:24] = (255, 255, 255)
+    white_source = Path("/tmp/gemini-white-check.png")
+    white_dest = Path("/tmp/gemini-white-check-out.png")
+    Image.fromarray(page, "RGB").save(white_source)
+    clean_checker_print(white_source, white_dest, 0, 0, 300, comment="house on white")
+    lifted = np.array(Image.open(white_dest).convert("RGBA"))
+    if lifted.shape[:2] != (48, 48):
+        raise SystemExit("a file-sized print was resized")
+    if int(lifted[0, 0, 3]) != 0:
+        raise SystemExit("white page stayed opaque")
+    if int(lifted[18, 18, 3]) < 200 or int(lifted[18, 18, 0]) > 80:
+        raise SystemExit("the drawing on a white page was removed")
+    if int(lifted[23, 23, 3]) < 200 or int(lifted[23, 23, 0]) < 240:
+        raise SystemExit("white ink inside the drawing was cleared")
+    saved = Image.open(white_dest)
+    if saved.info.get("Comment") != "house on white" and saved.text.get("Comment") != "house on white":
+        comment = saved.info.get("Comment") or getattr(saved, "text", {}).get("Comment")
+        raise SystemExit(f"png comment was not stored: {comment}")
     print("ok gemini checker knockout")
 
 
@@ -299,6 +350,7 @@ def main() -> None:
     parser.add_argument("--width", type=int, default=3852)
     parser.add_argument("--height", type=int, default=4398)
     parser.add_argument("--dpi", type=int, default=300)
+    parser.add_argument("--comment", default="")
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     if args.check:
@@ -306,8 +358,15 @@ def main() -> None:
         return
     if not args.source or not args.dest:
         raise SystemExit("source and dest are required")
-    clean_checker_print(Path(args.source), Path(args.dest), args.width, args.height, args.dpi)
-    print(f"wrote {args.dest} {args.width}x{args.height} @ {args.dpi} dpi")
+    width, height = clean_checker_print(
+        Path(args.source),
+        Path(args.dest),
+        args.width,
+        args.height,
+        args.dpi,
+        args.comment,
+    )
+    print(f"wrote {args.dest} {width}x{height} @ {args.dpi} dpi")
 
 
 if __name__ == "__main__":

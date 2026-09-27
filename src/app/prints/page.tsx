@@ -38,9 +38,11 @@ export default function PrintsPage() {
   const [key, setKey] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [stamp, setStamp] = useState(0);
+  const [pixelMode, setPixelMode] = useState("file");
   const [printWidth, setPrintWidth] = useState("3852");
   const [printHeight, setPrintHeight] = useState("4398");
   const [printDpi, setPrintDpi] = useState("300");
+  const [printComment, setPrintComment] = useState("");
   const [fixedHref, setFixedHref] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -80,14 +82,16 @@ export default function PrintsPage() {
     setBusy("gemini");
     try {
       const json = (await sendFile("/api/prints/fix-gemini", {
+        pixels: pixelMode,
         width: printWidth,
         height: printHeight,
         dpi: printDpi,
+        comment: printComment,
       }, file)) as { href?: string; width?: number; height?: number; dpi?: number };
       const href = `${json.href}?v=${Date.now()}`;
       setFixedHref(href);
       setStamp(Date.now());
-      toast.success(`Transparent print ready · ${json.width}×${json.height} at ${json.dpi} DPI`);
+      toast.success(`Transparent print ready · ${json.width}×${json.height} px at ${json.dpi} DPI`);
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
@@ -190,25 +194,61 @@ export default function PrintsPage() {
           <div>
             <p className="font-medium">Fix a Gemini image</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Gemini paints the transparency grid into the file, or stores the empty area as black.
-              Upload that image here. Pressroom clears the background and keeps the drawing sharp.
-              A photo app paints the empty area black; that black is not in the file. In Printify,
-              open Edit design, delete the old front image, then upload this file.
+              Gemini paints a gray grid, a black matte, or a white page behind the drawing. Pressroom
+              clears that ground and keeps the drawing. The empty area in the file is transparent. A
+              photo app may paint it white or black; that fill is not in the file. In Printify, open
+              Edit design, delete the old front image, then upload this file.
             </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <Label htmlFor="print-width">Width (px)</Label>
-              <Input id="print-width" value={printWidth} onChange={(event) => setPrintWidth(event.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="print-height">Height (px)</Label>
-              <Input id="print-height" value={printHeight} onChange={(event) => setPrintHeight(event.target.value)} />
+              <Label htmlFor="print-pixels">Pixels</Label>
+              <select
+                id="print-pixels"
+                value={pixelMode}
+                onChange={(event) => setPixelMode(event.target.value)}
+                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                <option value="file">Keep this file&apos;s pixels</option>
+                <option value="custom">Set width and height</option>
+              </select>
             </div>
             <div>
               <Label htmlFor="print-dpi">DPI</Label>
-              <Input id="print-dpi" value={printDpi} onChange={(event) => setPrintDpi(event.target.value)} />
+              <select
+                id="print-dpi"
+                value={printDpi}
+                onChange={(event) => setPrintDpi(event.target.value)}
+                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                <option value="150">150</option>
+                <option value="300">300</option>
+                <option value="600">600</option>
+              </select>
             </div>
+          </div>
+          {pixelMode === "custom" ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="print-width">Width (px)</Label>
+                <Input id="print-width" value={printWidth} onChange={(event) => setPrintWidth(event.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="print-height">Height (px)</Label>
+                <Input id="print-height" value={printHeight} onChange={(event) => setPrintHeight(event.target.value)} />
+              </div>
+            </div>
+          ) : null}
+          <div>
+            <Label htmlFor="print-comment">Comment</Label>
+            <Textarea
+              id="print-comment"
+              value={printComment}
+              onChange={(event) => setPrintComment(event.target.value)}
+              placeholder="Optional note saved inside the PNG"
+              rows={2}
+              maxLength={240}
+            />
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
@@ -239,7 +279,7 @@ export default function PrintsPage() {
               imageUrl={fixedHref}
               kind="print"
               fit="contain"
-              className="aspect-square max-w-sm rounded-lg bg-white"
+              className="aspect-square max-w-sm rounded-lg"
             />
           ) : null}
         </CardContent>
