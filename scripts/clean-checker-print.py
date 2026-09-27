@@ -153,20 +153,59 @@ def clean_white(rgba: np.ndarray) -> np.ndarray:
     return zero_rgb(out)
 
 
+def paper_islands(pale: np.ndarray, color: np.ndarray, min_plate: int) -> np.ndarray:
+    """Pale pieces the wreath sealed off, plus specks that are not sitting on colored ink."""
+    if not pale.any():
+        return pale
+    height, width = pale.shape
+    seen = np.zeros((height, width), dtype=bool)
+    drop = np.zeros((height, width), dtype=bool)
+    colored = dilate(color)
+    ys, xs = np.where(pale)
+    for y, x in zip(ys.tolist(), xs.tolist()):
+        if seen[y, x]:
+            continue
+        stack = [(y, x)]
+        seen[y, x] = True
+        pts: list[tuple[int, int]] = []
+        touches_ink = False
+        while stack:
+            cy, cx = stack.pop()
+            pts.append((cy, cx))
+            if colored[cy, cx]:
+                touches_ink = True
+            for ny, nx in ((cy - 1, cx), (cy + 1, cx), (cy, cx - 1), (cy, cx + 1)):
+                if 0 <= ny < height and 0 <= nx < width and pale[ny, nx] and not seen[ny, nx]:
+                    seen[ny, nx] = True
+                    stack.append((ny, nx))
+        # A large pale piece is trapped paper, even where it touches the drawing.
+        # A small piece stays only when it is a highlight on colored ink.
+        if len(pts) >= min_plate or not touches_ink:
+            for cy, cx in pts:
+                drop[cy, cx] = True
+    return drop
+
+
 def clean_paper(rgba: np.ndarray) -> np.ndarray:
-    """Drop a pale plate that touches empty pixels. Light ink boxed in by the drawing stays."""
+    """Drop a pale plate, including paper a wreath has sealed in. Light ink on the drawing stays."""
     luma, chroma = luma_chroma(rgba[:, :, :3])
     alpha = rgba[:, :, 3]
-    pale = (luma >= 215) & (chroma <= 20) & (alpha > 0)
+    pale = (luma >= 176) & (chroma <= 34) & (alpha > 0)
     if int(pale.sum()) < 40:
         return rgba
     reached = flood_from_border(pale | (alpha == 0))
     cleared = reached & pale
+    min_plate = max(800, (rgba.shape[0] * rgba.shape[1]) // 8000)
+    cleared = cleared | paper_islands(pale & ~cleared, (chroma > 40) & (alpha > 80), min_plate)
     if int(cleared.sum()) < 40:
         return rgba
-    fringe = dilate(cleared) & ~cleared & (luma >= 200) & (chroma <= 26) & (alpha > 0)
+    fringe = cleared
+    grown = cleared
+    for _ in range(4):
+        fringe = dilate(fringe) & ~grown & (luma >= 165) & (chroma <= 30) & (alpha > 0)
+        grown = grown | fringe
     out = rgba.copy()
-    out[cleared | fringe, 3] = 0
+    out[grown, 3] = 0
     return zero_rgb(out)
 
 
@@ -261,7 +300,7 @@ def clean_checker_print(
     elif kind == "black":
         cleaned = clean_black(rgba)
     elif kind == "white":
-        cleaned = clean_white(rgba)
+        cleaned = clean_paper(clean_white(rgba))
     elif kind == "checker":
         cleaned = clean_checker(rgba)
         # A flat off-white page has no two-tone grid, so the checker pass leaves it.
@@ -371,6 +410,24 @@ def check() -> None:
         raise SystemExit("the drawing on a pale plate was removed")
     if int(peeled[32, 32, 3]) < 200 or int(peeled[32, 32, 0]) < 240:
         raise SystemExit("light ink inside the drawing was cleared with the plate")
+
+    sealed = np.zeros((80, 80, 4), dtype=np.uint8)
+    sealed[8:72, 8:72] = (200, 90, 30, 255)
+    sealed[16:64, 16:64] = (226, 224, 220, 255)
+    sealed[30:50, 30:50] = (190, 70, 20, 255)
+    sealed[38:42, 38:42] = (250, 246, 240, 255)
+    sealed[20:23, 20:23] = (230, 228, 226, 255)
+    sealed_source = Path("/tmp/gemini-sealed-check.png")
+    sealed_dest = Path("/tmp/gemini-sealed-check-out.png")
+    Image.fromarray(sealed, "RGBA").save(sealed_source)
+    clean_checker_print(sealed_source, sealed_dest, 0, 0, 300)
+    opened = np.array(Image.open(sealed_dest).convert("RGBA"))
+    if int(opened[0, 0, 3]) != 0 or int(opened[20, 20, 3]) != 0 or int(opened[40, 18, 3]) != 0:
+        raise SystemExit("paper sealed inside the wreath stayed opaque")
+    if int(opened[34, 34, 3]) < 200 or int(opened[34, 34, 0]) < 140:
+        raise SystemExit("the drawing inside a sealed plate was removed")
+    if int(opened[40, 40, 3]) < 200 or int(opened[40, 40, 0]) < 240:
+        raise SystemExit("a highlight on the drawing was cleared with the sealed plate")
 
     saved = Image.open(white_dest)
     if saved.info.get("Comment") != "house on white" and saved.text.get("Comment") != "house on white":
