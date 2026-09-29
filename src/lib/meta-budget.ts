@@ -1,6 +1,8 @@
 import crypto from "node:crypto";
 
 export const META_ADS_LANDING_URL = "https://fernora.nz";
+/** Public fern poster already on the shop. Meta saves this into the ad account image library. */
+export const META_ADS_IMAGE_URL = "https://fernora.nz/cdn/shop/files/catalog-poster.png";
 export const META_ADS_CAMPAIGN_NAME = "Fernora · Pressroom";
 export const META_ADS_ADSET_NAME = "Fernora storefront · NZ AU";
 export const META_ADS_AD_NAME = "Fernora · fernora.nz";
@@ -39,6 +41,22 @@ export type MetaGraphAssets = {
   pages: MetaGraphPage[];
   pixels: Array<{ id: string; name?: string }>;
 };
+
+export function metaAdStorySpec(input: { pageId: string; instagramUserId?: string }) {
+  const storySpec: Record<string, unknown> = {
+    page_id: input.pageId,
+    link_data: {
+      message: "Original botanicals for considered homes.",
+      link: META_ADS_LANDING_URL,
+      name: "Fernora",
+      description: "Prints, apparel, and objects — priced in your currency.",
+      picture: META_ADS_IMAGE_URL,
+      call_to_action: { type: "SHOP_NOW", value: { link: META_ADS_LANDING_URL } },
+    },
+  };
+  if (input.instagramUserId) storySpec.instagram_user_id = input.instagramUserId;
+  return storySpec;
+}
 
 export function pickMetaIds(
   assets: MetaGraphAssets,

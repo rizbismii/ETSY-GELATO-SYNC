@@ -199,6 +199,8 @@ export type MetaAdsCampaign = {
   adSetId?: string;
   adId?: string;
   creativeId?: string;
+  /** Picture URL baked into creativeId. A missing or different URL means build a new creative. */
+  creativeImageUrl?: string;
   dailyBudget: number;
   currency?: string;
   landingUrl: string;
