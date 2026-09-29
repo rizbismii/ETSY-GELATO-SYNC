@@ -5,7 +5,7 @@ import {
   printifyProductToShopifyDraft,
   type PrintifyShopifyDraft,
 } from "@/lib/printify-shopify";
-import { publishableToOnlineStore, shopifyGraphql } from "@/lib/shopify";
+import { assignVariantsToDefaultDeliveryProfile, publishableToOnlineStore, shopifyGraphql } from "@/lib/shopify";
 import { updateShop } from "@/lib/store";
 import type { ShopifyCatalogMap } from "@/lib/types";
 
@@ -87,6 +87,12 @@ export async function syncPrintifyProductsToShopify(products: PrintifyShopProduc
       } catch (error) {
         notes.push(`${draft.title}: saved in Shopify admin. Online Store publish: ${(error as Error).message}`);
       }
+      let shippingNote = "";
+      try {
+        shippingNote = await assignVariantsToDefaultDeliveryProfile(node.variants.nodes.map((row) => row.id));
+      } catch (error) {
+        shippingNote = `shipping profile not attached: ${(error as Error).message}`;
+      }
       const variants: Record<string, string> = {};
       for (const row of node.variants.nodes) {
         if (row.sku && row.id) variants[row.sku] = row.id;
@@ -101,7 +107,7 @@ export async function syncPrintifyProductsToShopify(products: PrintifyShopProduc
       published += 1;
       const mockups = draft.files.length;
       notes.push(
-        `${draft.title}: on Shopify and the Online Store. ${draft.stockLine} ${mockups} mockup${mockups === 1 ? "" : "s"}.`,
+        `${draft.title}: on Shopify and the Online Store. ${draft.stockLine} ${mockups} mockup${mockups === 1 ? "" : "s"}. ${shippingNote}`,
       );
     } catch (error) {
       notes.push(`${draft.title}: ${(error as Error).message}`);
