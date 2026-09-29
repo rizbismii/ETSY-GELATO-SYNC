@@ -9,7 +9,9 @@ import {
   META_ADS_ADSET_NAME,
   META_ADS_CAMPAIGN_NAME,
   META_ADS_DAILY_BUDGET_DEFAULT,
+  META_ADS_IMAGE_URL,
   META_ADS_LANDING_URL,
+  metaAdStorySpec,
   metaPurchasePayload,
   normalizeAdAccountId,
   normalizePixelId,
@@ -23,6 +25,7 @@ export {
   META_ADS_ADSET_NAME,
   META_ADS_CAMPAIGN_NAME,
   META_ADS_DAILY_BUDGET_DEFAULT,
+  META_ADS_IMAGE_URL,
   META_ADS_DAILY_BUDGET_MAX,
   META_ADS_DAILY_BUDGET_MIN,
   META_ADS_LANDING_URL,
@@ -259,32 +262,27 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
 
   let creativeId = current.creativeId;
   let adId = current.adId;
+  let creativeImageUrl = current.creativeImageUrl;
   if (ping.pageId) {
     try {
-      if (!creativeId) {
-        const storySpec: Record<string, unknown> = {
-          page_id: ping.pageId,
-          link_data: {
-            message: "Original botanicals for considered homes.",
-            link: META_ADS_LANDING_URL,
-            name: "Fernora",
-            description: "Prints, apparel, and objects — priced in your currency.",
-            call_to_action: { type: "SHOP_NOW", value: { link: META_ADS_LANDING_URL } },
-          },
-        };
-        if (ping.instagramUserId) storySpec.instagram_user_id = ping.instagramUserId;
+      const needsPoster = creativeImageUrl !== META_ADS_IMAGE_URL;
+      if (!adId && (!creativeId || needsPoster)) {
         const created = await graph<{ id: string }>(`/${accountId}/adcreatives`, {
           method: "POST",
           body: {
             name: META_ADS_AD_NAME,
-            object_story_spec: storySpec,
+            object_story_spec: metaAdStorySpec({
+              pageId: ping.pageId,
+              instagramUserId: ping.instagramUserId,
+            }),
           },
         });
         creativeId = created.id;
+        creativeImageUrl = META_ADS_IMAGE_URL;
         notes.push(
           ping.instagramUserId
-            ? "Ad creative points shoppers to fernora.nz on Facebook and Instagram."
-            : "Ad creative points shoppers to fernora.nz.",
+            ? "Ad creative uses the fern poster and points shoppers to fernora.nz on Facebook and Instagram."
+            : "Ad creative uses the fern poster and points shoppers to fernora.nz.",
         );
       }
       if (!adId && creativeId) {
@@ -329,6 +327,7 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
     adSetId,
     adId,
     creativeId,
+    creativeImageUrl,
     dailyBudget,
     currency: ping.currency,
     landingUrl: META_ADS_LANDING_URL,
