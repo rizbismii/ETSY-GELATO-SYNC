@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Recolor a light-ground logo so it reads on a black or dark garment.
 
-The shirt or paper around the art is cleared. Dark neutral ink (outlines and
-lettering) becomes the chosen light color. Gold, red, and other saturated
-color stay. White shapes trapped inside the art, such as a banner, stay.
+The shirt or paper around the art is cleared, including white paper trapped
+inside the drawing such as a banner fill or the inside of a letter. Every
+dark neutral line becomes the chosen light color. Gold, red, and other
+saturated color stay. Mid gray shading stays.
 """
 
 from __future__ import annotations
@@ -15,7 +16,7 @@ import numpy as np
 from PIL import Image
 
 INKS: dict[str, tuple[int, int, int]] = {
-    "white": (247, 244, 238),
+    "white": (255, 255, 255),
     "cream": (243, 224, 184),
     "gold": (224, 177, 90),
     "silver": (230, 232, 236),
@@ -91,36 +92,26 @@ def scale_longest(rgba: np.ndarray, longest: int) -> np.ndarray:
     return np.array(resized)
 
 
-def connected_within(mask: np.ndarray, seeds: np.ndarray) -> np.ndarray:
-    seen = seeds & mask
-    if not seen.any():
-        return seen
-    for _ in range(max(mask.shape)):
-        nxt = dilate(seen) & mask
-        if np.array_equal(nxt, seen):
-            break
-        seen = nxt
-    return seen
-
-
 def for_dark_ground(rgba: np.ndarray, ink: tuple[int, int, int]) -> np.ndarray:
     color = rgba[:, :, :3]
     alpha = rgba[:, :, 3]
     luma, chroma = luma_chroma(color)
     visible = alpha > 16
-    ink_core = visible & (luma < 92) & (chroma < 32)
+    ink_core = visible & (luma < 92) & (chroma < 36)
     light = visible & (luma > 205) & (chroma < 24)
     ground = flood_from_border(light)
-    # Only ink that touches the cleared ground changes color. Lettering inside a
-    # white banner, and detail sitting on gold, stays dark so it still reads.
-    outer = connected_within(ink_core, ink_core & dilate(ground, 1))
-    fringe = dilate(outer, 1) & ~ink_core & visible & ~ground & (chroma < 40) & (luma < 210)
+    # White paper trapped inside outlines would hide lettering once those
+    # lines are light. Drop it so the garment shows through.
+    enclosed = light & ~ground
+    fringe = dilate(ink_core, 1) & ~ink_core & visible & ~ground & ~enclosed & (chroma < 40) & (luma < 210)
 
     out = rgba.copy()
     out[ground, 3] = 0
     out[ground, :3] = 0
-    out[outer, :3] = ink
-    out[outer, 3] = 255
+    out[enclosed, 3] = 0
+    out[enclosed, :3] = 0
+    out[ink_core, :3] = ink
+    out[ink_core, 3] = 255
     if fringe.any():
         strength = np.clip((210.0 - luma) / (210.0 - 92.0), 0, 1)
         out[fringe, :3] = ink
@@ -155,17 +146,17 @@ def check() -> None:
     if int(out[0, 0, 3]) != 0:
         raise SystemExit("the light ground stayed opaque")
     banner = out[30, 30]
-    if int(banner[3]) < 250 or int(banner[0]) < 230 or abs(int(banner[0]) - int(banner[2])) > 20:
-        raise SystemExit(f"white trapped inside the art was cleared: {banner.tolist()}")
+    if int(banner[3]) != 0:
+        raise SystemExit(f"white paper trapped inside the art stayed opaque: {banner.tolist()}")
     line = out[22, 22]
-    if int(line[3]) < 250 or int(line[0]) < 230:
+    if int(line[3]) < 250 or int(line[0]) < 250 or abs(int(line[0]) - int(line[2])) > 8:
         raise SystemExit(f"dark ink was not recolored for a dark ground: {line.tolist()}")
     rose = out[38, 38]
     if int(rose[0]) < 160 or int(rose[1]) > 80:
         raise SystemExit(f"saturated color was recolored: {rose.tolist()}")
     inner = out[48, 38]
-    if int(inner[3]) < 250 or int(inner[0]) > 80:
-        raise SystemExit(f"ink inside the art was recolored: {inner.tolist()}")
+    if int(inner[3]) < 250 or int(inner[0]) < 250:
+        raise SystemExit(f"black line inside the art stayed dark: {inner.tolist()}")
     gun = out[24, 68]
     if int(gun[3]) < 250 or abs(int(gun[0]) - 150) > 25:
         raise SystemExit(f"mid gray was recolored: {gun.tolist()}")

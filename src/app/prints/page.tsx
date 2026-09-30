@@ -210,10 +210,10 @@ export default function PrintsPage() {
               Gemini paints the transparency grid into the file, or stores the empty area as black.
               Upload that image here. Pressroom clears the background and keeps the drawing sharp.
               A photo app paints the empty area black; that black is not in the file. For a black or
-              dark shirt, use Dark background: the light ground drops out, and the dark lines on
-              that ground take the ink color you pick. Gold, red, and lettering inside a light
-              banner stay. In Printify, open Edit design, delete the old front image, then upload
-              this file.
+              dark shirt, use Dark background: the light ground drops out, including white paper
+              trapped inside the drawing, and every black line becomes the ink color you pick.
+              Gold and red stay. In Printify, open Edit design, delete the old front image, then
+              upload this file.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
