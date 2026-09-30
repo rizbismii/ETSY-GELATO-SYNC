@@ -50,6 +50,26 @@ export async function cleanGeminiPrint(
   return dest.replace(path.join(process.cwd(), "public"), "");
 }
 
+export const DARK_GROUND_INKS = ["white", "cream", "gold", "silver"] as const;
+export type DarkGroundInk = (typeof DARK_GROUND_INKS)[number];
+
+export async function convertDarkGroundPrint(
+  source: string,
+  dest: string,
+  ink: DarkGroundInk,
+  dpi = 300,
+) {
+  await runPython(path.join(process.cwd(), "scripts", "dark-ground-print.py"), [
+    source,
+    dest,
+    "--ink",
+    ink,
+    "--dpi",
+    String(dpi),
+  ]);
+  return dest.replace(path.join(process.cwd(), "public"), "");
+}
+
 export async function cleanEmbroideryPrint(
   source: string,
   dest: string,
