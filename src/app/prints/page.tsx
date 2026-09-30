@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Upload, Wand2 } from "lucide-react";
+import { Contrast, Loader2, Sparkles, Upload, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,8 @@ export default function PrintsPage() {
   const [printHeight, setPrintHeight] = useState("4398");
   const [printDpi, setPrintDpi] = useState("300");
   const [fixedHref, setFixedHref] = useState<string | null>(null);
+  const [darkInk, setDarkInk] = useState("white");
+  const [darkHref, setDarkHref] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -88,6 +90,21 @@ export default function PrintsPage() {
       setFixedHref(href);
       setStamp(Date.now());
       toast.success(`Transparent print ready · ${json.width}×${json.height} at ${json.dpi} DPI`);
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function onDarkGround(file: File) {
+    setBusy("dark");
+    try {
+      const json = (await sendFile("/api/prints/dark-ground", { ink: darkInk }, file)) as { href?: string; ink?: string };
+      const href = `${json.href}?v=${Date.now()}`;
+      setDarkHref(href);
+      setStamp(Date.now());
+      toast.success(`Dark-background print ready · ${json.ink || darkInk} ink`);
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
@@ -192,8 +209,11 @@ export default function PrintsPage() {
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
               Gemini paints the transparency grid into the file, or stores the empty area as black.
               Upload that image here. Pressroom clears the background and keeps the drawing sharp.
-              A photo app paints the empty area black; that black is not in the file. In Printify,
-              open Edit design, delete the old front image, then upload this file.
+              A photo app paints the empty area black; that black is not in the file. For a black or
+              dark shirt, use Dark background: the light ground drops out, and the dark lines on
+              that ground take the ink color you pick. Gold, red, and lettering inside a light
+              banner stay. In Printify, open Edit design, delete the old front image, then upload
+              this file.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
@@ -231,6 +251,41 @@ export default function PrintsPage() {
                 Download transparent print
               </a>
             ) : null}
+            <Label htmlFor="dark-ink" className="text-sm">
+              Ink
+            </Label>
+            <select
+              id="dark-ink"
+              value={darkInk}
+              disabled={Boolean(busy)}
+              onChange={(event) => setDarkInk(event.target.value)}
+              className="h-9 rounded-md border border-border bg-background px-2 text-sm"
+            >
+              <option value="white">White</option>
+              <option value="cream">Cream</option>
+              <option value="gold">Gold</option>
+              <option value="silver">Silver</option>
+            </select>
+            <Label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
+              {busy === "dark" ? <Loader2 className="size-4 animate-spin" /> : <Contrast className="size-4" />}
+              Dark background
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                disabled={Boolean(busy)}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void onDarkGround(file);
+                  event.target.value = "";
+                }}
+              />
+            </Label>
+            {darkHref ? (
+              <a className="text-sm underline" href={darkHref} download={`print-dark-${darkInk}.png`}>
+                Download dark-background print
+              </a>
+            ) : null}
           </div>
           {fixedHref ? (
             <ProductArt
@@ -240,6 +295,16 @@ export default function PrintsPage() {
               kind="print"
               fit="contain"
               className="aspect-square max-w-sm rounded-lg bg-white"
+            />
+          ) : null}
+          {darkHref ? (
+            <ProductArt
+              id={`dark-ground-${stamp}`}
+              title="Dark background print"
+              imageUrl={darkHref}
+              kind="print"
+              fit="contain"
+              className="aspect-square max-w-sm rounded-lg bg-neutral-950"
             />
           ) : null}
         </CardContent>
