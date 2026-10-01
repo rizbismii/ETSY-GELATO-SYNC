@@ -131,6 +131,42 @@ def clean_cutout(rgba: np.ndarray) -> np.ndarray:
     return zero_rgb(out)
 
 
+def clean_white_paper(rgba: np.ndarray) -> np.ndarray:
+    """Drop a white sheet that touches the edge, including one inside a transparent margin.
+
+    Gemini often seals that sheet with a light gray band around luma 242. A pure-white
+    test stops at the band, so the sheet stays opaque. Off-white still counts as paper.
+    White trapped inside the drawing stays, because it does not touch the edge.
+    """
+    luma, chroma = luma_chroma(rgba[:, :, :3])
+    alpha = rgba[:, :, 3]
+    # 232 sits under the gray seal and above a Gemini checker square (about 230).
+    paper = ((luma >= 232) & (chroma <= 16) & (alpha > 0)) | (alpha == 0)
+    reached = flood_from_border(paper)
+    cleared = reached & (alpha > 0) & (luma >= 232) & (chroma <= 16)
+    pale = (alpha > 0) & (luma >= 214) & (chroma <= 18)
+    fringe = np.zeros(cleared.shape, dtype=bool)
+    edge = cleared
+    for _ in range(3):
+        edge = dilate(edge) & pale & ~cleared & ~fringe
+        if not edge.any():
+            break
+        fringe |= edge
+    # A darker drop shadow under the sheet touches the empty margin. Walk only
+    # a few pixels in from that margin so gray inside the drawing stays.
+    outside = alpha == 0
+    shadow = np.zeros(alpha.shape, dtype=bool)
+    for _ in range(8):
+        edge = dilate(outside) & ~outside & (alpha > 0) & (chroma <= 12)
+        if not edge.any():
+            break
+        shadow |= edge
+        outside |= edge
+    out = rgba.copy()
+    out[cleared | fringe | shadow, 3] = 0
+    return zero_rgb(out)
+
+
 def clean_black(rgba: np.ndarray) -> np.ndarray:
     """Remove a solid black matte that touches the edge. Leave dark ink inside the art."""
     luma, chroma = luma_chroma(rgba[:, :, :3])
@@ -213,6 +249,8 @@ def background_kind(rgba: np.ndarray) -> str:
         return "black"
     if edge_chroma < 18 and 150 < edge_luma < 245:
         return "checker"
+    if edge_luma >= 242 and edge_chroma < 18:
+        return "white"
     return "keep"
 
 
@@ -227,6 +265,7 @@ def clean_checker_print(source: Path, dest: Path, width: int, height: int, dpi: 
         cleaned = clean_checker(rgba)
     else:
         cleaned = rgba
+    cleaned = clean_white_paper(cleaned)
     canvas = fit_canvas(cleaned, width, height)
     if kind == "checker":
         # Only the pure checker gray that resampling blended back. Not the drawing.
@@ -289,6 +328,41 @@ def check() -> None:
         raise SystemExit("black matte stayed opaque")
     if int(opened[24, 24, 3]) < 200 or int(opened[24, 24, 0]) < 120:
         raise SystemExit("ink on a black matte was removed")
+
+    sheet = np.zeros((60, 60, 4), dtype=np.uint8)
+    sheet[8:52, 4:56] = (255, 255, 255, 255)
+    sheet[24:36, 24:36] = (20, 90, 180, 255)
+    sheet_source = Path("/tmp/gemini-white-sheet-check.png")
+    sheet_dest = Path("/tmp/gemini-white-sheet-check-out.png")
+    Image.fromarray(sheet, "RGBA").save(sheet_source)
+    clean_checker_print(sheet_source, sheet_dest, 60, 60, 300)
+    knocked = np.array(Image.open(sheet_dest).convert("RGBA"))
+    if int(knocked[0, 0, 3]) != 0 or int(knocked[12, 12, 3]) != 0:
+        raise SystemExit("white paper behind the art stayed opaque")
+    if int(knocked[30, 30, 3]) < 200 or int(knocked[30, 30, 2]) < 120:
+        raise SystemExit("the drawing on the white sheet was removed")
+
+    # A light gray seal (the chemistry upload) blocks a pure-white flood.
+    sealed = np.zeros((80, 80, 4), dtype=np.uint8)
+    sealed[6:74, 6:74] = (255, 255, 255, 255)
+    sealed[14:66, 14:66] = (242, 242, 242, 255)
+    sealed[20:60, 20:60] = (255, 255, 255, 255)
+    sealed[32:48, 32:48] = (20, 90, 180, 255)
+    sealed[38:42, 38:42] = (255, 255, 255, 255)
+    sealed[68:74, 6:74] = (130, 130, 130, 255)
+    sealed_source = Path("/tmp/gemini-sealed-sheet-check.png")
+    sealed_dest = Path("/tmp/gemini-sealed-sheet-check-out.png")
+    Image.fromarray(sealed, "RGBA").save(sealed_source)
+    clean_checker_print(sealed_source, sealed_dest, 80, 80, 300)
+    opened_sheet = np.array(Image.open(sealed_dest).convert("RGBA"))
+    if int(opened_sheet[10, 40, 3]) != 0 or int(opened_sheet[16, 40, 3]) != 0 or int(opened_sheet[24, 24, 3]) != 0:
+        raise SystemExit("a white sheet behind a gray seal stayed opaque")
+    if int(opened_sheet[70, 40, 3]) != 0:
+        raise SystemExit("the gray shadow under the sheet stayed opaque")
+    if int(opened_sheet[40, 40, 3]) < 200:
+        raise SystemExit("white trapped inside the drawing was cleared")
+    if int(opened_sheet[34, 34, 3]) < 200 or int(opened_sheet[34, 34, 2]) < 120:
+        raise SystemExit("the drawing on the sealed sheet was removed")
     print("ok gemini checker knockout")
 
 
