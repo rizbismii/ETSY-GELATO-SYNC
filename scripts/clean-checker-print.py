@@ -155,7 +155,9 @@ def checker_levels(luma: np.ndarray, chroma: np.ndarray) -> tuple[float, float] 
     samples = luma[neutral]
     low = float(np.percentile(samples, 20))
     high = float(np.percentile(samples, 80))
-    if high - low < 12 or low < 140 or high > 250:
+    # The light square is often white, not a second gray. A flat sheet has
+    # almost no gap between the two percentiles and is left alone.
+    if high - low < 12 or low < 140 or high > 255:
         return None
     return low, high
 
@@ -197,8 +199,18 @@ def clean_checker(rgba: np.ndarray) -> np.ndarray:
         shifted[:-period, :] |= squares[period:, :]
         cleared |= squares & shifted
     fringe = dilate(cleared) & ~cleared & (chroma <= 18) & (distance <= 18)
+    # Squares are anti-aliased, so the seam between gray and white is neither level.
+    between = (rgba[:, :, 3] > 0) & (chroma <= 18) & (luma >= low - 10) & (luma <= high + 4)
+    edge = cleared | fringe
+    extra = np.zeros(cleared.shape, dtype=bool)
+    for _ in range(4):
+        nxt = dilate(edge) & between & ~cleared & ~fringe & ~extra
+        if not nxt.any():
+            break
+        extra |= nxt
+        edge = nxt
     out = rgba.copy()
-    out[cleared | fringe, 3] = 0
+    out[cleared | fringe | extra, 3] = 0
     return zero_rgb(out)
 
 
@@ -262,6 +274,22 @@ def check() -> None:
     ink = (alpha > 200) & (red > green + 40) & (red > blue + 40)
     if int(ink.sum()) < 20:
         raise SystemExit("the colored mark was removed with the checker")
+
+    white = np.zeros((72, 72, 3), dtype=np.uint8)
+    yy, xx = np.indices((72, 72))
+    dark = ((yy // 12 + xx // 12) % 2) == 0
+    white[dark] = (186, 186, 186)
+    white[~dark] = (255, 255, 255)
+    white[30:48, 30:48] = (170, 40, 90)
+    white_source = Path("/tmp/gemini-white-checker-check.png")
+    white_dest = Path("/tmp/gemini-white-checker-check-out.png")
+    Image.fromarray(white, "RGB").save(white_source)
+    clean_checker_print(white_source, white_dest, 72, 72, 300)
+    knocked = np.array(Image.open(white_dest).convert("RGBA"))
+    if int(knocked[2, 2, 3]) != 0 or int(knocked[2, 14, 3]) != 0:
+        raise SystemExit("a white and gray checker stayed opaque")
+    if int(knocked[36, 36, 3]) < 200 or int(knocked[36, 36, 0]) < 120:
+        raise SystemExit("the drawing on the white checker was removed")
 
     cut = np.zeros((40, 40, 4), dtype=np.uint8)
     cut[10:30, 10:30] = (20, 140, 70, 255)
