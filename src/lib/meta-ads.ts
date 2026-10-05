@@ -257,6 +257,7 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
     });
     notes.push(`Ad set budget set to ${dailyBudget} ${ping.currency}/day.`);
   } else {
+    await graph(`/${adSetId}`, { method: "POST", body: { status } });
     notes.push(`Ad set created at ${dailyBudget} ${ping.currency}/day for New Zealand and Australia.`);
   }
 
@@ -312,15 +313,13 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
     );
   }
 
-  if (current.campaignId) {
-    await graph(`/${campaignId}`, {
-      method: "POST",
-      body: {
-        status: input.live ? "ACTIVE" : "PAUSED",
-        is_adset_budget_sharing_enabled: false,
-      },
-    });
-  }
+  await graph(`/${campaignId}`, {
+    method: "POST",
+    body: {
+      status,
+      is_adset_budget_sharing_enabled: false,
+    },
+  });
 
   const saved = await saveMetaCampaign({
     campaignId,
