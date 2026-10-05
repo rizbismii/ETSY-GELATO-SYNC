@@ -5,6 +5,7 @@ import {
   printifyCentsToPrice,
   printifyDraftToProductSetInput,
   printifyProductToShopifyDraft,
+  printifyRetailCentsToShopPrice,
 } from "./printify-shopify.ts";
 
 const crewneck = {
@@ -43,6 +44,14 @@ const crewneck = {
   ],
 };
 
+test("Printify USD retail becomes NZD unless it is already a catalog price", () => {
+  assert.equal(printifyRetailCentsToShopPrice(6899, "20187443075565716851"), "115.21");
+  assert.equal(printifyRetailCentsToShopPrice(2199, "11465104666991040209"), "36.72");
+  assert.equal(printifyRetailCentsToShopPrice(14599, "59514511148962208200"), "145.99");
+  assert.equal(printifyRetailCentsToShopPrice(3599, "live_poster"), "35.99");
+  assert.equal(printifyRetailCentsToShopPrice(7599, "live_tee_bloom-white-s"), "75.99");
+});
+
 test("Printify option names match Shopify Color and Size", () => {
   assert.equal(normalizePrintifyOptionName("Colors"), "Color");
   assert.equal(normalizePrintifyOptionName("Colours"), "Color");
@@ -65,7 +74,7 @@ test("enabled Printify variants become Shopify name, description, mockups, and m
   assert.deepEqual(draft.productOptions[1].values.map((value) => value.name), ["S", "M"]);
   assert.equal(draft.variants.length, 2);
   assert.equal(draft.variants[0].sku, "SKU-W-S");
-  assert.equal(draft.variants[0].price, "29.99");
+  assert.equal(draft.variants[0].price, "50.08");
   assert.equal(draft.variants[0].inventoryPolicy, "CONTINUE");
   assert.equal(draft.variants[0].tracked, false);
   assert.equal(draft.variants[0].inStock, true);
@@ -106,7 +115,7 @@ test("a variant title is the only option when Printify sends no colour or size l
   });
   assert.equal(draft.productOptions[0].name, "Title");
   assert.equal(draft.variants[0].optionValues[0].name, "12×16 in");
-  assert.equal(draft.variants[0].price, "15.00");
+  assert.equal(draft.variants[0].price, "25.05");
   assert.equal(draft.variants[0].sku, "printify-poster-1-9");
   assert.match(draft.descriptionHtml, /<p>Ready\.<\/p>/);
   assert.doesNotMatch(draft.descriptionHtml, /script/i);
