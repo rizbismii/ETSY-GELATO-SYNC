@@ -11,6 +11,7 @@ import {
   META_ADS_DAILY_BUDGET_DEFAULT,
   META_ADS_IMAGE_URL,
   META_ADS_LANDING_URL,
+  metaAdSetRegulation,
   metaAdStorySpec,
   metaAdTargeting,
   metaPurchasePayload,
@@ -242,6 +243,7 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
           optimization_goal: "LINK_CLICKS",
           bid_strategy: "LOWEST_COST_WITHOUT_CAP",
           destination_type: "WEBSITE",
+          ...metaAdSetRegulation(),
           targeting,
           status: "PAUSED",
         },
@@ -250,7 +252,12 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
   if (current.adSetId) {
     await graph(`/${adSetId}`, {
       method: "POST",
-      body: { daily_budget: dailyBudgetToMinor(dailyBudget), targeting, status },
+      body: {
+        daily_budget: dailyBudgetToMinor(dailyBudget),
+        ...metaAdSetRegulation(),
+        targeting,
+        status,
+      },
     });
     notes.push(`Ad set budget set to ${dailyBudget} ${ping.currency}/day.`);
   } else {

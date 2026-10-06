@@ -25,6 +25,7 @@ import {
   META_ADS_IMAGE_URL,
   META_ADS_LANDING_URL,
   META_ADS_SHOP_URL,
+  metaAdSetRegulation,
   metaAdStorySpec,
   metaAdTargeting,
   metaPixelSnippet,
@@ -174,6 +175,10 @@ test("ad creative uses the Fern Star bag photo and the shipping countries", () =
   assert.match(source, /metaAdTargeting/);
   assert.match(source, /creativeImageUrl !== META_ADS_IMAGE_URL/);
   assert.match(source, /creative: \{ creative_id: creativeId \}/);
+  assert.match(source, /metaAdSetRegulation\(\)/);
+  assert.equal(metaAdSetRegulation().dsa_beneficiary, "Fernora");
+  assert.equal(metaAdSetRegulation().dsa_payor, "Fernora");
+  assert.deepEqual(metaAdSetRegulation().regional_regulated_categories, ["SINGAPORE_UNIVERSAL"]);
   assert.doesNotMatch(source, /advantage_audience: 1/);
   const privacy = readFileSync(new URL("./shop-policies.ts", import.meta.url), "utf8");
   assert.match(privacy, /Meta Pixel on fernora\.nz/);
