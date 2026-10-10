@@ -164,12 +164,8 @@ test("ad creative uses the Fern Star bag photo and the shipping countries", () =
   assert.equal(targeting.targeting_automation.advantage_audience, 0);
   assert.equal(targeting.age_min, 25);
   assert.equal(targeting.age_max, 65);
-  assert.equal(META_ADS_COUNTRIES.length, 49);
-  assert.ok(META_ADS_COUNTRIES.includes("NZ"));
-  assert.ok(META_ADS_COUNTRIES.includes("AU"));
-  assert.ok(META_ADS_COUNTRIES.includes("US"));
-  assert.ok(META_ADS_COUNTRIES.includes("GB"));
-  assert.ok(META_ADS_COUNTRIES.includes("DE"));
+  assert.deepEqual([...META_ADS_COUNTRIES], ["NZ", "AU"]);
+  assert.equal((META_ADS_COUNTRIES as readonly string[]).includes("PE"), false);
   const source = readFileSync(new URL("./meta-ads.ts", import.meta.url), "utf8");
   assert.match(source, /metaAdStorySpec/);
   assert.match(source, /metaAdTargeting/);
@@ -178,7 +174,7 @@ test("ad creative uses the Fern Star bag photo and the shipping countries", () =
   assert.match(source, /metaAdSetRegulation\(\)/);
   assert.equal(metaAdSetRegulation().dsa_beneficiary, "Fernora");
   assert.equal(metaAdSetRegulation().dsa_payor, "Fernora");
-  assert.deepEqual(metaAdSetRegulation().regional_regulated_categories, ["SINGAPORE_UNIVERSAL"]);
+  assert.equal(metaAdSetRegulation().regional_regulated_categories, undefined);
   assert.doesNotMatch(source, /advantage_audience: 1/);
   const privacy = readFileSync(new URL("./shop-policies.ts", import.meta.url), "utf8");
   assert.match(privacy, /Meta Pixel on fernora\.nz/);

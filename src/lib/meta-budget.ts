@@ -1,5 +1,4 @@
 import crypto from "node:crypto";
-import { GELATO_COUNTRY_CODES } from "./gelato-countries.ts";
 
 /** Shop home. Purchase events stay on this URL. */
 export const META_ADS_SHOP_URL = "https://fernora.nz";
@@ -12,8 +11,11 @@ export const META_ADS_IMAGE_URL =
 export const META_ADS_CAMPAIGN_NAME = "Fernora · Pressroom";
 export const META_ADS_ADSET_NAME = "Fernora storefront · NZ AU";
 export const META_ADS_AD_NAME = "Fernora · fernora.nz";
-/** Countries fernora.nz already ships to. Same list as checkout. */
-export const META_ADS_COUNTRIES = GELATO_COUNTRY_CODES;
+/**
+ * New Zealand and Australia only. Wider shipping countries, especially Peru,
+ * bought cheap clicks and no sales. Add a country back only after it is checked.
+ */
+export const META_ADS_COUNTRIES = ["NZ", "AU"] as const;
 /** Shown on EU ads: the brand the ad promotes, and the business that pays. */
 export const META_ADS_DSA_BENEFICIARY = "Fernora";
 export const META_ADS_DSA_PAYOR = "Fernora";
@@ -21,15 +23,18 @@ export const META_ADS_DSA_PAYOR = "Fernora";
 export const META_ADS_BUSINESS_ID = "1613821157193235";
 
 export function metaAdSetRegulation() {
-  return {
+  const body: Record<string, unknown> = {
     dsa_beneficiary: META_ADS_DSA_BENEFICIARY,
     dsa_payor: META_ADS_DSA_PAYOR,
-    regional_regulated_categories: ["SINGAPORE_UNIVERSAL"],
-    regional_regulation_identities: {
+  };
+  if ((META_ADS_COUNTRIES as readonly string[]).includes("SG")) {
+    body.regional_regulated_categories = ["SINGAPORE_UNIVERSAL"];
+    body.regional_regulation_identities = {
       singapore_universal_beneficiary: META_ADS_BUSINESS_ID,
       singapore_universal_payer: META_ADS_BUSINESS_ID,
-    },
-  };
+    };
+  }
+  return body;
 }
 /** Default daily cap in the ad-account currency (whole units). */
 export const META_ADS_DAILY_BUDGET_DEFAULT = 5;
