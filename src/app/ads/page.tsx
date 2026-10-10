@@ -395,7 +395,7 @@ export default function AdsPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-xs leading-5 text-muted-foreground">
-              Traffic campaign to {data.landingUrl}, ages 25–65 in New Zealand and Australia. Paid
+              Traffic campaign to {data.landingUrl}, ages 25–65 in New Zealand, Australia, the United States, and Canada. Paid
               Shopify orders send a Purchase event back to the Pixel from Pressroom.
             </p>
             <div className="space-y-1">

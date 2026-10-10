@@ -164,7 +164,7 @@ test("ad creative uses the Fern Star bag photo and the shipping countries", () =
   assert.equal(targeting.targeting_automation.advantage_audience, 0);
   assert.equal(targeting.age_min, 25);
   assert.equal(targeting.age_max, 65);
-  assert.deepEqual([...META_ADS_COUNTRIES], ["NZ", "AU"]);
+  assert.deepEqual([...META_ADS_COUNTRIES], ["NZ", "AU", "US", "CA"]);
   assert.equal((META_ADS_COUNTRIES as readonly string[]).includes("PE"), false);
   const source = readFileSync(new URL("./meta-ads.ts", import.meta.url), "utf8");
   assert.match(source, /metaAdStorySpec/);

@@ -261,7 +261,7 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
     });
     notes.push(`Ad set budget set to ${dailyBudget} ${ping.currency}/day.`);
   } else {
-    notes.push(`Ad set created at ${dailyBudget} ${ping.currency}/day for New Zealand and Australia.`);
+    notes.push(`Ad set created at ${dailyBudget} ${ping.currency}/day for New Zealand, Australia, the United States, and Canada.`);
   }
 
   let creativeId = current.creativeId;

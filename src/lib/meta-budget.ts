@@ -12,10 +12,11 @@ export const META_ADS_CAMPAIGN_NAME = "Fernora · Pressroom";
 export const META_ADS_ADSET_NAME = "Fernora storefront · NZ AU";
 export const META_ADS_AD_NAME = "Fernora · fernora.nz";
 /**
- * New Zealand and Australia only. Wider shipping countries, especially Peru,
- * bought cheap clicks and no sales. Add a country back only after it is checked.
+ * New Zealand, Australia, the United States, and Canada.
+ * Peru and the other cheap-click countries stay off. Singapore stays off
+ * until its beneficiary step is confirmed.
  */
-export const META_ADS_COUNTRIES = ["NZ", "AU"] as const;
+export const META_ADS_COUNTRIES = ["NZ", "AU", "US", "CA"] as const;
 /** Shown on EU ads: the brand the ad promotes, and the business that pays. */
 export const META_ADS_DSA_BENEFICIARY = "Fernora";
 export const META_ADS_DSA_PAYOR = "Fernora";
