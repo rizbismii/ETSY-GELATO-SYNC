@@ -11,7 +11,9 @@ import {
   META_ADS_DAILY_BUDGET_DEFAULT,
   META_ADS_IMAGE_URL,
   META_ADS_LANDING_URL,
+  metaAdSetRegulation,
   metaAdStorySpec,
+  metaAdTargeting,
   metaPurchasePayload,
   normalizeAdAccountId,
   normalizePixelId,
@@ -219,11 +221,7 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
     ).id;
   notes.push(current.campaignId ? "Campaign already on this ad account." : "Created the Fernora · Pressroom campaign.");
 
-  const targeting = {
-    geo_locations: { countries: ["NZ", "AU"] },
-    age_min: 25,
-    age_max: 65,
-  };
+  const targeting = metaAdTargeting();
   const existingAdSets = await graph<{ data?: Array<{ id: string; name?: string; campaign_id?: string }> }>(
     `/${accountId}/adsets`,
     { search: { fields: "id,name,campaign_id", limit: "25" } },
@@ -245,6 +243,7 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
           optimization_goal: "LINK_CLICKS",
           bid_strategy: "LOWEST_COST_WITHOUT_CAP",
           destination_type: "WEBSITE",
+          ...metaAdSetRegulation(),
           targeting,
           status: "PAUSED",
         },
@@ -253,11 +252,16 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
   if (current.adSetId) {
     await graph(`/${adSetId}`, {
       method: "POST",
-      body: { daily_budget: dailyBudgetToMinor(dailyBudget), targeting, status },
+      body: {
+        daily_budget: dailyBudgetToMinor(dailyBudget),
+        ...metaAdSetRegulation(),
+        targeting,
+        status,
+      },
     });
     notes.push(`Ad set budget set to ${dailyBudget} ${ping.currency}/day.`);
   } else {
-    notes.push(`Ad set created at ${dailyBudget} ${ping.currency}/day for New Zealand and Australia.`);
+    notes.push(`Ad set created at ${dailyBudget} ${ping.currency}/day for the countries fernora.nz ships to.`);
   }
 
   let creativeId = current.creativeId;
@@ -265,8 +269,9 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
   let creativeImageUrl = current.creativeImageUrl;
   if (ping.pageId) {
     try {
-      const needsPoster = creativeImageUrl !== META_ADS_IMAGE_URL;
-      if (!adId && (!creativeId || needsPoster)) {
+      const storyChanged =
+        creativeImageUrl !== META_ADS_IMAGE_URL || current.landingUrl !== META_ADS_LANDING_URL;
+      if (!creativeId || storyChanged) {
         const created = await graph<{ id: string }>(`/${accountId}/adcreatives`, {
           method: "POST",
           body: {
@@ -281,8 +286,8 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
         creativeImageUrl = META_ADS_IMAGE_URL;
         notes.push(
           ping.instagramUserId
-            ? "Ad creative uses the fern poster and points shoppers to fernora.nz on Facebook and Instagram."
-            : "Ad creative uses the fern poster and points shoppers to fernora.nz.",
+            ? "Ad creative uses the Fern Star bag photo on Facebook and Instagram."
+            : "Ad creative uses the Fern Star bag photo.",
         );
       }
       if (!adId && creativeId) {
@@ -297,6 +302,12 @@ export async function upsertMetaCampaign(input: { dailyBudget?: number; live?: b
         });
         adId = created.id;
         notes.push("Meta ad created and linked to Pressroom.");
+      } else if (adId && storyChanged && creativeId) {
+        await graph(`/${adId}`, {
+          method: "POST",
+          body: { creative: { creative_id: creativeId }, status },
+        });
+        notes.push("Live ad now uses the Fern Star bag photo.");
       } else if (adId) {
         await graph(`/${adId}`, { method: "POST", body: { status } });
       }

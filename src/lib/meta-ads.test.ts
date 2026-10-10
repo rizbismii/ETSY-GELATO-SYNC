@@ -21,9 +21,13 @@ import {
   META_ADS_DAILY_BUDGET_DEFAULT,
   META_ADS_DAILY_BUDGET_MAX,
   META_ADS_DAILY_BUDGET_MIN,
+  META_ADS_COUNTRIES,
   META_ADS_IMAGE_URL,
   META_ADS_LANDING_URL,
+  META_ADS_SHOP_URL,
+  metaAdSetRegulation,
   metaAdStorySpec,
+  metaAdTargeting,
   metaPixelSnippet,
   metaPurchasePayload,
   normalizeAdAccountId,
@@ -45,7 +49,8 @@ test("Meta daily budget stays on a low cap", () => {
   assert.equal(clampMetaDailyBudget(1), META_ADS_DAILY_BUDGET_MIN);
   assert.equal(clampMetaDailyBudget(99), META_ADS_DAILY_BUDGET_MAX);
   assert.equal(dailyBudgetToMinor(5), 500);
-  assert.equal(META_ADS_LANDING_URL, "https://fernora.nz");
+  assert.equal(META_ADS_SHOP_URL, "https://fernora.nz");
+  assert.match(META_ADS_LANDING_URL, /^https:\/\/fernora\.nz\/products\/copy-of-purple-floral/);
 });
 
 test("Etsy Offsite Ads stay opted out and CPC Ads are not activated", () => {
@@ -146,17 +151,35 @@ test("pickMetaIds keeps saved Fernora IDs and fills Instagram from the Page", ()
   assert.equal(picked.instagramUserId, "ig_1");
 });
 
-test("paused ad creative uses the fern poster, not a text-only link", () => {
+test("ad creative uses the Fern Star bag photo and the shipping countries", () => {
   const story = metaAdStorySpec({ pageId: "123", instagramUserId: "ig_9" });
-  const link = story.link_data as { picture?: string; link?: string };
+  const link = story.link_data as { picture?: string; link?: string; name?: string };
   assert.equal(link.picture, META_ADS_IMAGE_URL);
-  assert.equal(link.link, "https://fernora.nz");
-  assert.match(META_ADS_IMAGE_URL, /^https:\/\/fernora\.nz\/cdn\/shop\/files\/catalog-poster\.png$/);
+  assert.equal(link.link, META_ADS_LANDING_URL);
+  assert.equal(link.name, "Fern Star Waterproof Travel Bag");
+  assert.match(META_ADS_IMAGE_URL, /^https:\/\/fernora\.nz\/cdn\/shop\/files\/1826055067722872459_2048\.jpg$/);
   assert.equal(story.instagram_user_id, "ig_9");
   assert.equal(metaAdStorySpec({ pageId: "123" }).instagram_user_id, undefined);
+  const targeting = metaAdTargeting();
+  assert.equal(targeting.targeting_automation.advantage_audience, 0);
+  assert.equal(targeting.age_min, 25);
+  assert.equal(targeting.age_max, 65);
+  assert.equal(META_ADS_COUNTRIES.length, 49);
+  assert.ok(META_ADS_COUNTRIES.includes("NZ"));
+  assert.ok(META_ADS_COUNTRIES.includes("AU"));
+  assert.ok(META_ADS_COUNTRIES.includes("US"));
+  assert.ok(META_ADS_COUNTRIES.includes("GB"));
+  assert.ok(META_ADS_COUNTRIES.includes("DE"));
   const source = readFileSync(new URL("./meta-ads.ts", import.meta.url), "utf8");
   assert.match(source, /metaAdStorySpec/);
+  assert.match(source, /metaAdTargeting/);
   assert.match(source, /creativeImageUrl !== META_ADS_IMAGE_URL/);
+  assert.match(source, /creative: \{ creative_id: creativeId \}/);
+  assert.match(source, /metaAdSetRegulation\(\)/);
+  assert.equal(metaAdSetRegulation().dsa_beneficiary, "Fernora");
+  assert.equal(metaAdSetRegulation().dsa_payor, "Fernora");
+  assert.deepEqual(metaAdSetRegulation().regional_regulated_categories, ["SINGAPORE_UNIVERSAL"]);
+  assert.doesNotMatch(source, /advantage_audience: 1/);
   const privacy = readFileSync(new URL("./shop-policies.ts", import.meta.url), "utf8");
   assert.match(privacy, /Meta Pixel on fernora\.nz/);
   assert.doesNotMatch(privacy, /add analytics later/);

@@ -1,11 +1,36 @@
 import crypto from "node:crypto";
+import { GELATO_COUNTRY_CODES } from "./gelato-countries.ts";
 
-export const META_ADS_LANDING_URL = "https://fernora.nz";
-/** Public fern poster already on the shop. Meta saves this into the ad account image library. */
-export const META_ADS_IMAGE_URL = "https://fernora.nz/cdn/shop/files/catalog-poster.png";
+/** Shop home. Purchase events stay on this URL. */
+export const META_ADS_SHOP_URL = "https://fernora.nz";
+/** Click destination: the Fern Star bag already published on the shop. */
+export const META_ADS_LANDING_URL =
+  "https://fernora.nz/products/copy-of-purple-floral-waterproof-travel-bag-leakproof-duffle-with-vibrant-orchid-lily-print";
+/** Clear square product photo from fernora.nz. Meta saves this into the ad account image library. */
+export const META_ADS_IMAGE_URL =
+  "https://fernora.nz/cdn/shop/files/1826055067722872459_2048.jpg";
 export const META_ADS_CAMPAIGN_NAME = "Fernora · Pressroom";
 export const META_ADS_ADSET_NAME = "Fernora storefront · NZ AU";
 export const META_ADS_AD_NAME = "Fernora · fernora.nz";
+/** Countries fernora.nz already ships to. Same list as checkout. */
+export const META_ADS_COUNTRIES = GELATO_COUNTRY_CODES;
+/** Shown on EU ads: the brand the ad promotes, and the business that pays. */
+export const META_ADS_DSA_BENEFICIARY = "Fernora";
+export const META_ADS_DSA_PAYOR = "Fernora";
+/** Verified Fernora business. Singapore ads must name this beneficiary and payer. */
+export const META_ADS_BUSINESS_ID = "1613821157193235";
+
+export function metaAdSetRegulation() {
+  return {
+    dsa_beneficiary: META_ADS_DSA_BENEFICIARY,
+    dsa_payor: META_ADS_DSA_PAYOR,
+    regional_regulated_categories: ["SINGAPORE_UNIVERSAL"],
+    regional_regulation_identities: {
+      singapore_universal_beneficiary: META_ADS_BUSINESS_ID,
+      singapore_universal_payer: META_ADS_BUSINESS_ID,
+    },
+  };
+}
 /** Default daily cap in the ad-account currency (whole units). */
 export const META_ADS_DAILY_BUDGET_DEFAULT = 5;
 export const META_ADS_DAILY_BUDGET_MIN = 3;
@@ -42,14 +67,24 @@ export type MetaGraphAssets = {
   pixels: Array<{ id: string; name?: string }>;
 };
 
+export function metaAdTargeting() {
+  return {
+    geo_locations: { countries: [...META_ADS_COUNTRIES] },
+    age_min: 25,
+    age_max: 65,
+    // Keep the saved country list. Do not hand the audience to Advantage+.
+    targeting_automation: { advantage_audience: 0 },
+  };
+}
+
 export function metaAdStorySpec(input: { pageId: string; instagramUserId?: string }) {
   const storySpec: Record<string, unknown> = {
     page_id: input.pageId,
     link_data: {
-      message: "Original botanicals for considered homes.",
+      message: "Fern Star waterproof travel bag, with ferns, stars, and hearts.",
       link: META_ADS_LANDING_URL,
-      name: "Fernora",
-      description: "Prints, apparel, and objects — priced in your currency.",
+      name: "Fern Star Waterproof Travel Bag",
+      description: "Made to order. Checkout ships to the country you choose.",
       picture: META_ADS_IMAGE_URL,
       call_to_action: { type: "SHOP_NOW", value: { link: META_ADS_LANDING_URL } },
     },
@@ -125,7 +160,7 @@ export function metaPurchasePayload(input: {
         event_time: input.eventTime || Math.floor(Date.now() / 1000),
         event_id: input.eventId,
         action_source: "website",
-        event_source_url: META_ADS_LANDING_URL,
+        event_source_url: META_ADS_SHOP_URL,
         user_data: {
           em: hashed ? [hashed] : [],
         },
