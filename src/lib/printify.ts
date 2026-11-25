@@ -391,7 +391,7 @@ function wantedVariantIds(spec: PrintifyStarterSpec) {
   return printifyVariantsWithIds(spec).map((variant) => variant.id);
 }
 
-function sameWantedVariants(spec: PrintifyStarterSpec, product: PrintifyProduct, title: string) {
+function sameWantedVariants(spec: PrintifyStarterSpec, product: PrintifyShopProduct, title: string) {
   if ((product.title || "").trim() !== title.trim()) return false;
   const enabled = new Set(printifyEnabledVariantIds(product));
   const wanted = wantedVariantIds(spec);
