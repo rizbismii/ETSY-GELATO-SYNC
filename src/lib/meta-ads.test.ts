@@ -115,7 +115,10 @@ test("campaign create keeps a hard ad-set cap and does not share budget", () => 
 });
 
 test("Ads page uses the existing Fernora Pressroom app after the 48-hour wait", () => {
-  const page = readFileSync(new URL("../app/ads/page.tsx", import.meta.url), "utf8");
+  const page = readFileSync(new URL("../app/ads/ads-client.tsx", import.meta.url), "utf8");
+  const shell = readFileSync(new URL("../app/ads/page.tsx", import.meta.url), "utf8");
+  assert.match(shell, /getAdsDesk/);
+  assert.match(shell, /AdsClient/);
   const app = readFileSync(new URL("./meta-app.ts", import.meta.url), "utf8");
   assert.match(app, new RegExp(FERNORA_META_APP_ID));
   assert.match(app, new RegExp(FERNORA_META_APP_NAME));
