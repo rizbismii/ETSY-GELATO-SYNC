@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Contrast, Loader2, Sparkles, Upload, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -198,7 +199,11 @@ export default function PrintsPage() {
         <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
           Generate, edit, or upload the file Printify embroidered or prints. Product photos stay
           official Printify colour mockups — {data.colors.line}. Do not paste homemade black or navy
-          composites.
+          composites.{" "}
+          <Link href="/prints/daily" className="underline">
+            Daily batch
+          </Link>{" "}
+          prepares today’s seasonal designs for a glance.
         </p>
       </div>
 

@@ -13,6 +13,7 @@ import {
   Menu,
   Store,
   Megaphone,
+  CalendarDays,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,19 +29,30 @@ const links = [
   { href: "/orders", label: "Orders", icon: ShoppingBag },
   { href: "/listings", label: "Catalog", icon: Package },
   { href: "/prints", label: "Print templates", icon: ImageIcon },
+  { href: "/prints/daily", label: "Daily batch", icon: CalendarDays },
   { href: "/ads", label: "Ads", icon: Megaphone },
   { href: "/revenue", label: "Revenue", icon: Wallet },
   { href: "/connections", label: "Connections", icon: Plug },
   { href: "/shop", label: "Fernora shop", icon: Store },
 ];
 
+function isCurrent(pathname: string, href: string) {
+  const matches = links.filter((link) =>
+    link.href === "/"
+      ? pathname === "/"
+      : pathname === link.href || pathname.startsWith(`${link.href}/`),
+  );
+  if (!matches.length) return false;
+  const best = matches.reduce((winner, link) => (link.href.length > winner.href.length ? link : winner));
+  return best.href === href;
+}
+
 function Nav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   return (
     <nav className="flex flex-col gap-1">
       {links.map((link) => {
-        const active =
-          link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
+        const active = isCurrent(pathname, link.href);
         const Icon = link.icon;
         return (
           <Link
