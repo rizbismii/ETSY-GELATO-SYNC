@@ -207,8 +207,9 @@ export default function PrintsPage() {
           <div>
             <p className="font-medium">Fix a Gemini image</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Gemini paints the transparency grid into the file, or stores the empty area as black.
-              Upload that image here. Pressroom clears the background and keeps the drawing sharp.
+              Gemini paints the transparency grid into the file, stores the empty area as black, or
+              leaves a white sheet behind the art. Upload that image here. Pressroom clears that
+              ground, keeps the drawing, and the preview checker shows the transparent area.
               A photo app paints the empty area black; that black is not in the file. For a black or
               dark shirt, use Dark background: the light ground drops out, including white paper
               trapped inside the drawing, and every black line becomes the ink color you pick.
@@ -294,7 +295,7 @@ export default function PrintsPage() {
               imageUrl={fixedHref}
               kind="print"
               fit="contain"
-              className="aspect-square max-w-sm rounded-lg bg-white"
+              className="aspect-square max-w-sm rounded-lg"
             />
           ) : null}
           {darkHref ? (
