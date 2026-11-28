@@ -829,6 +829,29 @@ export async function publishableToOnlineStore(id: string, publicationId?: strin
   }
 }
 
+/** A variant with no delivery profile is in stock at Printify and Sold out on fernora.nz. */
+export async function assignVariantsToDefaultDeliveryProfile(variantIds: string[]) {
+  const ids = [...new Set(variantIds.filter(Boolean))];
+  if (!ids.length) return "No variants to add to the shipping profile.";
+  const data = await shopifyGraphql<{
+    deliveryProfiles: { nodes: Array<{ id: string; name: string; default?: boolean | null }> };
+  }>(`{ deliveryProfiles(first: 25) { nodes { id name default } } }`);
+  const profile = data.deliveryProfiles.nodes.find((row) => row.default) || data.deliveryProfiles.nodes[0];
+  if (!profile) return "Shopify has no shipping profile, so the storefront can show Sold out.";
+  const updated = await shopifyGraphql<{
+    deliveryProfileUpdate: { userErrors: Array<{ message: string }> };
+  }>(
+    `mutation ($id: ID!, $profile: DeliveryProfileInput!) {
+      deliveryProfileUpdate(id: $id, profile: $profile) { userErrors { field message } }
+    }`,
+    { id: profile.id, profile: { variantsToAssociate: ids } },
+  );
+  if (updated.deliveryProfileUpdate.userErrors.length) {
+    throw new Error(updated.deliveryProfileUpdate.userErrors.map((row) => row.message).join("; "));
+  }
+  return `Shipping profile ${profile.name} covers ${ids.length} variant${ids.length === 1 ? "" : "s"}.`;
+}
+
 function shopifyProductHtml(product: ReturnType<typeof fernoraCatalog>[number]) {
   const lanes = product.lanes
     .map(

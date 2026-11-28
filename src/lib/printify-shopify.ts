@@ -1,4 +1,6 @@
+import { catalogPrice, PRINTIFY_PRINT_NZD, type PrintifyCostKey } from "./printify-costs.ts";
 import type { PrintifyShopProduct } from "./printify.ts";
+import { usdToNzd } from "./shop-currency.ts";
 
 const FERNORA_VENDOR = "Fernora";
 const VARIANT_CAP = 100;
@@ -69,6 +71,21 @@ export function printifyCentsToPrice(cents: number) {
   const dollars = Math.trunc(rounded / 100);
   const remainder = Math.abs(rounded % 100);
   return `${dollars}.${String(remainder).padStart(2, "0")}`;
+}
+
+/**
+ * Printify always labels retail USD. Pressroom catalog prices are already NZD
+ * in that field (the website number). Every other Printify retail price is
+ * real USD and has to be converted before it is stored on the NZD shop.
+ */
+const CATALOG_SHOP_PRICES = new Set(
+  (Object.keys(PRINTIFY_PRINT_NZD) as PrintifyCostKey[]).map((key) => catalogPrice(key).toFixed(2)),
+);
+
+export function printifyRetailCentsToShopPrice(cents: number, sku?: string) {
+  const labeled = printifyCentsToPrice(cents);
+  if ((sku || "").startsWith("live_") || CATALOG_SHOP_PRICES.has(labeled)) return labeled;
+  return usdToNzd(cents / 100).toFixed(2);
 }
 
 function descriptionHtml(description?: string) {
@@ -198,6 +215,7 @@ export function printifyProductToShopifyDraft(product: PrintifyShopProduct): Pri
       bump("price");
       continue;
     }
+    const sku = (variant.sku || "").trim() || `printify-${product.id}-${variant.id}`;
     const optionValues = valuesForVariant(product, variant);
     if (!optionValues?.length) {
       bump("options");
@@ -205,8 +223,8 @@ export function printifyProductToShopifyDraft(product: PrintifyShopProduct): Pri
     }
     resolved.push({
       id: variant.id,
-      sku: (variant.sku || "").trim() || `printify-${product.id}-${variant.id}`,
-      price: printifyCentsToPrice(variant.price),
+      sku,
+      price: printifyRetailCentsToShopPrice(variant.price, sku),
       isDefault: Boolean(variant.is_default),
       optionValues,
       sourceIndex,
