@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ProductArt } from "@/components/product-art";
+import { DailyBatch } from "@/app/prints/daily-batch";
 import { api } from "@/lib/api";
 
 type Template = {
@@ -179,17 +180,6 @@ export default function PrintsPage() {
     }
   }
 
-  if (error) {
-    return <p className="text-sm text-destructive">{error}</p>;
-  }
-  if (!data || !current) {
-    return (
-      <p className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="size-4 animate-spin" /> Loading print templates
-      </p>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div>
@@ -197,11 +187,21 @@ export default function PrintsPage() {
         <h1 className="font-heading text-4xl">Print templates</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
           Generate, edit, or upload the file Printify embroidered or prints. Product photos stay
-          official Printify colour mockups — {data.colors.line}. Do not paste homemade black or navy
-          composites.
+          official Printify colour mockups{data ? ` — ${data.colors.line}` : ""}. Do not paste homemade
+          black or navy composites. The daily batch is on this page.
         </p>
       </div>
 
+      <DailyBatch />
+
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {!error && (!data || !current) ? (
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" /> Loading print templates
+        </p>
+      ) : null}
+      {data && current ? (
+      <>
       <Card>
         <CardContent className="space-y-4 p-4">
           <div>
@@ -499,6 +499,8 @@ export default function PrintsPage() {
           </div>
         </div>
       </div>
+      </>
+      ) : null}
     </div>
   );
 }
