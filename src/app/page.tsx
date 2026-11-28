@@ -120,8 +120,8 @@ export default function DeskPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" nativeButton={false} render={<Link href="/prints/daily" />}>
-            Daily batch
+          <Button variant="outline" nativeButton={false} render={<Link href="/prints" />}>
+            Prints
           </Button>
           <Button variant="outline" nativeButton={false} render={<Link href="/connections" />}>
             {sample ? "Connect live shops" : "Connection status"}

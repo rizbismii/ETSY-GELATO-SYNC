@@ -292,3 +292,33 @@ export function dailyBatchLabel(date = new Date()) {
     timeZone: "Pacific/Auckland",
   }).format(date);
 }
+
+export type ReviewMark = { glanced: boolean; clean: boolean };
+
+export function designsForThemes(rows: PreparedDesign[], themes: readonly DailyTheme[]) {
+  const allowed = new Set(themes);
+  return rows.filter((row) => allowed.has(row.theme));
+}
+
+/** Clean is only kept after a glance. Turning glance off clears clean. */
+export function markGlanced(marks: Record<string, ReviewMark>, id: string, glanced: boolean) {
+  const current = marks[id] || { glanced: false, clean: false };
+  return {
+    ...marks,
+    [id]: { glanced, clean: glanced ? current.clean : false },
+  };
+}
+
+export function markClean(marks: Record<string, ReviewMark>, id: string, clean: boolean) {
+  const current = marks[id];
+  if (!current?.glanced) return marks;
+  return { ...marks, [id]: { glanced: true, clean } };
+}
+
+/** Push set: glanced and marked clean, and still in the batch being reviewed. */
+export function designsToSave(
+  rows: PreparedDesign[],
+  reviews: Record<string, { glanced?: boolean; clean?: boolean } | undefined>,
+) {
+  return rows.filter((row) => reviews[row.id]?.glanced === true && reviews[row.id]?.clean === true);
+}

@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import { FERNORA_PRINTIFY_STARTERS } from "./printify-products.ts";
+import { mkdtemp, writeFile, mkdir } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import {
   DAILY_THEMES,
   DAILY_WORD_OPTIONS,
@@ -9,9 +12,13 @@ import {
   FERNORA_COLLAR_PRINT,
   dailyBatchLabel,
   dailyBatchSummary,
+  designsToSave,
+  markClean,
+  markGlanced,
   phraseForTheme,
   prepareDailyBatch,
 } from "./daily-batch.ts";
+import { clearDeskBatch, resolveDeskBatchFile, saveDeskBatch } from "./daily-batch-desk.ts";
 
 const allLines = DAILY_THEMES.flatMap((theme) => DAILY_WORD_OPTIONS[theme].map((row) => row.line));
 
@@ -92,16 +99,56 @@ test("every tee includes the Fernora collar logo and other blanks do not", () =>
   }
 });
 
-test("the batch module and page do not publish or read credentials", () => {
+test("push keeps only designs that were glanced and marked clean", () => {
+  const rows = prepareDailyBatch();
+  const first = rows[0];
+  const second = rows[1];
+  let marks = markGlanced({}, first.id, true);
+  marks = markClean(marks, first.id, true);
+  marks = markClean(marks, second.id, true);
+  assert.equal(marks[second.id], undefined);
+  marks = markGlanced(marks, second.id, true);
+  marks = markClean(marks, second.id, true);
+  marks = markGlanced(marks, second.id, false);
+  assert.equal(marks[second.id].clean, false);
+  const saved = designsToSave(rows, marks);
+  assert.deepEqual(saved.map((row) => row.id), [first.id]);
+});
+
+test("clear removes desk batch files and leaves files outside that folder", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "fernora-batch-"));
+  const desk = path.join(root, "daily-batch");
+  await mkdir(desk);
+  const rows = prepareDailyBatch().slice(0, 1);
+  await saveDeskBatch(desk, rows);
+  await writeFile(path.join(desk, "notes.txt"), "keep");
+  await writeFile(path.join(root, "credentials.json"), "{}");
+  assert.throws(() => resolveDeskBatchFile(desk, "../credentials"));
+  const removed = await clearDeskBatch(desk);
+  assert.deepEqual(removed, [`${rows[0].id}.json`]);
+  assert.equal(existsSync(path.join(desk, "notes.txt")), true);
+  assert.equal(existsSync(path.join(root, "credentials.json")), true);
+  assert.equal(existsSync(path.join(desk, `${rows[0].id}.json`)), false);
+});
+
+test("the batch stays on the prints page and does not delete shop products", () => {
   const lib = readFileSync(new URL("./daily-batch.ts", import.meta.url), "utf8");
-  const page = readFileSync(new URL("../app/prints/daily/page.tsx", import.meta.url), "utf8");
-  for (const source of [lib, page]) {
+  const desk = readFileSync(new URL("./daily-batch-desk.ts", import.meta.url), "utf8");
+  const route = readFileSync(new URL("../app/api/prints/daily/route.ts", import.meta.url), "utf8");
+  const batch = readFileSync(new URL("../app/prints/daily-batch.tsx", import.meta.url), "utf8");
+  const prints = readFileSync(new URL("../app/prints/page.tsx", import.meta.url), "utf8");
+  assert.equal(existsSync(new URL("../app/prints/daily/page.tsx", import.meta.url)), false);
+  assert.match(prints, /<DailyBatch/);
+  assert.doesNotMatch(prints, /href=["']\/prints\/daily["']/);
+  for (const source of [lib, desk, route, batch]) {
     assert.doesNotMatch(source, /from ["']@\/lib\/(printify|etsy|shopify|credentials|desk-credentials)/);
     assert.doesNotMatch(source, /\/api\/prints\/push/);
     assert.doesNotMatch(source, /\/api\/listings/);
     assert.doesNotMatch(source, /openai/i);
     assert.doesNotMatch(source, /credentials\.json/);
   }
-  assert.doesNotMatch(page, /fetch\(/);
+  assert.match(batch, /\/api\/prints\/daily/);
+  assert.match(route, /action === "clear"/);
+  assert.match(route, /action === "push"/);
   assert.match(dailyBatchLabel(new Date("2026-11-28T04:00:00Z")), /2026/);
 });
